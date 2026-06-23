@@ -298,8 +298,11 @@ export default function LeaderDashboard({ team, onLogout }) {
         </div>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
-        <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>Team {team}</div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ fontSize: '1.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <img src="/logo.png" alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '50%' }} />
+          Team {team}
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
@@ -349,15 +352,15 @@ export default function LeaderDashboard({ team, onLogout }) {
                   onClick={() => selectedDay !== currentDay && setSelectedDay(currentDay)} 
                   title={selectedDay === currentDay ? "Today" : "Jump to Today"} 
                   style={{ 
-                    background: selectedDay === currentDay ? 'var(--success)' : 'transparent', 
-                    border: `1px solid ${selectedDay === currentDay ? 'var(--success)' : 'var(--accent)'}`, 
+                    background: selectedDay === currentDay ? 'var(--accent)' : 'transparent', 
+                    border: `1px solid var(--accent)`, 
                     color: selectedDay === currentDay ? '#fff' : 'var(--accent)', 
                     cursor: selectedDay === currentDay ? 'default' : 'pointer', 
                     display: 'flex',
                     alignItems: 'center', 
-                    padding: '0.15rem 0.5rem',
+                    padding: '0.2rem 0.6rem',
                     fontSize: '0.75rem',
-                    borderRadius: '1rem',
+                    borderRadius: '0.4rem',
                     marginLeft: '0.5rem',
                     fontWeight: 'bold'
                   }}
@@ -395,13 +398,13 @@ export default function LeaderDashboard({ team, onLogout }) {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '1rem' }}>
               <button 
                 onClick={() => handleSelectAll(true)} 
-                style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
+                style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
               >
                 ✓ Select All
               </button>
               <button 
                 onClick={() => handleSelectAll(false)} 
-                style={{ background: 'transparent', border: '1px solid var(--border-light)', color: 'var(--text-secondary)', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
+                style={{ background: 'transparent', border: '1px solid var(--border-light)', color: 'var(--text-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
               >
                 ✕ Deselect All
               </button>

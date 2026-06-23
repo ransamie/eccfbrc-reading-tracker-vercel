@@ -381,8 +381,11 @@ export default function AdminDashboard({ onLogout }) {
         </div>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
-        <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>⚙️ Admin Command Center</div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ fontSize: '1.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <img src="/logo.png" alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '50%' }} />
+          Admin Command Center
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
@@ -434,15 +437,15 @@ export default function AdminDashboard({ onLogout }) {
                   onClick={() => adminSelectedDay !== currentDayStr && setAdminSelectedDay(currentDayStr)} 
                   title={adminSelectedDay === currentDayStr ? "Today" : "Jump to Today"} 
                   style={{ 
-                    background: adminSelectedDay === currentDayStr ? 'var(--success)' : 'transparent', 
-                    border: `1px solid ${adminSelectedDay === currentDayStr ? 'var(--success)' : 'var(--accent)'}`, 
+                    background: adminSelectedDay === currentDayStr ? 'var(--accent)' : 'transparent', 
+                    border: `1px solid var(--accent)`, 
                     color: adminSelectedDay === currentDayStr ? '#fff' : 'var(--accent)', 
                     cursor: adminSelectedDay === currentDayStr ? 'default' : 'pointer', 
                     display: 'flex',
                     alignItems: 'center', 
-                    padding: '0.15rem 0.5rem',
+                    padding: '0.2rem 0.6rem',
                     fontSize: '0.75rem',
-                    borderRadius: '1rem',
+                    borderRadius: '0.4rem',
                     marginLeft: '0.5rem',
                     fontWeight: 'bold'
                   }}
@@ -480,13 +483,13 @@ export default function AdminDashboard({ onLogout }) {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '1rem' }}>
               <button 
                 onClick={() => handleAdminSelectAll(true)} 
-                style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
+                style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
               >
                 ✓ Select All
               </button>
               <button 
                 onClick={() => handleAdminSelectAll(false)} 
-                style={{ background: 'transparent', border: '1px solid var(--border-light)', color: 'var(--text-secondary)', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
+                style={{ background: 'transparent', border: '1px solid var(--border-light)', color: 'var(--text-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
               >
                 ✕ Deselect All
               </button>
@@ -595,13 +598,33 @@ export default function AdminDashboard({ onLogout }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '2rem', marginBottom: '3rem' }}>
               
               <div style={{ maxWidth: '100%' }}>
-                <h3 className="mb-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.4rem' }}>🏆 Today's Leaderboard</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.4rem', margin: 0 }}>🏆 Today's Leaderboard</h3>
+                  {todayReads > 0 && (
+                    <button 
+                      onClick={async () => {
+                        const el = document.getElementById('leaderboard-table');
+                        if (!el) return;
+                        const html2canvas = (await import('html2canvas')).default;
+                        const canvas = await html2canvas(el, { backgroundColor: '#0f172a' });
+                        const pngUrl = canvas.toDataURL('image/png');
+                        const a = document.createElement('a');
+                        a.href = pngUrl;
+                        a.download = `leaderboard_day_${currentDayNum}.png`;
+                        a.click();
+                      }}
+                      style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '0.4rem', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '600' }}
+                    >
+                      📥 PNG
+                    </button>
+                  )}
+                </div>
                 {todayReads === 0 ? (
                   <div style={{ background: '#1e293b', color: '#60a5fa', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #3b82f6', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
                     No reading data available for today yet.
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '400px', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%' }}>
+                  <div id="leaderboard-table" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '400px', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>
@@ -625,8 +648,26 @@ export default function AdminDashboard({ onLogout }) {
               </div>
 
               <div style={{ maxWidth: '100%' }}>
-                <h3 className="mb-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.4rem' }}>🏥 Team Health Check</h3>
-                <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '400px', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.4rem', margin: 0 }}>🏥 Team Health Check</h3>
+                  <button 
+                    onClick={async () => {
+                      const el = document.getElementById('team-health-table');
+                      if (!el) return;
+                      const html2canvas = (await import('html2canvas')).default;
+                      const canvas = await html2canvas(el, { backgroundColor: '#0f172a' });
+                      const pngUrl = canvas.toDataURL('image/png');
+                      const a = document.createElement('a');
+                      a.href = pngUrl;
+                      a.download = `team_health_day_${currentDayNum}.png`;
+                      a.click();
+                    }}
+                    style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '0.4rem', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '600' }}
+                  >
+                    📥 PNG
+                  </button>
+                </div>
+                <div id="team-health-table" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '400px', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>
@@ -698,7 +739,7 @@ export default function AdminDashboard({ onLogout }) {
                   };
                   img.src = url;
                 }}
-                style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
+                style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
               >
                 📥 Export PNG
               </button>

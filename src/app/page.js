@@ -74,21 +74,21 @@ export default function Home() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: "600px", marginTop: "10vh", padding: "1rem" }}>
+    <div className="container" style={{ maxWidth: "600px", marginTop: "5vh", padding: "1rem" }}>
       <div className="text-center mb-4">
         <div style={{
-          width: '120px', height: '120px', backgroundColor: '#000', borderRadius: '50%',
-          display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 1.5rem auto'
+          width: '90px', height: '90px', backgroundColor: '#000', borderRadius: '50%',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 1.25rem auto'
         }}>
-          <img src="/logo.png" alt="ECCF Logo" style={{ maxHeight: '90px', maxWidth: '90px', borderRadius: '50%' }} />
+          <img src="/logo.png" alt="ECCF Logo" style={{ maxHeight: '70px', maxWidth: '70px', borderRadius: '50%' }} />
         </div>
-        <h2 style={{ fontSize: "2.2rem", fontWeight: "700", margin: "0", textAlign: "center" }}>ECCF Bible Reading Challenge Tracker</h2>
+        <h2 style={{ fontSize: "1.75rem", fontWeight: "700", margin: "0", textAlign: "center", lineHeight: "1.3" }}>ECCF Bible Reading Challenge Tracker</h2>
         <p style={{ color: "var(--text-secondary)", fontWeight: 500, marginTop: "10px", textAlign: "center", fontSize: "1.1rem" }}>
           📖 June-August NT Edition
         </p>
       </div>
 
-      <div style={{ marginTop: "2.5rem" }}>
+      <div style={{ marginTop: "1.5rem" }}>
         {error && <div className="alert alert-error mb-3" style={{ color: 'var(--accent)' }}>{error}</div>}
 
         {loading && !teams.length ? (
@@ -98,8 +98,9 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <p style={{ fontSize: "0.95rem", fontWeight: "400", marginBottom: "1rem" }}>Select Login Type:</p>
-            <div style={{ display: "flex", gap: "1.5rem", marginBottom: "2rem" }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <p style={{ fontSize: "0.95rem", fontWeight: "400", marginBottom: "0.75rem", textAlign: "center" }}>Select Login Type:</p>
+              <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem", justifyContent: "center" }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input 
                   type="radio" 
@@ -120,15 +121,19 @@ export default function Home() {
                 />
                 <span>Super Admin</span>
               </label>
+              </div>
             </div>
 
-            <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '2rem 0' }} />
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '1.25rem 0' }} />
 
             <div style={{ 
-              border: '1px solid var(--border-light)', 
-              borderRadius: '0.5rem', 
-              padding: '1.5rem',
-              backgroundColor: 'transparent'
+              border: '1px solid rgba(255, 255, 255, 0.08)', 
+              borderRadius: '0.75rem', 
+              padding: '2rem',
+              backgroundColor: 'rgba(17, 24, 39, 0.4)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)'
             }}>
               <form onSubmit={handleLogin}>
                 {loginType === "Team Leader" && (
