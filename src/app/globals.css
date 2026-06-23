@@ -1,0 +1,403 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --background: #0f172a;
+  --background-gradient: linear-gradient(135deg, #0f172a 0%, #171124 100%);
+  --surface: #1e293b;
+  --surface-secondary: #334155;
+  --border: rgba(255, 255, 255, 0.15);
+  --border-light: rgba(255, 255, 255, 0.08);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --accent: #38bdf8;
+  --accent-hover: #0ea5e9;
+  --accent-light: rgba(56, 189, 248, 0.15);
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --font-sans: 'Inter', sans-serif;
+}
+
+[data-theme="light"] {
+  --background: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-secondary: #F0F2F6;
+  --border: rgba(49, 51, 63, 0.2);
+  --border-light: rgba(49, 51, 63, 0.1);
+  --text-primary: #31333F;
+  --text-secondary: #5a5d6e;
+  --accent: #00BFFF;
+  --accent-light: rgba(0, 191, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--background);
+  background-image: var(--background-gradient);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all 0.2s ease;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+/* Streamlit Container Layout */
+.container {
+  max-width: 730px; /* Streamlit default max width */
+  margin: 0 auto;
+  padding: 3rem 1rem;
+}
+
+/* Streamlit doesn't use heavy cards, it's flat */
+.card {
+  background: var(--surface);
+  border-radius: 0.5rem;
+  padding: 0rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Streamlit Primary Button */
+.btn-primary {
+  background-color: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 400;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Streamlit Text Input */
+.input-field {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: var(--surface-secondary);
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--accent);
+  background-color: var(--surface);
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.text-center { text-align: center; }
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-4 { margin-top: 2rem; }
+
+.divider {
+  height: 1px;
+  background-color: var(--border-light);
+  margin: 1.5rem 0;
+  width: 100%;
+}
+
+/* Streamlit Tabs */
+.st-tabs {
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 1rem;
+}
+
+.st-tab {
+  flex: 1;
+  text-align: center;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.75rem 0.25rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  cursor: pointer;
+  white-space: normal;
+  position: relative;
+  transition: color 0.2s, border-bottom-color 0.2s;
+  line-height: 1.2;
+}
+
+.st-tab:hover {
+  color: var(--text-primary);
+}
+
+.st-tab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Streamlit Expander */
+.st-expander {
+  border: 1px solid var(--border-light);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  background: var(--surface);
+}
+
+.st-expander-header {
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: var(--surface);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 400;
+  border: none;
+  width: 100%;
+}
+
+.st-expander-header:hover {
+  color: var(--accent);
+}
+
+.st-expander-content {
+  padding: 1rem;
+  border-top: 1px solid var(--border-light);
+}
+
+/* Loaders */
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.spinner {
+  border: 4px solid var(--border-light);
+  border-top: 4px solid var(--accent);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Custom Checkbox mimicking Streamlit */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  font-size: 0.95rem;
+}
+
+input[type="checkbox"] {
+  appearance: none;
+  background-color: var(--surface);
+  margin: 0;
+  font: inherit;
+  color: var(--accent);
+  width: 1.2em;
+  height: 1.2em;
+  border: 1.5px solid var(--accent);
+  border-radius: 0.25em;
+  display: grid;
+  place-content: center;
+  transition: all 0.2s ease;
+}
+
+input[type="checkbox"]::before {
+  content: "";
+  width: 0.7em;
+  height: 0.7em;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  transform: scale(0);
+  background-color: white;
+  transition: 120ms transform ease-in-out;
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+input[type="checkbox"]:checked::before {
+  transform: scale(1);
+}
+
+/* Pills UI (Streamlit style) */
+.pills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.pill {
+  padding: 0.25rem 1rem;
+  border-radius: 1rem;
+  background-color: var(--surface);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pill.active {
+  background-color: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Toast Notification */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.95rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-light);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: toastSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  position: relative;
+  overflow: hidden;
+  min-width: 300px;
+}
+
+.toast::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: currentColor;
+  animation: toastProgress 3s linear forwards;
+}
+
+.toast.success {
+  border-left: 4px solid var(--success);
+}
+.toast.success::after {
+  background: var(--success);
+}
+
+.toast.error {
+  border-left: 4px solid var(--error);
+}
+.toast.error::after {
+  background: var(--error);
+}
+
+.toast-icon {
+  font-size: 1.25rem;
+}
+
+.toast.success .toast-icon {
+  color: var(--success);
+}
+
+.toast.error .toast-icon {
+  color: var(--error);
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toastProgress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
