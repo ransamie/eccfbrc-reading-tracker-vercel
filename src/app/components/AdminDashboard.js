@@ -51,13 +51,14 @@ const RawTrackingTable = ({ dfTracker }) => {
   };
 
   return (
-    <div className="ag-theme-alpine-dark" style={{ height: '500px', width: '100%', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+    <div className="ag-theme-alpine-dark" style={{ width: '100%', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
       <AgGridReact
         rowData={dfTracker}
         columnDefs={columnDefs}
         defaultColDef={defaultColDef}
         suppressCellFocus={true}
         enableCellTextSelection={true}
+        domLayout="autoHeight"
       />
     </div>
   )
@@ -567,13 +568,13 @@ export default function AdminDashboard({ onLogout }) {
                 className="btn-primary" 
                 onClick={() => handleSaveAdminReport(false)} 
                 disabled={saving} 
-                style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border-light)', fontWeight: 'bold' }}
+                style={{ backgroundColor: 'var(--accent)', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}
               >
                 {saving ? 'Saving...' : `💾 Save ${adminSelectedDay.replace('_', ' ')} Updates`}
               </button>
               
               {adminSelectedDay === currentDayStr && (
-                 <button className="btn-primary" onClick={() => handleSaveAdminReport(true)} disabled={saving} style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border-light)', fontWeight: 'bold' }}>
+                 <button className="btn-primary" onClick={() => handleSaveAdminReport(true)} disabled={saving} style={{ backgroundColor: '#10b981', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
                    📋 Generate Daily Report
                  </button>
               )}
@@ -679,7 +680,7 @@ export default function AdminDashboard({ onLogout }) {
                         a.download = getExportFileName('leaderboard');
                         a.click();
                       }}
-                      style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '0.4rem', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '600' }}
+                      style={{ background: 'var(--accent)', border: '1px solid var(--accent)', color: '#ffffff', padding: '0.15rem 0.5rem', borderRadius: '0.4rem', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '600', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
                     >
                       📥 PNG
                     </button>
@@ -690,7 +691,7 @@ export default function AdminDashboard({ onLogout }) {
                     No reading data available for today yet.
                   </div>
                 ) : (
-                  <div id="leaderboard-table" style={{ overflowX: 'auto', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
+                  <div id="leaderboard-table" style={{ overflowX: 'auto', overflowY: 'hidden', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>
@@ -730,12 +731,12 @@ export default function AdminDashboard({ onLogout }) {
                       a.download = getExportFileName('team_health');
                       a.click();
                     }}
-                    style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '0.4rem', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '600' }}
+                    style={{ background: 'var(--accent)', border: '1px solid var(--accent)', color: '#ffffff', padding: '0.15rem 0.5rem', borderRadius: '0.4rem', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '600', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
                   >
                     📥 PNG
                   </button>
                 </div>
-                <div id="team-health-table" style={{ overflowX: 'auto', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
+                <div id="team-health-table" style={{ overflowX: 'auto', overflowY: 'hidden', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>
@@ -809,7 +810,7 @@ export default function AdminDashboard({ onLogout }) {
                   };
                   img.src = url;
                 }}
-                style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
+                style={{ background: 'var(--accent)', border: '1px solid var(--accent)', color: '#ffffff', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
               >
                 📥 Export PNG
               </button>
