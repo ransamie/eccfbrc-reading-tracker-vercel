@@ -113,7 +113,7 @@ export default function AdminDashboard({ onLogout }) {
 
   const loadData = (isManualRefresh = false) => {
     setLoading(true);
-    fetch('/api/data?type=admin')
+    fetch(`/api/data?type=admin&t=${Date.now()}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(d => {
         setData(d);
@@ -488,30 +488,29 @@ export default function AdminDashboard({ onLogout }) {
               <ChevronLeft size={20} />
             </button>
             
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Updating</span>
-              <span style={{ fontSize: '1.1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {adminSelectedDay.replace('_', ' ')} 
-                <button 
-                  onClick={() => adminSelectedDay !== currentDayStr && setAdminSelectedDay(currentDayStr)} 
-                  title={adminSelectedDay === currentDayStr ? "Today" : "Jump to Today"} 
-                  style={{ 
-                    background: adminSelectedDay === currentDayStr ? 'var(--accent)' : 'transparent', 
-                    border: `1px solid var(--accent)`, 
-                    color: adminSelectedDay === currentDayStr ? '#fff' : 'var(--accent)', 
-                    cursor: adminSelectedDay === currentDayStr ? 'default' : 'pointer', 
-                    display: 'flex',
-                    alignItems: 'center', 
-                    padding: '0.2rem 0.6rem',
-                    fontSize: '0.75rem',
-                    borderRadius: '0.4rem',
-                    marginLeft: '0.5rem',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  <CalendarDays size={14} style={{ marginRight: '4px' }} /> {adminSelectedDay === currentDayStr ? "Today" : "Jump to Today"}
-                </button>
-              </span>
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 'bold' }}>Updating</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: '1' }}>{adminSelectedDay.replace('_', ' ')}</span>
+              <button 
+                onClick={() => adminSelectedDay !== currentDayStr && setAdminSelectedDay(currentDayStr)} 
+                title={adminSelectedDay === currentDayStr ? "Already viewing today" : "Jump to Today"} 
+                style={{ 
+                  background: adminSelectedDay === currentDayStr ? 'rgba(255,255,255,0.05)' : 'var(--accent-light)', 
+                  border: `1px solid ${adminSelectedDay === currentDayStr ? 'var(--border-light)' : 'var(--accent)'}`, 
+                  color: adminSelectedDay === currentDayStr ? 'var(--text-secondary)' : 'var(--accent)', 
+                  cursor: adminSelectedDay === currentDayStr ? 'default' : 'pointer', 
+                  display: 'flex',
+                  alignItems: 'center', 
+                  padding: '0.3rem 0.8rem',
+                  fontSize: '0.8rem',
+                  borderRadius: '1rem',
+                  fontWeight: '600',
+                  marginTop: '0.2rem',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <CalendarDays size={14} style={{ marginRight: '6px' }} /> {adminSelectedDay === currentDayStr ? "Today" : "Jump to Today"}
+              </button>
             </div>
 
             <button 
@@ -565,16 +564,15 @@ export default function AdminDashboard({ onLogout }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
               <button 
-                className="btn-primary" 
                 onClick={() => handleSaveAdminReport(false)} 
                 disabled={saving} 
-                style={{ backgroundColor: 'var(--accent)', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}
+                style={{ backgroundColor: 'var(--accent)', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, transition: 'all 0.2s ease' }}
               >
                 {saving ? 'Saving...' : `💾 Save ${adminSelectedDay.replace('_', ' ')} Updates`}
               </button>
               
               {adminSelectedDay === currentDayStr && (
-                 <button className="btn-primary" onClick={() => handleSaveAdminReport(true)} disabled={saving} style={{ backgroundColor: '#10b981', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+                 <button onClick={() => handleSaveAdminReport(true)} disabled={saving} style={{ backgroundColor: '#047857', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, transition: 'all 0.2s ease' }}>
                    📋 Generate Daily Report
                  </button>
               )}
@@ -691,8 +689,13 @@ export default function AdminDashboard({ onLogout }) {
                     No reading data available for today yet.
                   </div>
                 ) : (
-                  <div id="leaderboard-table" style={{ overflowX: 'auto', overflowY: 'hidden', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                  <div style={{ overflowX: 'auto', overflowY: 'hidden', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-light)' }}>
+                    <div id="leaderboard-table" style={{ minWidth: 'max-content', background: 'var(--surface)', padding: '1.5rem' }}>
+                      <div style={{ textAlign: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
+                        <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.6rem', fontWeight: '800' }}>🏆 Daily Leaderboard</h2>
+                        <p style={{ margin: '0.4rem 0 0 0', color: 'var(--accent)', fontWeight: 'bold', fontSize: '1rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{adminSelectedDay.replace('_', ' ')}</p>
+                      </div>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>
                           <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Rank</th>
@@ -713,6 +716,7 @@ export default function AdminDashboard({ onLogout }) {
                       </tbody>
                     </table>
                   </div>
+                </div>
                 )}
               </div>
 
@@ -736,8 +740,13 @@ export default function AdminDashboard({ onLogout }) {
                     📥 PNG
                   </button>
                 </div>
-                <div id="team-health-table" style={{ overflowX: 'auto', overflowY: 'hidden', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                <div style={{ overflowX: 'auto', overflowY: 'hidden', width: '100%', borderRadius: '0.5rem', border: '1px solid var(--border-light)' }}>
+                  <div id="team-health-table" style={{ minWidth: 'max-content', background: 'var(--surface)', padding: '1.5rem' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
+                      <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.6rem', fontWeight: '800' }}>❤️ Team Health Check</h2>
+                      <p style={{ margin: '0.4rem 0 0 0', color: 'var(--accent)', fontWeight: 'bold', fontSize: '1rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{adminSelectedDay.replace('_', ' ')}</p>
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>
                         <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Team</th>
@@ -762,6 +771,7 @@ export default function AdminDashboard({ onLogout }) {
                     </tbody>
                   </table>
                 </div>
+              </div>
               </div>
 
             </div>

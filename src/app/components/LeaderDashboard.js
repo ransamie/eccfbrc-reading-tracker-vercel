@@ -33,7 +33,7 @@ export default function LeaderDashboard({ team, onLogout }) {
 
   const loadData = (isManualRefresh = false) => {
     setLoading(true);
-    fetch(`/api/data?type=leader&team=${encodeURIComponent(team)}`)
+    fetch(`/api/data?type=leader&team=${encodeURIComponent(team)}&t=${Date.now()}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(d => {
         setData(d);
@@ -344,30 +344,29 @@ export default function LeaderDashboard({ team, onLogout }) {
               <ChevronLeft size={20} />
             </button>
             
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Updating</span>
-              <span style={{ fontSize: '1.1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {selectedDay.replace('_', ' ')} 
-                <button 
-                  onClick={() => selectedDay !== currentDay && setSelectedDay(currentDay)} 
-                  title={selectedDay === currentDay ? "Today" : "Jump to Today"} 
-                  style={{ 
-                    background: selectedDay === currentDay ? 'var(--accent)' : 'transparent', 
-                    border: `1px solid var(--accent)`, 
-                    color: selectedDay === currentDay ? '#fff' : 'var(--accent)', 
-                    cursor: selectedDay === currentDay ? 'default' : 'pointer', 
-                    display: 'flex',
-                    alignItems: 'center', 
-                    padding: '0.2rem 0.6rem',
-                    fontSize: '0.75rem',
-                    borderRadius: '0.4rem',
-                    marginLeft: '0.5rem',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  <CalendarDays size={14} style={{ marginRight: '4px' }} /> {selectedDay === currentDay ? "Today" : "Jump to Today"}
-                </button>
-              </span>
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 'bold' }}>Updating</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: '1' }}>{selectedDay.replace('_', ' ')}</span>
+              <button 
+                onClick={() => selectedDay !== currentDay && setSelectedDay(currentDay)} 
+                title={selectedDay === currentDay ? "Already viewing today" : "Jump to Today"} 
+                style={{ 
+                  background: selectedDay === currentDay ? 'rgba(255,255,255,0.05)' : 'var(--accent-light)', 
+                  border: `1px solid ${selectedDay === currentDay ? 'var(--border-light)' : 'var(--accent)'}`, 
+                  color: selectedDay === currentDay ? 'var(--text-secondary)' : 'var(--accent)', 
+                  cursor: selectedDay === currentDay ? 'default' : 'pointer', 
+                  display: 'flex',
+                  alignItems: 'center', 
+                  padding: '0.3rem 0.8rem',
+                  fontSize: '0.8rem',
+                  borderRadius: '1rem',
+                  fontWeight: '600',
+                  marginTop: '0.2rem',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <CalendarDays size={14} style={{ marginRight: '6px' }} /> {selectedDay === currentDay ? "Today" : "Jump to Today"}
+              </button>
             </div>
 
             <button 
@@ -432,16 +431,15 @@ export default function LeaderDashboard({ team, onLogout }) {
                 </div>
               )}
               <button 
-                className="btn-primary" 
                 onClick={() => handleSaveReport(false)} 
                 disabled={saving || !isReportingWindow} 
-                style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border-light)', fontWeight: 'bold', opacity: (!isReportingWindow) ? 0.5 : 1, cursor: (!isReportingWindow) ? 'not-allowed' : 'pointer' }}
+                style={{ backgroundColor: 'var(--accent)', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: (saving || !isReportingWindow) ? 'not-allowed' : 'pointer', opacity: (saving || !isReportingWindow) ? 0.5 : 1, transition: 'all 0.2s ease' }}
               >
                 {saving ? 'Saving...' : `💾 Save ${selectedDay.replace('_', ' ')} Updates`}
               </button>
               
               {selectedDay === currentDay && (
-                 <button className="btn-primary" onClick={() => handleSaveReport(true)} disabled={saving || !isReportingWindow} style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border-light)', fontWeight: 'bold', opacity: (!isReportingWindow) ? 0.5 : 1, cursor: (!isReportingWindow) ? 'not-allowed' : 'pointer' }}>
+                 <button onClick={() => handleSaveReport(true)} disabled={saving || !isReportingWindow} style={{ backgroundColor: '#047857', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: (saving || !isReportingWindow) ? 'not-allowed' : 'pointer', opacity: (saving || !isReportingWindow) ? 0.5 : 1, transition: 'all 0.2s ease' }}>
                    📋 Generate Report
                  </button>
               )}
@@ -464,10 +462,8 @@ export default function LeaderDashboard({ team, onLogout }) {
 
       {activeTab === 'roster' && (
         <div className="card">
-          <div className="st-expander">
-            <div className="st-expander-content" style={{borderTop: 'none'}}>
-              <h3 className="mb-2">Manage Team Roster</h3>
-              <p className="label mb-3">Update a member's status if they have left the group chat or declined the challenge. Changes made here will automatically update your active checklist and WhatsApp report.</p>
+          <h3 className="mb-2">Manage Team Roster</h3>
+          <p className="label mb-3">Update a member's status if they have left the group chat or declined the challenge. Changes made here will automatically update your active checklist and WhatsApp report.</p>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {allMembers.map(m => {
@@ -499,7 +495,8 @@ export default function LeaderDashboard({ team, onLogout }) {
                       background: 'var(--surface-secondary)', 
                       padding: '0.75rem 1rem', 
                       borderRadius: '0.5rem',
-                      borderLeft: `4px solid ${statusBorder}`
+                      borderLeft: `4px solid ${statusBorder}`,
+                      gap: '1rem'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
                         <div style={{ 
@@ -510,7 +507,7 @@ export default function LeaderDashboard({ team, onLogout }) {
                         }}>
                            {m.Member_Name.trim().charAt(0).toUpperCase()}
                         </div>
-                        <span style={{ fontSize: '0.95rem', fontWeight: '600', lineHeight: '1.2' }}>{m.Member_Name}</span>
+                        <span style={{ fontSize: '0.95rem', fontWeight: '600', lineHeight: '1.2', display: 'block', wordBreak: 'break-word' }}>{m.Member_Name}</span>
                       </div>
                       <select 
                         className="input-field" 
@@ -539,9 +536,7 @@ export default function LeaderDashboard({ team, onLogout }) {
                   );
                 })}
               </div>
-              <button className="btn-primary mt-4" onClick={handleSaveRoster} disabled={saving}>{saving ? 'Saving...' : 'Save Roster Updates'}</button>
-            </div>
-          </div>
+              <button onClick={handleSaveRoster} disabled={saving} style={{ marginTop: '1rem', backgroundColor: 'var(--accent)', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, transition: 'all 0.2s ease', width: '100%' }}>{saving ? 'Saving...' : '💾 Save Roster Updates'}</button>
         </div>
       )}
     </div>
