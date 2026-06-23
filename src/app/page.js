@@ -15,6 +15,15 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const savedSession = localStorage.getItem("eccf_session");
+    if (savedSession) {
+      try {
+        setSession(JSON.parse(savedSession));
+      } catch (e) {
+        console.error("Failed to parse session");
+      }
+    }
+
     fetch("/api/data?type=valid_teams")
       .then((res) => res.json())
       .then((data) => {
@@ -48,7 +57,9 @@ export default function Home() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSession({ role: data.role, team: data.team });
+        const newSession = { role: data.role, team: data.team };
+        setSession(newSession);
+        localStorage.setItem("eccf_session", JSON.stringify(newSession));
       } else {
         setError(data.message || "Login failed");
       }
@@ -63,6 +74,7 @@ export default function Home() {
   const handleLogout = () => {
     setSession(null);
     setPin("");
+    localStorage.removeItem("eccf_session");
   };
 
   if (session?.role === "admin") {

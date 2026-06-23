@@ -192,6 +192,28 @@ export async function POST(request) {
       return NextResponse.json({ success: true });
     }
     
+    if (action === 'admin_update_super_pin') {
+      const { newPin } = payload;
+      const settingsSheet = db.sheetsByTitle["Global_Settings"];
+      const rows = await settingsSheet.getRows();
+      
+      let found = false;
+      for (const row of rows) {
+        if (row.get('Setting_Key') === 'ADMIN_PIN') {
+          row.set('Setting_Value', newPin);
+          await row.save();
+          found = true;
+          break;
+        }
+      }
+      
+      if (!found) {
+        await settingsSheet.addRow({ Setting_Key: 'ADMIN_PIN', Setting_Value: newPin });
+      }
+      
+      return NextResponse.json({ success: true });
+    }
+    
     if (action === 'admin_rename_team') {
       const { oldTeamName, newTeamName } = payload;
       const promises = [];

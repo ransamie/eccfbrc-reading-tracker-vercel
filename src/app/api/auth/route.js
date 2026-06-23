@@ -9,7 +9,7 @@ export async function POST(request) {
     const data = await fetchGlobalData();
 
     if (loginType === 'Super Admin') {
-      const adminPin = process.env.ADMIN_PIN || "0000";
+      const adminPin = data.settings?.ADMIN_PIN || process.env.ADMIN_PIN || "0000";
       if (pin === adminPin) {
         return NextResponse.json({ success: true, role: 'admin' });
       } else {

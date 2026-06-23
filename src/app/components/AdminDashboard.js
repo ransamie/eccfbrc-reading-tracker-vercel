@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut } from "lucide-react";
+import { AgGridReact } from 'ag-grid-react';
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
+
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 const parse12to24 = (time12h) => {
   if (!time12h) return "";
@@ -18,9 +22,46 @@ const parse24to12 = (time24h) => {
   let h = parseInt(hours, 10);
   const ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12;
-  h = h ? h : 12;
-  return `${String(h).padStart(2, '0')}:${minutes} ${ampm}`;
+  if (h === 0) h = 12;
+  return `${h}:${minutes} ${ampm}`;
 };
+
+const RawTrackingTable = ({ dfTracker }) => {
+  if (!dfTracker || dfTracker.length === 0) return <p style={{color: 'var(--text-secondary)'}}>No data available.</p>;
+
+  const allKeys = Object.keys(dfTracker[0]).filter(k => k !== '_sheet' && k !== '_rowNumber' && k !== '_rawData');
+  
+  const columnDefs = [
+    { headerName: '#', valueGetter: 'node.rowIndex', pinned: 'left', width: 70 },
+    ...allKeys.map(k => {
+      const isPinned = k === 'Team_Name' || k === 'Member_Name';
+      return { 
+        field: k, 
+        pinned: isPinned ? 'left' : null,
+        minWidth: 120
+      };
+    })
+  ];
+
+  const defaultColDef = {
+    sortable: true,
+    filter: true,
+    resizable: true,
+    width: 150
+  };
+
+  return (
+    <div className="ag-theme-alpine-dark" style={{ height: '500px', width: '100%', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+      <AgGridReact
+        rowData={dfTracker}
+        columnDefs={columnDefs}
+        defaultColDef={defaultColDef}
+        suppressCellFocus={true}
+        enableCellTextSelection={true}
+      />
+    </div>
+  )
+}
 
 export default function AdminDashboard({ onLogout }) {
   const [data, setData] = useState(null);
@@ -49,13 +90,16 @@ export default function AdminDashboard({ onLogout }) {
   // Expanders
   const [expandAddTeam, setExpandAddTeam] = useState(false);
   const [expandUpdatePin, setExpandUpdatePin] = useState(false);
+  const [expandSuperPin, setExpandSuperPin] = useState(false);
   const [expandRenameTeam, setExpandRenameTeam] = useState(false);
   const [expandBulkUpload, setExpandBulkUpload] = useState(false);
+  const [expandRawData, setExpandRawData] = useState(false);
 
   const [settingsForm, setSettingsForm] = useState({ currentRound: 1, evictionThreshold: 5 });
 
   const [newTeam, setNewTeam] = useState({ name: '', pin: '' });
   const [pinUpdate, setPinUpdate] = useState({ team: '', pin: '' });
+  const [superPin, setSuperPin] = useState("");
   const [renameTeam, setRenameTeam] = useState({ oldName: '', newName: '' });
 
   const [csvFile, setCsvFile] = useState(null);
@@ -310,6 +354,20 @@ export default function AdminDashboard({ onLogout }) {
     } catch (e) { showToast("Error updating PIN", "error"); } finally { setSaving(false); }
   };
 
+  const handleUpdateSuperPin = async () => {
+    if (!superPin) return showToast("Provide a new Super Admin PIN.", "error");
+    setSaving(true);
+    try {
+      await fetch('/api/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'admin_update_super_pin', payload: { newPin: superPin } })
+      });
+      showToast("Super Admin PIN updated successfully!");
+      setSuperPin("");
+    } catch (e) { showToast("Error updating Super Admin PIN", "error"); } finally { setSaving(false); }
+  };
+
   const handleRenameTeam = async () => {
     if (!renameTeam.oldName || !renameTeam.newName) return showToast("Provide both old and new names.", "error");
     setSaving(true);
@@ -559,7 +617,7 @@ export default function AdminDashboard({ onLogout }) {
         dfTracker.forEach(m => {
           const t = m.Team_Name || m.Team || m['Team Name'];
           if (!t) return;
-          if (!teamsMap[t]) teamsMap[t] = { active: 0, evicted: 0, total: 0, todayReads: 0 };
+          if (!teamsMap[t]) teamsMap[t] = { active: 0, evicted: 0, declined: 0, total: 0, todayReads: 0 };
           teamsMap[t].total++;
           const status = String(m.Status || '').toLowerCase();
           if (status === 'active') {
@@ -569,6 +627,8 @@ export default function AdminDashboard({ onLogout }) {
             }
           } else if (status === 'evicted') {
             teamsMap[t].evicted++;
+          } else if (status === 'declined' || status === 'left') {
+            teamsMap[t].declined++;
           }
         });
 
@@ -579,6 +639,12 @@ export default function AdminDashboard({ onLogout }) {
         });
 
         const leaderboardData = [...teamsData].sort((a, b) => b.completionRate - a.completionRate);
+
+        const getExportFileName = (prefix) => {
+          const round = data?.settings?.Current_Round || 1;
+          const dateStr = new Date().toISOString().split('T')[0];
+          return `${prefix}_Round_${round}_Day_${currentDayNum}_${dateStr}.png`;
+        };
 
         return (
           <div className="card">
@@ -610,7 +676,7 @@ export default function AdminDashboard({ onLogout }) {
                         const pngUrl = canvas.toDataURL('image/png');
                         const a = document.createElement('a');
                         a.href = pngUrl;
-                        a.download = `leaderboard_day_${currentDayNum}.png`;
+                        a.download = getExportFileName('leaderboard');
                         a.click();
                       }}
                       style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '0.4rem', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '600' }}
@@ -624,13 +690,14 @@ export default function AdminDashboard({ onLogout }) {
                     No reading data available for today yet.
                   </div>
                 ) : (
-                  <div id="leaderboard-table" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '400px', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
+                  <div id="leaderboard-table" style={{ overflowX: 'auto', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>
                           <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Rank</th>
                           <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Team</th>
-                          <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Completion</th>
+                          <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Completion %</th>
+                          <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Reads</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -638,7 +705,8 @@ export default function AdminDashboard({ onLogout }) {
                           <tr key={t.team} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>#{idx + 1}</td>
                             <td style={{ padding: '0.4rem 0.6rem', fontWeight: 'bold', border: '1px solid var(--border-light)' }}>{t.team}</td>
-                            <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{t.completionRate}%</td>
+                            <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{t.completionRate}</td>
+                            <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{t.todayReads}/{t.active}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -659,7 +727,7 @@ export default function AdminDashboard({ onLogout }) {
                       const pngUrl = canvas.toDataURL('image/png');
                       const a = document.createElement('a');
                       a.href = pngUrl;
-                      a.download = `team_health_day_${currentDayNum}.png`;
+                      a.download = getExportFileName('team_health');
                       a.click();
                     }}
                     style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: '0.4rem', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '600' }}
@@ -667,13 +735,14 @@ export default function AdminDashboard({ onLogout }) {
                     📥 PNG
                   </button>
                 </div>
-                <div id="team-health-table" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '400px', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
+                <div id="team-health-table" style={{ overflowX: 'auto', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', width: '100%', padding: '0.5rem' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>
                         <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Team</th>
                         <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Active</th>
                         <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Evicted</th>
+                        <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Declined</th>
                         <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Total</th>
                         <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Surv Rate</th>
                       </tr>
@@ -684,6 +753,7 @@ export default function AdminDashboard({ onLogout }) {
                           <td style={{ padding: '0.4rem 0.6rem', fontWeight: 'bold', border: '1px solid var(--border-light)' }}>{t.team}</td>
                           <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{t.active}</td>
                           <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{t.evicted}</td>
+                          <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{t.declined}</td>
                           <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{t.total}</td>
                           <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{t.survivalRate}%</td>
                         </tr>
@@ -733,7 +803,7 @@ export default function AdminDashboard({ onLogout }) {
                     const pngUrl = canvas.toDataURL('image/png');
                     const a = document.createElement('a');
                     a.href = pngUrl;
-                    a.download = 'engagement_trend.png';
+                    a.download = getExportFileName('engagement_trend');
                     a.click();
                     URL.revokeObjectURL(url);
                   };
@@ -771,6 +841,18 @@ export default function AdminDashboard({ onLogout }) {
                   <Line type="linear" dataKey="participants" stroke="var(--accent)" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#fff', stroke: 'var(--accent)', strokeWidth: 2 }} />
                 </LineChart>
               </ResponsiveContainer>
+            </div>
+
+            <div className="st-expander mt-4 mb-3">
+              <button className="st-expander-header" onClick={() => setExpandRawData(!expandRawData)}>
+                <span>{expandRawData ? '▼' : '▶'} Raw Tracking Data</span>
+              </button>
+              {expandRawData && (
+                <div className="st-expander-content">
+                  <p className="label mb-3">This is a live, read-only view of the underlying Google Sheet database.</p>
+                  <RawTrackingTable dfTracker={dfTracker} />
+                </div>
+              )}
             </div>
 
           </div>
@@ -864,6 +946,20 @@ export default function AdminDashboard({ onLogout }) {
                 </select>
                 <input type="text" className="input-field" placeholder="New 4-Digit PIN (e.g., 5678)" maxLength="4" value={pinUpdate.pin} onChange={e => setPinUpdate({...pinUpdate, pin: e.target.value})}/>
                 <button className="btn-primary" onClick={handleUpdatePin} disabled={saving}>Update PIN</button>
+              </div>
+            )}
+          </div>
+
+          <div className="st-expander mb-3">
+            <button className="st-expander-header" onClick={() => setExpandSuperPin(!expandSuperPin)}>
+              <span>🔐 Super Admin Security</span>
+              <span>{expandSuperPin ? '▼' : '▶'}</span>
+            </button>
+            {expandSuperPin && (
+              <div className="st-expander-content">
+                <p className="label mb-2">Change the global Super Admin login PIN.</p>
+                <input type="password" className="input-field" placeholder="New Super Admin PIN" value={superPin} onChange={e => setSuperPin(e.target.value)}/>
+                <button className="btn-primary" onClick={handleUpdateSuperPin} disabled={saving}>Update Super Admin PIN</button>
               </div>
             )}
           </div>
