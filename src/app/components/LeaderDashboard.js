@@ -379,7 +379,7 @@ export default function LeaderDashboard({ team, onLogout }) {
             </button>
           </div>
 
-          <div style={{ border: '1px solid var(--border-light)', borderRadius: '0.5rem', padding: '1rem', marginTop: '1rem' }}>
+          <div style={{ marginTop: '1.5rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', marginBottom: '1.5rem' }}>
               {activeMembers.length === 0 ? <p>No active members.</p> : activeMembers.map(m => {
                 const nameTrimmed = String(m.Member_Name || '').trim();
@@ -446,8 +446,8 @@ export default function LeaderDashboard({ team, onLogout }) {
           </div>
 
           {reportText && (
-            <div ref={reportRef} className="card mt-4" style={{ border: '1px solid var(--border-light)' }}>
-              <div style={{ padding: '1rem' }}>
+            <div ref={reportRef} className="card mt-4">
+              <div style={{ padding: '0.5rem' }}>
                 <h3 className="mb-2">📱 Copy Your Daily Report</h3>
                 <pre style={{ background: 'var(--surface-secondary)', padding: '1rem', borderRadius: '0.5rem', overflowX: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>
                   {reportText}

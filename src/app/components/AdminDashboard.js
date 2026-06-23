@@ -464,7 +464,7 @@ export default function AdminDashboard({ onLogout }) {
             </button>
           </div>
 
-          <div style={{ border: '1px solid var(--border-light)', borderRadius: '0.5rem', padding: '1rem', marginTop: '1rem' }}>
+          <div style={{ marginTop: '1.5rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '0.5rem', marginBottom: '1.5rem' }}>
               {activeLeaders.length === 0 ? <p>No active leaders.</p> : activeLeaders.map(m => {
                 const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
@@ -520,8 +520,8 @@ export default function AdminDashboard({ onLogout }) {
           </div>
 
           {reportText && (
-            <div ref={reportRef} className="card mt-4" style={{ border: '1px solid var(--border)' }}>
-              <div style={{ padding: '1rem' }}>
+            <div ref={reportRef} className="card mt-4">
+              <div style={{ padding: '0.5rem' }}>
                 <h3 className="mb-2">📱 Copy Your Daily Report</h3>
                 <pre style={{ background: 'var(--surface-secondary)', padding: '1rem', borderRadius: '0.5rem', overflowX: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>{reportText}</pre>
                 <button className="btn-primary mt-2" onClick={() => { navigator.clipboard.writeText(reportText); showToast("Copied to clipboard!"); }}>Copy to Clipboard</button>

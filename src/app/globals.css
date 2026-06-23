@@ -1,20 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --background: #0f172a;
-  --background-gradient: linear-gradient(135deg, #0f172a 0%, #171124 100%);
-  --surface: #1e293b;
-  --surface-secondary: #334155;
-  --border: rgba(255, 255, 255, 0.15);
-  --border-light: rgba(255, 255, 255, 0.08);
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --accent: #38bdf8;
-  --accent-hover: #0ea5e9;
-  --accent-light: rgba(56, 189, 248, 0.15);
-  --success: #10b981;
-  --error: #ef4444;
-  --warning: #f59e0b;
+  --background: #0B1121;
+  --surface: #111827;
+  --surface-secondary: #1F2937;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-light: rgba(255, 255, 255, 0.05);
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --accent: #2563EB;
+  --accent-hover: #3B82F6;
+  --accent-light: rgba(37, 99, 235, 0.15);
+  --success: #10B981;
+  --error: #EF4444;
+  --warning: #F59E0B;
   --font-sans: 'Inter', sans-serif;
 }
 
@@ -43,8 +42,6 @@ html, body {
 
 body {
   background: var(--background);
-  background-image: var(--background-gradient);
-  background-attachment: fixed;
   color: var(--text-primary);
   font-family: var(--font-sans);
   line-height: 1.6;
@@ -82,12 +79,13 @@ h1, h2, h3, h4, h5, h6 {
   padding: 3rem 1rem;
 }
 
-/* Streamlit doesn't use heavy cards, it's flat */
+/* Flat Cards */
 .card {
   background: var(--surface);
-  border-radius: 0.5rem;
-  padding: 0rem;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
   margin-bottom: 1.5rem;
+  border: 1px solid var(--border-light);
 }
 
 /* Streamlit Primary Button */
@@ -123,6 +121,29 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 1rem;
   margin-bottom: 1rem;
   transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+/* File Input Custom Styling */
+input[type="file"] {
+  padding: 0.5rem;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 1rem;
+  border: 1px solid var(--border-light);
+  background: var(--surface);
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--surface-secondary);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .input-field:focus {
