@@ -128,7 +128,7 @@ export default function LeaderDashboard({ team, onLogout }) {
 
     setSaving(true);
     try {
-      await fetch('/api/update', {
+      const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -143,6 +143,7 @@ export default function LeaderDashboard({ team, onLogout }) {
           }
         })
       });
+      if (!res.ok) throw new Error("Failed to save data");
       
       if (generateReport) {
         generateWhatsappText();
@@ -160,7 +161,7 @@ export default function LeaderDashboard({ team, onLogout }) {
   const handleSaveRoster = async () => {
     setSaving(true);
     try {
-      await fetch('/api/update', {
+      const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -168,6 +169,7 @@ export default function LeaderDashboard({ team, onLogout }) {
           payload: { team, rosterUpdates }
         })
       });
+      if (!res.ok) throw new Error("Failed to save roster");
       showToast("Team roster successfully updated!");
       loadData();
     } catch (e) {

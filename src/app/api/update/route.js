@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/googleSheets';
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -42,6 +45,15 @@ export async function POST(request) {
       }
       
       const trackerSheet = db.sheetsByTitle["Tracker_Data"];
+      await trackerSheet.loadHeaderRow();
+      if (!trackerSheet.headerValues.includes(day)) {
+        const newHeaders = [...trackerSheet.headerValues, day];
+        if (newHeaders.length > trackerSheet.columnCount) {
+          await trackerSheet.resize({ rowCount: trackerSheet.rowCount, columnCount: newHeaders.length + 5 });
+        }
+        await trackerSheet.setHeaderRow(newHeaders);
+      }
+      
       const rows = await trackerSheet.getRows();
 
       const promises = [];
@@ -124,6 +136,14 @@ export async function POST(request) {
     if (action === 'admin_report') {
       const { day, updates, reflection } = payload;
       const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
+      await leadersSheet.loadHeaderRow();
+      if (!leadersSheet.headerValues.includes(day)) {
+        const newHeaders = [...leadersSheet.headerValues, day];
+        if (newHeaders.length > leadersSheet.columnCount) {
+          await leadersSheet.resize({ rowCount: leadersSheet.rowCount, columnCount: newHeaders.length + 5 });
+        }
+        await leadersSheet.setHeaderRow(newHeaders);
+      }
       const rows = await leadersSheet.getRows();
 
       const promises = [];

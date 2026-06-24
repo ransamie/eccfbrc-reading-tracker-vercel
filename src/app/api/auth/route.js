@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { fetchGlobalData } from '@/lib/googleSheets';
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 export async function POST(request) {
   try {
     const body = await request.json();

@@ -185,7 +185,7 @@ export default function AdminDashboard({ onLogout }) {
   const handleSaveAdminReport = async (generateReport = false) => {
     setSaving(true);
     try {
-      await fetch('/api/update', {
+      const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -193,6 +193,7 @@ export default function AdminDashboard({ onLogout }) {
           payload: { day: adminSelectedDay, updates: adminUpdates, reflection: adminSelectedDay === currentDayStr ? reflection : undefined }
         })
       });
+      if (!res.ok) throw new Error("Failed to save admin report");
       
       if (generateReport) generateAdminWhatsappText();
       else showToast(`Saved Leaders updates for ${adminSelectedDay.replace('_', ' ')} successfully!`);
@@ -315,11 +316,12 @@ export default function AdminDashboard({ onLogout }) {
         Evening_Window_Start: parse24to12(settingsForm.eveStart),
         Evening_Window_End: parse24to12(settingsForm.eveEnd)
       };
-      await fetch('/api/update', {
+      const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'admin_settings', payload })
       });
+      if (!res.ok) throw new Error("Failed to save settings");
       showToast("System policies updated successfully!");
       loadData();
     } catch (e) { showToast("Error saving policies", "error"); } finally { setSaving(false); }
@@ -329,11 +331,12 @@ export default function AdminDashboard({ onLogout }) {
     if (!newTeam.name || !newTeam.pin) return showToast("Provide both name and PIN.", "error");
     setSaving(true);
     try {
-      await fetch('/api/update', {
+      const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'admin_add_team', payload: { newTeamName: newTeam.name.toUpperCase(), newTeamPin: newTeam.pin } })
       });
+      if (!res.ok) throw new Error("Failed to add team");
       showToast(`Team ${newTeam.name} added!`);
       setNewTeam({name: '', pin: ''});
       loadData();
@@ -344,11 +347,12 @@ export default function AdminDashboard({ onLogout }) {
     if (!pinUpdate.team || !pinUpdate.pin) return showToast("Select team and provide PIN.", "error");
     setSaving(true);
     try {
-      await fetch('/api/update', {
+      const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'admin_update_pin', payload: { team: pinUpdate.team, newPin: pinUpdate.pin } })
       });
+      if (!res.ok) throw new Error("Failed to update PIN");
       showToast(`PIN for ${pinUpdate.team} updated!`);
       setPinUpdate({team: '', pin: ''});
       loadData();
@@ -359,11 +363,12 @@ export default function AdminDashboard({ onLogout }) {
     if (!superPin) return showToast("Provide a new Super Admin PIN.", "error");
     setSaving(true);
     try {
-      await fetch('/api/update', {
+      const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'admin_update_super_pin', payload: { newPin: superPin } })
       });
+      if (!res.ok) throw new Error("Failed to update Super PIN");
       showToast("Super Admin PIN updated successfully!");
       setSuperPin("");
     } catch (e) { showToast("Error updating Super Admin PIN", "error"); } finally { setSaving(false); }
@@ -373,11 +378,12 @@ export default function AdminDashboard({ onLogout }) {
     if (!renameTeam.oldName || !renameTeam.newName) return showToast("Provide both old and new names.", "error");
     setSaving(true);
     try {
-      await fetch('/api/update', {
+      const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'admin_rename_team', payload: { oldTeamName: renameTeam.oldName, newTeamName: renameTeam.newName.toUpperCase() } })
       });
+      if (!res.ok) throw new Error("Failed to rename team");
       showToast(`Successfully renamed ${renameTeam.oldName} to ${renameTeam.newName.toUpperCase()} across all databases!`);
       setRenameTeam({oldName: '', newName: ''});
       loadData();
@@ -408,11 +414,12 @@ export default function AdminDashboard({ onLogout }) {
       }
 
       try {
-        await fetch('/api/update', {
+        const res = await fetch('/api/update', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'admin_bulk_upload', payload: { members } })
         });
+        if (!res.ok) throw new Error("Failed to upload CSV");
         showToast(`Successfully onboarded ${members.length} new members!`);
         setCsvFile(null);
         loadData();

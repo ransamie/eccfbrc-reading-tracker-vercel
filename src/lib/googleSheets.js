@@ -49,7 +49,7 @@ export async function fetchGlobalData() {
 
   const [settingsRows, trackerRows, credentialsRows] = await Promise.all([
     settingsSheet.getRows(),
-    trackerSheet.getRows(),
+    (async () => { await trackerSheet.loadHeaderRow(); return trackerSheet.getRows(); })(),
     credentialsSheet.getRows()
   ]);
 
@@ -92,6 +92,7 @@ export async function fetchGlobalData() {
 export async function fetchLeadersData() {
   const db = await getDatabase();
   const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
+  await leadersSheet.loadHeaderRow();
   const leadersRows = await leadersSheet.getRows();
   return leadersRows.map(row => row.toObject());
 }
