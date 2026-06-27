@@ -70,6 +70,7 @@ export async function POST(request) {
           // If updates exist for this user, apply them
           if (row.get('Status') === 'Active' && updates && updates[rowName] !== undefined) {
              row.set(day, updates[rowName] ? 'TRUE' : 'FALSE');
+             updated = true;
           }
 
           // Evaluate Evictions if active
@@ -87,16 +88,16 @@ export async function POST(request) {
               }
               if (missedDaysCount >= parseInt(evictionThreshold)) {
                  row.set('Status', 'Evicted');
+                 updated = true;
                  break;
               }
             }
           }
-          // We save if anything was updated (either the day's read status or eviction)
-          promises.push(row.save());
+          if (updated) {
+            await row.save();
+          }
         }
       }
-
-      await Promise.all(promises);
 
       // Save reflection if today
       if (reflection) {
@@ -120,16 +121,14 @@ export async function POST(request) {
       const trackerSheet = db.sheetsByTitle["Tracker_Data"];
       const rows = await trackerSheet.getRows();
       
-      const promises = [];
       for (const row of rows) {
         const rowTeam = String(row.get('Team_Name') || '').trim();
         const rowName = String(row.get('Member_Name') || '').trim();
         if (rowTeam.toLowerCase() === team.toLowerCase() && rosterUpdates[rowName]) {
           row.set('Status', rosterUpdates[rowName]);
-          promises.push(row.save());
+          await row.save();
         }
       }
-      await Promise.all(promises);
       return NextResponse.json({ success: true });
     }
 
@@ -144,17 +143,26 @@ export async function POST(request) {
         }
         await leadersSheet.setHeaderRow(newHeaders);
       }
+      const dayColIndex = leadersSheet.headerValues.indexOf(day);
+      await leadersSheet.loadCells();
       const rows = await leadersSheet.getRows();
 
-      const promises = [];
+      let hasUpdates = false;
       for (const row of rows) {
         const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
         if (updates[rowName] !== undefined) {
-          row.set(day, updates[rowName] ? 'TRUE' : 'FALSE');
-          promises.push(row.save());
+          const cell = leadersSheet.getCell(row.rowNumber - 1, dayColIndex);
+          const newVal = updates[rowName] ? 'TRUE' : 'FALSE';
+          if (cell.value !== newVal) {
+            cell.value = newVal;
+            hasUpdates = true;
+          }
         }
       }
-      await Promise.all(promises);
+      
+      if (hasUpdates) {
+        await leadersSheet.saveUpdatedCells();
+      }
       return NextResponse.json({ success: true });
     }
 
@@ -236,7 +244,6 @@ export async function POST(request) {
     
     if (action === 'admin_rename_team') {
       const { oldTeamName, newTeamName } = payload;
-      const promises = [];
       
       // Update Credentials
       const credsSheet = db.sheetsByTitle["Team_Credentials"];
@@ -244,7 +251,7 @@ export async function POST(request) {
       for (const row of credRows) {
         if (String(row.get('Team_Name') || '').trim().toLowerCase() === oldTeamName.toLowerCase()) {
            row.set('Team_Name', newTeamName);
-           promises.push(row.save());
+           await row.save();
         }
       }
       
@@ -254,7 +261,7 @@ export async function POST(request) {
       for (const row of trRows) {
         if (String(row.get('Team_Name') || '').trim().toLowerCase() === oldTeamName.toLowerCase()) {
            row.set('Team_Name', newTeamName);
-           promises.push(row.save());
+           await row.save();
         }
       }
       
@@ -266,11 +273,9 @@ export async function POST(request) {
         if (rowTeam.toLowerCase() === oldTeamName.toLowerCase()) {
            if (row.get('Team') !== undefined) row.set('Team', newTeamName);
            if (row.get('Team_Name') !== undefined) row.set('Team_Name', newTeamName);
-           promises.push(row.save());
+           await row.save();
         }
       }
-      
-      await Promise.all(promises);
       return NextResponse.json({ success: true });
     }
     
@@ -286,7 +291,7 @@ export async function POST(request) {
     return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
 
   } catch (error) {
-    console.error('Update error:', error);
-    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+    console.error('Update error in API:', error.message, error.stack);
+    return NextResponse.json({ success: false, message: 'Internal Server Error: ' + error.message }, { status: 500 });
   }
 }
