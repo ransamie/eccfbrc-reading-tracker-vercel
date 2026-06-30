@@ -405,18 +405,17 @@ export default function LeaderDashboard({ team, onLogout }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '1rem' }}>
-              <button 
-                onClick={() => handleSelectAll(true)} 
-                style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
-              >
-                ✓ Select All
-              </button>
-              <button 
-                onClick={() => handleSelectAll(false)} 
-                style={{ background: 'transparent', border: '1px solid var(--border-light)', color: 'var(--text-secondary)', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
-              >
-                ✕ Deselect All
-              </button>
+              {(() => {
+                const allSelected = activeMembers.length > 0 && activeMembers.every(m => updates[String(m.Member_Name || '').trim()]);
+                return (
+                  <button 
+                    onClick={() => handleSelectAll(!allSelected)} 
+                    style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
+                  >
+                    {allSelected ? '✕ Deselect All' : '✓ Select All'}
+                  </button>
+                );
+              })()}
             </div>
 
             <hr style={{ borderColor: 'var(--border-light)', opacity: 0.5, margin: '1.5rem 0' }} />
