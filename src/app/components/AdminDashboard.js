@@ -272,10 +272,16 @@ export default function AdminDashboard({ onLogout }) {
     activeLeaders.forEach(m => {
       let missedDays = [];
       const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+      let missedDaysInCurrentRound = 0;
       for (let i = 1; i <= currentDayNum; i++) {
         const dStr = `Day_${i}`;
         const val = (i === currentDayNum && adminSelectedDay === currentDayStr) ? adminUpdates[name] : (String(m[dStr] || '').toUpperCase() === 'TRUE');
-        if (!val) missedDays.push(i);
+        if (!val) {
+          missedDays.push(i);
+          if (i >= currentRoundStart) {
+            missedDaysInCurrentRound++;
+          }
+        }
       }
       
       const teamStr = m.Team || m.Team_Name || "Unknown";
@@ -284,9 +290,9 @@ export default function AdminDashboard({ onLogout }) {
       if (missedDays.length > 0) {
         const daysStr = missedDays.length === 1 ? `Day ${missedDays[0]}` : `Day ${missedDays[0]} - ${missedDays[missedDays.length - 1]}`;
         yetToUpdate.push(`* @${memberNameStr} (${daysStr})`);
-        if (showEvictionList && missedDays.length >= evictionThreshold) {
-           const dayWord = missedDays.length === 1 ? "day" : "days";
-           evictionList.push(`* @${memberNameStr} (${missedDays.length} ${dayWord} behind)`);
+        if (showEvictionList && missedDaysInCurrentRound > evictionThreshold) {
+           const dayWord = missedDaysInCurrentRound === 1 ? "day" : "days";
+           evictionList.push(`* @${memberNameStr} (${missedDaysInCurrentRound} ${dayWord} behind this round)`);
         }
       } else {
         upToDate.push(`* @${memberNameStr}`);
@@ -298,7 +304,7 @@ export default function AdminDashboard({ onLogout }) {
     let evictionSection = "";
     if (showEvictionList) {
        const evictStr = evictionList.length ? evictionList.join('\\n') : "- None 🎉";
-       evictionSection = `\\n\\n*Eviction List 🚨🚨🚨*\\n_(Members behind by ${evictionThreshold} or more days. Eviction takes effect next round!)_\\n${evictStr}`;
+       evictionSection = `\\n\\n*Eviction List 🚨🚨🚨*\\n_(Members behind by more than ${evictionThreshold} days. Eviction takes effect next round!)_\\n${evictStr}`;
     }
 
     const text = `*ECCF Bible Reading Club*\\n\\n*Daily Reading Report*\\n\\n*GLOBAL TEAM LEADERS*\\n\\n*Team Status Update*\\n- *Number Assigned*: ${numAssigned.toString().padStart(2,'0')}\\n- *Number Committed*: ${numCommitted.toString().padStart(2,'0')}\\n- *Number Declined*: ${numDeclined.toString().padStart(2,'0')}\\n- *Number Left*: ${numLeft.toString().padStart(2,'0')}\\n- *Number Evicted*: ${numEvicted.toString().padStart(2,'0')}\\n- *Number Settled*: ${numCommitted.toString().padStart(2,'0')}\\n\\n*Bible Reading Team Report 📃*\\n\\n${previousRoundsStr}   *ROUND ${currentRound} ✅*\\n${roundBreakdownStr}\\n\\n*YET TO UPDATE 🤲✨*\\n${yetToUpdateStr}\\n\\n*UP-TO-DATE 🤩🚀*\\n${upToDateStr}${evictionSection}\\n\\n*REFLECTION*\\n*${reflection}*`;
@@ -910,7 +916,7 @@ export default function AdminDashboard({ onLogout }) {
                 <input type="number" className="input-field" value={settingsForm.currentRound} onChange={(e) => setSettingsForm({...settingsForm, currentRound: e.target.value})} />
               </div>
               <div className="mb-3">
-                <label className="label">Eviction Threshold (Days)</label>
+                <label className="label">Max Allowed Missed Days Before Eviction</label>
                 <input type="number" className="input-field" value={settingsForm.evictionThreshold} onChange={(e) => setSettingsForm({...settingsForm, evictionThreshold: e.target.value})} />
               </div>
               <div className="mb-3" style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>

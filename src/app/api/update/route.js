@@ -70,6 +70,14 @@ export async function POST(request) {
           // If updates exist for this user, apply them
           if (row.get('Status') === 'Active' && updates && updates[rowName] !== undefined) {
              row.set(day, updates[rowName] ? 'TRUE' : 'FALSE');
+             if (updates[rowName]) {
+               for (let pastD = 1; pastD < currentDayNum; pastD++) {
+                 const pastDStr = `Day_${pastD}`;
+                 if (String(row.get(pastDStr) || '').toUpperCase() !== 'TRUE') {
+                   row.set(pastDStr, 'TRUE');
+                 }
+               }
+             }
           }
 
           // Evaluate Evictions if active
@@ -85,7 +93,7 @@ export async function POST(request) {
                     missedDaysCount++;
                  }
               }
-              if (missedDaysCount >= parseInt(evictionThreshold)) {
+              if (missedDaysCount > parseInt(evictionThreshold)) {
                  row.set('Status', 'Evicted');
                  break;
               }
@@ -148,6 +156,7 @@ export async function POST(request) {
       const rows = await leadersSheet.getRows();
 
       let hasUpdates = false;
+      const currentDayNum = parseInt(day.split('_')[1] || 1);
       for (const row of rows) {
         const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
         if (updates[rowName] !== undefined) {
@@ -156,6 +165,18 @@ export async function POST(request) {
           if (cell.value !== newVal) {
             cell.value = newVal;
             hasUpdates = true;
+          }
+          if (updates[rowName]) {
+             for (let pastD = 1; pastD < currentDayNum; pastD++) {
+                const pastColIndex = leadersSheet.headerValues.indexOf(`Day_${pastD}`);
+                if (pastColIndex !== -1) {
+                   const pastCell = leadersSheet.getCell(row.rowNumber - 1, pastColIndex);
+                   if (pastCell.value !== 'TRUE') {
+                      pastCell.value = 'TRUE';
+                      hasUpdates = true;
+                   }
+                }
+             }
           }
         }
       }

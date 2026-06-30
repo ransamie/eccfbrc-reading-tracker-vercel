@@ -248,10 +248,18 @@ export default function LeaderDashboard({ team, onLogout }) {
     activeMembers.forEach(m => {
       let missedDays = [];
       const memberName = String(m.Member_Name || '').trim();
+      let missedDaysInCurrentRound = 0;
+      const currentRoundStartDay = (currentRound - 1) * daysPerRound + 1;
+      
       for (let i = 1; i <= currentDayNum; i++) {
         const dStr = `Day_${i}`;
         const val = (i === currentDayNum && selectedDay === currentDay) ? updates[memberName] : (String(m[dStr] || '').toUpperCase() === 'TRUE');
-        if (!val) missedDays.push(i);
+        if (!val) {
+          missedDays.push(i);
+          if (i >= currentRoundStartDay) {
+            missedDaysInCurrentRound++;
+          }
+        }
       }
       
       const memberNameStr = m.Member_Name.trim();
@@ -259,9 +267,9 @@ export default function LeaderDashboard({ team, onLogout }) {
         const daysStr = missedDays.length === 1 ? `Day ${missedDays[0]}` : `Day ${missedDays[0]} - ${missedDays[missedDays.length - 1]}`;
         yetToUpdate.push(`* @${memberNameStr} (${daysStr})`);
         
-        if (showEvictionList && missedDays.length >= evictionThreshold) {
-           const dayWord = missedDays.length === 1 ? "day" : "days";
-           evictionList.push(`* @${memberNameStr} (${missedDays.length} ${dayWord} behind)`);
+        if (showEvictionList && missedDaysInCurrentRound > evictionThreshold) {
+           const dayWord = missedDaysInCurrentRound === 1 ? "day" : "days";
+           evictionList.push(`* @${memberNameStr} (${missedDaysInCurrentRound} ${dayWord} behind this round)`);
         }
       } else {
         upToDate.push(`* @${memberNameStr}`);
@@ -274,7 +282,7 @@ export default function LeaderDashboard({ team, onLogout }) {
     let evictionSection = "";
     if (showEvictionList) {
        const evictStr = evictionList.length ? evictionList.join('\\n') : "- None 🎉";
-       evictionSection = `\\n\\n*Eviction List 🚨🚨🚨*\\n_(Members behind by ${evictionThreshold} or more days. Eviction takes effect next round!)_\\n${evictStr}`;
+       evictionSection = `\\n\\n*Eviction List 🚨🚨🚨*\\n_(Members behind by more than ${evictionThreshold} days. Eviction takes effect next round!)_\\n${evictStr}`;
     }
 
     const text = `*ECCF Bible Reading Club*\\n\\n*Daily Reading Report*\\n\\n*TEAM ${team.toUpperCase()}*\\n\\n*Team Status Update*\\n- *Number Assigned*: ${numAssigned.toString().padStart(2,'0')}\\n- *Number Committed*: ${numCommitted.toString().padStart(2,'0')}\\n- *Number Declined*: ${numDeclined.toString().padStart(2,'0')}\\n- *Number Left*: ${numLeft.toString().padStart(2,'0')}\\n- *Number Evicted*: ${numEvicted.toString().padStart(2,'0')}\\n- *Number Settled*: ${numCommitted.toString().padStart(2,'0')}\\n\\n*Bible Reading Team Report 📃*\\n\\n${previousRoundsStr}   *ROUND ${currentRound} ✅*\\n${roundBreakdownStr}\\n\\n*YET TO UPDATE 🤲✨*\\n${yetToUpdateStr}\\n\\n*UP-TO-DATE 🤩🚀*\\n${upToDateStr}${evictionSection}\\n\\n*REFLECTION*\\n*${reflection}*`;
