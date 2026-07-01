@@ -71,7 +71,8 @@ export async function POST(request) {
           if (row.get('Status') === 'Active' && updates && updates[rowName] !== undefined) {
              row.set(day, updates[rowName] ? 'TRUE' : 'FALSE');
              if (updates[rowName]) {
-               for (let pastD = 1; pastD < currentDayNum; pastD++) {
+               const editingDayNum = parseInt(day.split('_')[1] || 1);
+               for (let pastD = 1; pastD < editingDayNum; pastD++) {
                  const pastDStr = `Day_${pastD}`;
                  if (String(row.get(pastDStr) || '').toUpperCase() !== 'TRUE') {
                    row.set(pastDStr, 'TRUE');
@@ -171,7 +172,7 @@ export async function POST(request) {
                 const pastColIndex = leadersSheet.headerValues.indexOf(`Day_${pastD}`);
                 if (pastColIndex !== -1) {
                    const pastCell = leadersSheet.getCell(row.rowNumber - 1, pastColIndex);
-                   if (pastCell.value !== 'TRUE') {
+                   if (String(pastCell.value || '').toUpperCase() !== 'TRUE' && pastCell.value !== true) {
                       pastCell.value = 'TRUE';
                       hasUpdates = true;
                    }
