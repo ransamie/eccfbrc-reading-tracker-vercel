@@ -76,6 +76,7 @@ export default function AdminDashboard({ onLogout }) {
 
   // Tabs states
   const [adminUpdates, setAdminUpdates] = useState({});
+  const [adminRosterUpdates, setAdminRosterUpdates] = useState({});
   const [adminSelectedDay, setAdminSelectedDay] = useState("");
   const [showAdminDays, setShowAdminDays] = useState(false);
   const [reflection, setReflection] = useState("");
@@ -190,7 +191,13 @@ export default function AdminDashboard({ onLogout }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'admin_report',
-          payload: { day: adminSelectedDay, updates: adminUpdates, reflection: adminSelectedDay === currentDayStr ? reflection : undefined }
+          payload: { 
+            day: adminSelectedDay, 
+            updates: adminUpdates, 
+            reflection: adminSelectedDay === currentDayStr ? reflection : undefined,
+            currentDayNum: parseInt(currentDayStr.split('_')[1] || "1"),
+            evictionThreshold: parseInt(data?.settings?.Eviction_Threshold || "5")
+          }
         })
       });
       if (!res.ok) throw new Error("Failed to save admin report");
@@ -201,6 +208,27 @@ export default function AdminDashboard({ onLogout }) {
       loadData();
     } catch (e) {
       showToast("Error saving admin data", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveAdminRoster = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'admin_update_roster',
+          payload: { rosterUpdates: adminRosterUpdates }
+        })
+      });
+      if (!res.ok) throw new Error("Failed to update team leaders roster");
+      showToast("Leaders roster updated successfully!");
+      loadData();
+    } catch (e) {
+      showToast("Error updating leaders roster", "error");
     } finally {
       setSaving(false);
     }
@@ -480,6 +508,7 @@ export default function AdminDashboard({ onLogout }) {
       <div className="st-tabs">
         <button className={`st-tab ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>Overview</button>
         <button className={`st-tab ${activeTab === 'leaders' ? 'active' : ''}`} onClick={() => setActiveTab('leaders')}>Reports</button>
+        <button className={`st-tab ${activeTab === 'roster' ? 'active' : ''}`} onClick={() => setActiveTab('roster')}>Roster</button>
         <button className={`st-tab ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>Settings</button>
       </div>
 
@@ -600,6 +629,70 @@ export default function AdminDashboard({ onLogout }) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'roster' && (
+        <div className="card">
+          <h3 className="mb-2">Manage Team Leaders Roster</h3>
+          <p className="label mb-3">Update a leader's status if they have been evicted or declined the challenge. Changes made here will update the Leaders Tracker Data.</p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {(data?.leadersData || []).map(m => {
+              const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+              if (!name) return null;
+              const currentStatus = adminRosterUpdates[name] || m.Status || 'Active';
+              
+              let statusColor = "var(--text-primary)";
+              let statusBg = "var(--surface)";
+              let statusBorder = "var(--border-light)";
+              
+              if (currentStatus === "Active") {
+                statusColor = "var(--success)";
+                statusBorder = "var(--success)";
+                statusBg = "rgba(33, 195, 84, 0.1)";
+              } else if (currentStatus === "Evicted") {
+                statusColor = "var(--error)";
+                statusBorder = "var(--error)";
+                statusBg = "rgba(255, 43, 43, 0.1)";
+              } else if (currentStatus === "Left" || currentStatus === "Declined") {
+                statusColor = "var(--warning)";
+                statusBorder = "var(--warning)";
+                statusBg = "rgba(255, 183, 3, 0.1)";
+              }
+
+              return (
+                <div key={name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--surface-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-light)' }}>
+                  <div>
+                    <div style={{ fontWeight: '600', fontSize: '1.05rem', color: 'var(--text-primary)' }}>{name}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{m.Team || m.Team_Name || "Unknown Team"}</div>
+                  </div>
+                  
+                  <select 
+                    style={{ 
+                      padding: '0.5rem', 
+                      borderRadius: '0.4rem', 
+                      background: statusBg, 
+                      color: statusColor, 
+                      border: `1px solid ${statusBorder}`,
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      fontSize: '0.85rem'
+                    }} 
+                    value={currentStatus}
+                    onChange={(e) => setAdminRosterUpdates(prev => ({ ...prev, [name]: e.target.value }))}
+                  >
+                    <option value="Active" style={{ color: 'var(--text-primary)', background: 'var(--surface)' }}>Active</option>
+                    <option value="Evicted" style={{ color: 'var(--text-primary)', background: 'var(--surface)' }}>Evicted</option>
+                    <option value="Left" style={{ color: 'var(--text-primary)', background: 'var(--surface)' }}>Left</option>
+                    <option value="Declined" style={{ color: 'var(--text-primary)', background: 'var(--surface)' }}>Declined</option>
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+          <button onClick={handleSaveAdminRoster} disabled={saving} style={{ marginTop: '1rem', backgroundColor: 'var(--accent)', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, transition: 'all 0.2s ease', width: '100%' }}>{saving ? 'Saving...' : '💾 Save Roster Updates'}</button>
         </div>
       )}
 

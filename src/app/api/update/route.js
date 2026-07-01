@@ -140,7 +140,7 @@ export async function POST(request) {
     }
 
     if (action === 'admin_report') {
-      const { day, updates, reflection } = payload;
+      const { day, updates, reflection, currentDayNum: globalCurrentDayNum, evictionThreshold } = payload;
       const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
       await leadersSheet.loadHeaderRow();
       if (!leadersSheet.headerValues.includes(day)) {
@@ -153,8 +153,13 @@ export async function POST(request) {
       }
       
       const dayColIndex = leadersSheet.headerValues.indexOf(day);
+      const statusColIndex = leadersSheet.headerValues.indexOf('Status');
       await leadersSheet.loadCells();
       const rows = await leadersSheet.getRows();
+
+      // Calculate rounds for eviction logic
+      const daysPerRound = 10;
+      const completedRounds = Math.floor(((globalCurrentDayNum || 1) - 1) / daysPerRound);
 
       let hasUpdates = false;
       const currentDayNum = parseInt(day.split('_')[1] || 1);
@@ -180,8 +185,61 @@ export async function POST(request) {
              }
           }
         }
+        
+        // Evaluate Evictions if active
+        if (statusColIndex !== -1 && completedRounds > 0 && evictionThreshold) {
+           const statusCell = leadersSheet.getCell(row.rowNumber - 1, statusColIndex);
+           if (String(statusCell.value || '').toLowerCase() === 'active') {
+              for (let r = 1; r <= completedRounds; r++) {
+                 let missedDaysCount = 0;
+                 const prevRoundEnd = r * daysPerRound;
+                 const prevRoundStart = prevRoundEnd - daysPerRound + 1;
+                 for (let pastD = prevRoundStart; pastD <= prevRoundEnd; pastD++) {
+                    const pastColIndex = leadersSheet.headerValues.indexOf(`Day_${pastD}`);
+                    let val = 'FALSE';
+                    if (pastColIndex !== -1) {
+                       val = String(leadersSheet.getCell(row.rowNumber - 1, pastColIndex).value || '').toUpperCase();
+                    }
+                    if (val !== 'TRUE') {
+                       missedDaysCount++;
+                    }
+                 }
+                 if (missedDaysCount > parseInt(evictionThreshold)) {
+                    statusCell.value = 'Evicted';
+                    hasUpdates = true;
+                    break;
+                 }
+              }
+           }
+        }
       }
       
+      if (hasUpdates) {
+        await leadersSheet.saveUpdatedCells();
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'admin_update_roster') {
+      const { rosterUpdates } = payload;
+      const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
+      await leadersSheet.loadHeaderRow();
+      const statusColIndex = leadersSheet.headerValues.indexOf('Status');
+      if (statusColIndex === -1) return NextResponse.json({ success: true });
+      await leadersSheet.loadCells();
+      const rows = await leadersSheet.getRows();
+      
+      let hasUpdates = false;
+      for (const row of rows) {
+        const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
+        if (rosterUpdates[rowName]) {
+           const statusCell = leadersSheet.getCell(row.rowNumber - 1, statusColIndex);
+           if (statusCell.value !== rosterUpdates[rowName]) {
+              statusCell.value = rosterUpdates[rowName];
+              hasUpdates = true;
+           }
+        }
+      }
       if (hasUpdates) {
         await leadersSheet.saveUpdatedCells();
       }
