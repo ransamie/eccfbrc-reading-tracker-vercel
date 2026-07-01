@@ -33,7 +33,7 @@ export default function LeaderDashboard({ team, onLogout }) {
 
   const loadData = (isManualRefresh = false) => {
     setLoading(true);
-    fetch(`/api/data?type=leader&team=${encodeURIComponent(team)}&t=${Date.now()}`, { cache: 'no-store' })
+    return fetch(`/api/data?type=leader&team=${encodeURIComponent(team)}&t=${Date.now()}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(d => {
         setData(d);
@@ -59,13 +59,13 @@ export default function LeaderDashboard({ team, onLogout }) {
           }
         });
         setUpdates(initialUpdates);
-        setLoading(false);
         if (isManualRefresh === true) showToast("Dashboard is up-to-date!");
+        return d;
       })
       .catch(err => {
-        setLoading(false);
         if (isManualRefresh === true) showToast("Error refreshing data", "error");
-      });
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { loadData(); }, [team]);
@@ -145,12 +145,13 @@ export default function LeaderDashboard({ team, onLogout }) {
       });
       if (!res.ok) throw new Error("Failed to save data");
       
+      const freshData = await loadData();
+      
       if (generateReport) {
-        generateWhatsappText();
+        generateWhatsappText(freshData);
       } else {
         showToast(`Saved updates for ${selectedDay.replace('_', ' ')} successfully!`);
       }
-      loadData();
     } catch (e) {
       showToast("Error saving data", "error");
     } finally {
@@ -179,8 +180,9 @@ export default function LeaderDashboard({ team, onLogout }) {
     }
   };
 
-  const generateWhatsappText = () => {
-    const allMembers = data.trackerData || [];
+  const generateWhatsappText = (freshData = null) => {
+    const useData = freshData || data;
+    const allMembers = useData.trackerData || [];
     const activeMembers = allMembers.filter(m => String(m.Status || '').toLowerCase() === 'active');
     
     const numAssigned = allMembers.length;
@@ -191,7 +193,7 @@ export default function LeaderDashboard({ team, onLogout }) {
 
     const daysPerRound = 10;
     const currentRound = Math.floor((currentDayNum - 1) / daysPerRound) + 1;
-    const evictionThreshold = parseInt(data.settings.Eviction_Threshold || 5);
+    const evictionThreshold = parseInt(useData.settings?.Eviction_Threshold || 5);
     const currentRoundStart = Math.floor((currentDayNum - 1) / daysPerRound) * daysPerRound + 1;
     
     // Previous rounds formatting

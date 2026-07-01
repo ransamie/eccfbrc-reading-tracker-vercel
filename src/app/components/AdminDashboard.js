@@ -114,7 +114,7 @@ export default function AdminDashboard({ onLogout }) {
 
   const loadData = (isManualRefresh = false) => {
     setLoading(true);
-    fetch(`/api/data?type=admin&t=${Date.now()}`, { cache: 'no-store' })
+    return fetch(`/api/data?type=admin&t=${Date.now()}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(d => {
         setData(d);
@@ -202,10 +202,10 @@ export default function AdminDashboard({ onLogout }) {
       });
       if (!res.ok) throw new Error("Failed to save admin report");
       
-      if (generateReport) generateAdminWhatsappText();
-      else showToast(`Saved Leaders updates for ${adminSelectedDay.replace('_', ' ')} successfully!`);
+      const freshData = await loadData();
       
-      loadData();
+      if (generateReport) generateAdminWhatsappText(freshData);
+      else showToast(`Saved Leaders updates for ${adminSelectedDay.replace('_', ' ')} successfully!`);
     } catch (e) {
       showToast("Error saving admin data", "error");
     } finally {
@@ -234,8 +234,9 @@ export default function AdminDashboard({ onLogout }) {
     }
   };
 
-  const generateAdminWhatsappText = () => {
-    const allLeaders = data.leadersData || [];
+  const generateAdminWhatsappText = (freshData = null) => {
+    const useData = freshData || data;
+    const allLeaders = useData.leadersData || [];
     const activeLeaders = allLeaders.filter(m => String(m.Status || '').toLowerCase() === 'active');
     
     const numAssigned = allLeaders.length;
@@ -246,7 +247,7 @@ export default function AdminDashboard({ onLogout }) {
 
     const daysPerRound = 10;
     const currentRound = Math.floor((currentDayNum - 1) / daysPerRound) + 1;
-    const evictionThreshold = parseInt(data.settings.Eviction_Threshold || 5);
+    const evictionThreshold = parseInt(useData.settings?.Eviction_Threshold || 5);
     const currentRoundStart = Math.floor((currentDayNum - 1) / daysPerRound) * daysPerRound + 1;
     
     let previousRoundsStr = "";
