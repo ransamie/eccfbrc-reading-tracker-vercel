@@ -4,6 +4,8 @@ import { fetchGlobalData, fetchLeadersData } from '@/lib/googleSheets';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
+const normalizeTeamName = (name) => String(name || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -34,7 +36,7 @@ export async function GET(request) {
       if (!team) return NextResponse.json({ error: 'Team name is required' }, { status: 400 });
       
       const teamTrackerData = globalData.trackerData.filter(
-        row => String(row.Team_Name || '').trim().toLowerCase() === team.trim().toLowerCase()
+        row => normalizeTeamName(row.Team_Name) === normalizeTeamName(team)
       );
       
       return NextResponse.json({

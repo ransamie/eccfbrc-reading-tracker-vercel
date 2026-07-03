@@ -4,6 +4,8 @@ import { getDatabase } from '@/lib/googleSheets';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
+const normalizeTeamName = (name) => String(name || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -63,10 +65,10 @@ export async function POST(request) {
       const completedRounds = Math.floor((currentDayNum - 1) / daysPerRound);
 
       for (const row of rows) {
-        const rowTeam = String(row.get('Team_Name') || '').trim();
+        const rowTeam = normalizeTeamName(row.get('Team_Name'));
         const rowName = String(row.get('Member_Name') || '').trim();
 
-        if (rowTeam.toLowerCase() === team.toLowerCase()) {
+        if (rowTeam === normalizeTeamName(team)) {
           // If updates exist for this user, apply them
           if (row.get('Status') === 'Active' && updates && updates[rowName] !== undefined) {
              row.set(day, updates[rowName] ? 'TRUE' : 'FALSE');
@@ -110,7 +112,7 @@ export async function POST(request) {
         const credsSheet = db.sheetsByTitle["Team_Credentials"];
         const credsRows = await credsSheet.getRows();
         for (const cRow of credsRows) {
-          if (String(cRow.get('Team_Name') || '').trim().toLowerCase() === team.toLowerCase()) {
+          if (normalizeTeamName(cRow.get('Team_Name')) === normalizeTeamName(team)) {
             cRow.set('Current_Reflection', reflection);
             await cRow.save();
             break;
@@ -129,9 +131,9 @@ export async function POST(request) {
       
       const promises = [];
       for (const row of rows) {
-        const rowTeam = String(row.get('Team_Name') || '').trim();
+        const rowTeam = normalizeTeamName(row.get('Team_Name'));
         const rowName = String(row.get('Member_Name') || '').trim();
-        if (rowTeam.toLowerCase() === team.toLowerCase() && rosterUpdates[rowName]) {
+        if (rowTeam === normalizeTeamName(team) && rosterUpdates[rowName]) {
           row.set('Status', rosterUpdates[rowName]);
           await row.save();
         }
@@ -291,7 +293,7 @@ export async function POST(request) {
       const credsSheet = db.sheetsByTitle["Team_Credentials"];
       const rows = await credsSheet.getRows();
       for (const row of rows) {
-        if (String(row.get('Team_Name') || '').trim().toLowerCase() === team.toLowerCase()) {
+        if (normalizeTeamName(row.get('Team_Name')) === normalizeTeamName(team)) {
            row.set('PIN', newPin);
            await row.save();
            break;
@@ -330,7 +332,7 @@ export async function POST(request) {
       const credsSheet = db.sheetsByTitle["Team_Credentials"];
       const credRows = await credsSheet.getRows();
       for (const row of credRows) {
-        if (String(row.get('Team_Name') || '').trim().toLowerCase() === oldTeamName.toLowerCase()) {
+        if (normalizeTeamName(row.get('Team_Name')) === normalizeTeamName(oldTeamName)) {
            row.set('Team_Name', newTeamName);
            await row.save();
         }
@@ -340,7 +342,7 @@ export async function POST(request) {
       const trackerSheet = db.sheetsByTitle["Tracker_Data"];
       const trRows = await trackerSheet.getRows();
       for (const row of trRows) {
-        if (String(row.get('Team_Name') || '').trim().toLowerCase() === oldTeamName.toLowerCase()) {
+        if (normalizeTeamName(row.get('Team_Name')) === normalizeTeamName(oldTeamName)) {
            row.set('Team_Name', newTeamName);
            await row.save();
         }
@@ -350,8 +352,8 @@ export async function POST(request) {
       const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
       const ldRows = await leadersSheet.getRows();
       for (const row of ldRows) {
-        const rowTeam = String(row.get('Team') || row.get('Team_Name') || '').trim();
-        if (rowTeam.toLowerCase() === oldTeamName.toLowerCase()) {
+        const rowTeam = normalizeTeamName(row.get('Team') || row.get('Team_Name'));
+        if (rowTeam === normalizeTeamName(oldTeamName)) {
            if (row.get('Team') !== undefined) row.set('Team', newTeamName);
            if (row.get('Team_Name') !== undefined) row.set('Team_Name', newTeamName);
            await row.save();
