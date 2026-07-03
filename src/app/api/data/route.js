@@ -22,7 +22,8 @@ export async function GET(request) {
         trackerData: globalData.trackerData,
         credentialsData: globalData.credentialsData,
         validTeams: globalData.validTeams,
-        leadersData: leadersData
+        leadersData: leadersData,
+        teamReflection: globalData.settings['Admin_Reflection'] || ""
       });
     }
 

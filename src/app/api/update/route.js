@@ -143,6 +143,25 @@ export async function POST(request) {
 
     if (action === 'admin_report') {
       const { day, updates, reflection, currentDayNum: globalCurrentDayNum, evictionThreshold } = payload;
+      
+      // Save Admin Reflection
+      if (reflection !== undefined) {
+        const settingsSheet = db.sheetsByTitle["Global_Settings"];
+        const settingsRows = await settingsSheet.getRows();
+        let found = false;
+        for (const row of settingsRows) {
+          if (row.get('Setting_Key') === 'Admin_Reflection') {
+            row.set('Setting_Value', reflection);
+            await row.save();
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          await settingsSheet.addRow({ Setting_Key: 'Admin_Reflection', Setting_Value: reflection });
+        }
+      }
+
       const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
       await leadersSheet.loadHeaderRow();
       if (!leadersSheet.headerValues.includes(day)) {

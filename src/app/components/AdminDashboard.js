@@ -129,6 +129,7 @@ export default function AdminDashboard({ onLogout }) {
         setCurrentDayNum(diffDays);
         setCurrentDayStr(calcCurrentDay);
         if (!adminSelectedDay) setAdminSelectedDay(calcCurrentDay);
+        setReflection(d.teamReflection || "");
 
         setSettingsForm({ 
           currentRound: parseInt(d.settings?.Current_Round || 1), 
