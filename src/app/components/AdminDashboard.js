@@ -663,10 +663,29 @@ export default function AdminDashboard({ onLogout }) {
               }
 
               return (
-                <div key={name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--surface-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-light)' }}>
-                  <div>
-                    <div style={{ fontWeight: '600', fontSize: '1.05rem', color: 'var(--text-primary)' }}>{name}</div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{m.Team || m.Team_Name || "Unknown Team"}</div>
+                <div key={name} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  background: 'var(--surface-secondary)', 
+                  padding: '0.75rem 1rem', 
+                  borderRadius: '0.5rem',
+                  borderLeft: `4px solid ${statusBorder}`,
+                  gap: '1rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+                    <div style={{ 
+                      width: '32px', height: '32px', borderRadius: '50%', 
+                      backgroundColor: 'var(--surface)', display: 'flex', 
+                      justifyContent: 'center', alignItems: 'center', 
+                      fontWeight: 'bold', color: 'var(--accent)', flexShrink: 0
+                    }}>
+                       {name.trim().charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.95rem', fontWeight: '600', lineHeight: '1.2', display: 'block', wordBreak: 'break-word' }}>{name}</span>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>{m.Team || m.Team_Name || "Unknown Team"}</div>
+                    </div>
                   </div>
                   
                   <select 
