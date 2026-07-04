@@ -394,6 +394,6 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Update error:', error);
-    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: `Server Error: ${error.message}` }, { status: 500 });
   }
 }

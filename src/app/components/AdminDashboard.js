@@ -201,14 +201,18 @@ export default function AdminDashboard({ onLogout }) {
           }
         })
       });
-      if (!res.ok) throw new Error("Failed to save admin report");
+      if (!res.ok) {
+        let errMessage = "Failed to save admin report";
+        try { const errData = await res.json(); errMessage = errData.message || errData.error || errMessage; } catch(e) {}
+        throw new Error(errMessage);
+      }
       
       const freshData = await loadData();
       
       if (generateReport) generateAdminWhatsappText(freshData);
       else showToast(`Saved Leaders updates for ${adminSelectedDay.replace('_', ' ')} successfully!`);
     } catch (e) {
-      showToast("Error saving admin data", "error");
+      showToast(e.message || "Error saving admin data", "error");
     } finally {
       setSaving(false);
     }
