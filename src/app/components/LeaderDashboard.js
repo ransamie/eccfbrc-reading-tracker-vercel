@@ -143,7 +143,11 @@ export default function LeaderDashboard({ team, onLogout }) {
           }
         })
       });
-      if (!res.ok) throw new Error("Failed to save data");
+      if (!res.ok) {
+        let errMessage = "Failed to save report";
+        try { const errData = await res.json(); errMessage = errData.message || errData.error || errMessage; } catch(e) {}
+        throw new Error(errMessage);
+      }
       
       const freshData = await loadData();
       
@@ -153,7 +157,7 @@ export default function LeaderDashboard({ team, onLogout }) {
         showToast(`Saved updates for ${selectedDay.replace('_', ' ')} successfully!`);
       }
     } catch (e) {
-      showToast("Error saving data", "error");
+      showToast(e.message || "Error saving data", "error");
     } finally {
       setSaving(false);
     }
@@ -170,11 +174,15 @@ export default function LeaderDashboard({ team, onLogout }) {
           payload: { team, rosterUpdates }
         })
       });
-      if (!res.ok) throw new Error("Failed to save roster");
+      if (!res.ok) {
+        let errMessage = "Failed to save report";
+        try { const errData = await res.json(); errMessage = errData.message || errData.error || errMessage; } catch(e) {}
+        throw new Error(errMessage);
+      }
       showToast("Team roster successfully updated!");
       loadData();
     } catch (e) {
-      showToast("Error saving roster", "error");
+      showToast(e.message || "Error saving roster", "error");
     } finally {
       setSaving(false);
     }
