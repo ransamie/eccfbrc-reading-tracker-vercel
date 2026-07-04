@@ -143,6 +143,11 @@ export async function POST(request) {
 
     if (action === 'admin_report') {
       const { day, updates, reflection, currentDayNum: globalCurrentDayNum, evictionThreshold } = payload;
+      const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
+      
+      const currentDayNum = parseInt(day.split('_')[1] || 1);
+      const daysPerRound = 10;
+      const completedRounds = Math.floor(((globalCurrentDayNum || 1) - 1) / daysPerRound);
       
       // Save Admin Reflection
       if (reflection !== undefined) {
@@ -162,7 +167,6 @@ export async function POST(request) {
         }
       }
 
-      const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
       await leadersSheet.loadHeaderRow();
       if (!leadersSheet.headerValues.includes(day)) {
         const newHeaders = [...leadersSheet.headerValues, day];
@@ -178,34 +182,35 @@ export async function POST(request) {
       await leadersSheet.loadCells();
       const rows = await leadersSheet.getRows();
 
-      // Calculate rounds for eviction logic
-      const daysPerRound = 10;
-      const completedRounds = Math.floor(((globalCurrentDayNum || 1) - 1) / daysPerRound);
-
       let hasUpdates = false;
-      const currentDayNum = parseInt(day.split('_')[1] || 1);
+
+      // Process updates first
       for (const row of rows) {
         const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
         if (updates[rowName] !== undefined) {
-          const cell = leadersSheet.getCell(row.rowNumber - 1, dayColIndex);
-          const newVal = updates[rowName] ? 'TRUE' : 'FALSE';
-          if (cell.value !== newVal) {
-            cell.value = newVal;
-            hasUpdates = true;
-          }
-          if (updates[rowName]) {
-             for (let pastD = 1; pastD < currentDayNum; pastD++) {
-                const pastColIndex = leadersSheet.headerValues.indexOf(`Day_${pastD}`);
-                if (pastColIndex !== -1) {
-                   const pastCell = leadersSheet.getCell(row.rowNumber - 1, pastColIndex);
-                   if (String(pastCell.value || '').toUpperCase() !== 'TRUE' && pastCell.value !== true) {
-                      pastCell.value = 'TRUE';
-                      hasUpdates = true;
-                   }
-                }
-             }
-          }
+           const dayCell = leadersSheet.getCell(row.rowNumber - 1, dayColIndex);
+           if (String(dayCell.value || '').toUpperCase() !== String(updates[rowName]).toUpperCase() && dayCell.value !== updates[rowName]) {
+              dayCell.value = updates[rowName] ? 'TRUE' : 'FALSE';
+              hasUpdates = true;
+           }
         }
+        if (updates[rowName]) {
+           for (let pastD = 1; pastD < currentDayNum; pastD++) {
+              const pastColIndex = leadersSheet.headerValues.indexOf(`Day_${pastD}`);
+              if (pastColIndex !== -1) {
+                 const pastCell = leadersSheet.getCell(row.rowNumber - 1, pastColIndex);
+                 if (String(pastCell.value || '').toUpperCase() !== 'TRUE' && pastCell.value !== true) {
+                    pastCell.value = 'TRUE';
+                    hasUpdates = true;
+                 }
+              }
+           }
+        }
+      }
+
+      // Process eviction logic based on updated values
+      for (const row of rows) {
+        const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
         
         // Evaluate Evictions if active
         if (statusColIndex !== -1 && completedRounds > 0 && evictionThreshold) {
