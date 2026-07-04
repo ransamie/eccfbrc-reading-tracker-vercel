@@ -191,13 +191,13 @@ export default function LeaderDashboard({ team, onLogout }) {
   const generateWhatsappText = (freshData = null) => {
     const useData = freshData || data;
     const allMembers = useData.trackerData || [];
-    const activeMembers = allMembers.filter(m => String(m.Status || '').toLowerCase() === 'active');
+    const activeMembers = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'active');
     
     const numAssigned = allMembers.length;
     const numCommitted = activeMembers.length;
-    const numDeclined = allMembers.filter(m => String(m.Status || '').toLowerCase() === 'declined').length;
-    const numLeft = allMembers.filter(m => String(m.Status || '').toLowerCase() === 'left').length;
-    const numEvicted = allMembers.filter(m => String(m.Status || '').toLowerCase() === 'evicted').length;
+    const numDeclined = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'declined').length;
+    const numLeft = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'left').length;
+    const numEvicted = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'evicted').length;
 
     const daysPerRound = 10;
     const currentRound = Math.floor((currentDayNum - 1) / daysPerRound) + 1;
@@ -303,7 +303,7 @@ export default function LeaderDashboard({ team, onLogout }) {
   if (loading && !data) return <div className="loader-container"><div className="spinner"></div><p>Loading Team Dashboard...</p></div>;
 
   const allMembers = data?.trackerData || [];
-  const activeMembers = allMembers.filter(m => String(m.Status || '').toLowerCase() === 'active');
+  const activeMembers = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'active');
   const daysList = Array.from({length: currentDayNum}, (_, i) => `Day_${i+1}`);
 
   return (
@@ -487,7 +487,7 @@ export default function LeaderDashboard({ team, onLogout }) {
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {allMembers.map(m => {
-                  const currentStatus = rosterUpdates[m.Member_Name] || m.Status || 'Active';
+                  const currentStatus = rosterUpdates[m.Member_Name] || String(m.Status || '').trim() || 'Active';
                   
                   let statusColor = "var(--text-primary)";
                   let statusBg = "var(--surface)";

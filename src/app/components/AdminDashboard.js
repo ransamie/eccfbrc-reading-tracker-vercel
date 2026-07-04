@@ -242,13 +242,13 @@ export default function AdminDashboard({ onLogout }) {
   const generateAdminWhatsappText = (freshData = null) => {
     const useData = freshData || data;
     const allLeaders = useData.leadersData || [];
-    const activeLeaders = allLeaders.filter(m => String(m.Status || '').toLowerCase() === 'active');
+    const activeLeaders = allLeaders.filter(m => String(m.Status || '').trim().toLowerCase() === 'active');
     
     const numAssigned = allLeaders.length;
     const numCommitted = activeLeaders.length;
-    const numDeclined = allLeaders.filter(m => String(m.Status || '').toLowerCase() === 'declined').length;
-    const numLeft = allLeaders.filter(m => String(m.Status || '').toLowerCase() === 'left').length;
-    const numEvicted = allLeaders.filter(m => String(m.Status || '').toLowerCase() === 'evicted').length;
+    const numDeclined = allLeaders.filter(m => String(m.Status || '').trim().toLowerCase() === 'declined').length;
+    const numLeft = allLeaders.filter(m => String(m.Status || '').trim().toLowerCase() === 'left').length;
+    const numEvicted = allLeaders.filter(m => String(m.Status || '').trim().toLowerCase() === 'evicted').length;
 
     const daysPerRound = 10;
     const currentRound = Math.floor((currentDayNum - 1) / daysPerRound) + 1;
@@ -472,7 +472,7 @@ export default function AdminDashboard({ onLogout }) {
 
   if (loading && !data) return <div className="loader-container"><div className="spinner"></div><p>Loading Command Center...</p></div>;
 
-  const activeLeaders = data?.leadersData?.filter(m => String(m.Status || '').toLowerCase() === 'active') || [];
+  const activeLeaders = data?.leadersData?.filter(m => String(m.Status || '').trim().toLowerCase() === 'active') || [];
   const daysList = Array.from({length: currentDayNum}, (_, i) => `Day_${i+1}`);
 
   return (
@@ -648,7 +648,7 @@ export default function AdminDashboard({ onLogout }) {
             {(data?.leadersData || []).map(m => {
               const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
               if (!name) return null;
-              const currentStatus = adminRosterUpdates[name] || m.Status || 'Active';
+              const currentStatus = adminRosterUpdates[name] || String(m.Status || '').trim() || 'Active';
               
               let statusColor = "var(--text-primary)";
               let statusBg = "var(--surface)";
@@ -724,11 +724,11 @@ export default function AdminDashboard({ onLogout }) {
 
       {activeTab === 'analytics' && (() => {
         const dfTracker = data?.trackerData || [];
-        const dfActive = dfTracker.filter(m => String(m.Status || '').toLowerCase() === 'active');
+        const dfActive = dfTracker.filter(m => String(m.Status || '').trim().toLowerCase() === 'active');
         const totalMembers = dfTracker.length;
         const activeMembers = dfActive.length;
-        const evictedMembers = dfTracker.filter(m => String(m.Status || '').toLowerCase() === 'evicted').length;
-        const declinedMembers = dfTracker.filter(m => String(m.Status || '').toLowerCase() === 'declined').length;
+        const evictedMembers = dfTracker.filter(m => String(m.Status || '').trim().toLowerCase() === 'evicted').length;
+        const declinedMembers = dfTracker.filter(m => String(m.Status || '').trim().toLowerCase() === 'declined').length;
 
         let todayReads = 0;
         if (activeMembers > 0) {
@@ -749,7 +749,7 @@ export default function AdminDashboard({ onLogout }) {
           if (!t) return;
           if (!teamsMap[t]) teamsMap[t] = { active: 0, evicted: 0, declined: 0, total: 0, todayReads: 0 };
           teamsMap[t].total++;
-          const status = String(m.Status || '').toLowerCase();
+          const status = String(m.Status || '').trim().toLowerCase();
           if (status === 'active') {
             teamsMap[t].active++;
             if (String(m[currentDayStr] || '').toUpperCase() === 'TRUE') {
