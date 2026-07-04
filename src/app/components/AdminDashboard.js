@@ -254,7 +254,8 @@ export default function AdminDashboard({ onLogout }) {
     let previousRoundsStr = "";
     if (currentRound > 1) {
       let prevRoundTexts = [];
-      for (let r = 1; r < currentRound; r++) {
+      const startRound = Math.max(1, currentRound - 1);
+      for (let r = startRound; r < currentRound; r++) {
         let roundIsComplete = true;
         let pastRoundBreakdown = [];
         const endDay = r * daysPerRound;
