@@ -212,7 +212,7 @@ export default function AdminDashboard({ onLogout }) {
       if (generateReport) generateAdminWhatsappText(freshData);
       else showToast(`Saved Leaders updates for ${adminSelectedDay.replace('_', ' ')} successfully!`);
     } catch (e) {
-      showToast(e.message || "Error saving admin data", "error");
+      showToast(e.message || "FALLBACK ERROR: " + String(e), "error");
     } finally {
       setSaving(false);
     }
