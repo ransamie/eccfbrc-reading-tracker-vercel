@@ -224,7 +224,14 @@ export async function POST(request) {
                     const pastColIndex = leadersSheet.headerValues.indexOf(`Day_${pastD}`);
                     let val = 'FALSE';
                     if (pastColIndex !== -1) {
-                       val = String(leadersSheet.getCell(row.rowNumber - 1, pastColIndex).value || '').toUpperCase();
+                       const pastCell = leadersSheet.getCell(row.rowNumber - 1, pastColIndex);
+                       try {
+                          val = String(pastCell.value || '').toUpperCase();
+                       } catch (e) {
+                          // google-spreadsheet throws if we try to read a cell we just modified
+                          // In this script, any modified past day was set to 'TRUE'
+                          val = 'TRUE';
+                       }
                     }
                     if (val !== 'TRUE') {
                        missedDaysCount++;
