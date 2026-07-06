@@ -40,10 +40,16 @@ export async function GET(request) {
         row => normalizeTeamName(row.Team_Name) === normalizeTeamName(team)
       );
       
+      const leadersData = await fetchLeadersData();
+      const teamLeadersInfo = leadersData.filter(
+        row => normalizeTeamName(row.Team_Name || row.Team || row['Team Name']) === normalizeTeamName(team)
+      );
+      
       return NextResponse.json({
         settings: globalData.settings,
         trackerData: teamTrackerData,
-        teamReflection: globalData.teamReflections[team] || ""
+        teamReflection: globalData.teamReflections[team] || "",
+        leadersData: teamLeadersInfo
       });
     }
 

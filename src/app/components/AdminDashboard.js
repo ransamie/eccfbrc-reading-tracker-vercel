@@ -747,7 +747,15 @@ export default function AdminDashboard({ onLogout }) {
         dfTracker.forEach(m => {
           const t = m.Team_Name || m.Team || m['Team Name'];
           if (!t) return;
-          if (!teamsMap[t]) teamsMap[t] = { active: 0, evicted: 0, declined: 0, total: 0, todayReads: 0 };
+          if (!teamsMap[t]) {
+            const teamLeadersInfo = (data?.leadersData || []).filter(l => {
+              const lTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'];
+              return String(lTeam || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase() === String(t || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+            });
+            const leaderName = teamLeadersInfo[0]?.Member_Name || teamLeadersInfo[0]?.Name || teamLeadersInfo[0]?.['Team Leader'] || 'N/A';
+            const assistantName = teamLeadersInfo[1]?.Member_Name || teamLeadersInfo[1]?.Name || teamLeadersInfo[1]?.['Team Leader'] || 'N/A';
+            teamsMap[t] = { active: 0, evicted: 0, declined: 0, total: 0, todayReads: 0, leaderName, assistantName };
+          }
           teamsMap[t].total++;
           const status = String(m.Status || '').trim().toLowerCase();
           if (status === 'active') {

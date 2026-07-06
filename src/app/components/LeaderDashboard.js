@@ -319,9 +319,17 @@ export default function LeaderDashboard({ team, onLogout }) {
         </div>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
-        <div style={{ fontSize: '1.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <img src="/logo.png" alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '50%' }} />
-          Team {team}
+          <div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>Team {team}</div>
+            {data?.leadersData && (
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                Leader: {data.leadersData[0]?.Member_Name || data.leadersData[0]?.Name || data.leadersData[0]?.['Team Leader'] || 'N/A'}
+                {data.leadersData[1] && ` | Assistant: ${data.leadersData[1]?.Member_Name || data.leadersData[1]?.Name || data.leadersData[1]?.['Team Leader']}`}
+              </div>
+            )}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
           <button 
