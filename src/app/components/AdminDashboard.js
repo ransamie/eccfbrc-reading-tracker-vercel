@@ -1018,16 +1018,29 @@ export default function AdminDashboard({ onLogout }) {
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>
                     <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Team Name</th>
+                    <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Leader</th>
+                    <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Assistant</th>
                     <th style={{ padding: '0.4rem 0.6rem', textAlign: 'right', border: '1px solid var(--border-light)' }}>PIN</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.credentialsData?.filter(c => c.Team_Name && c.Team_Name.toLowerCase() !== 'admin').map((c) => (
-                    <tr key={c.Team_Name} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <td style={{ padding: '0.4rem 0.6rem', fontWeight: 'bold', border: '1px solid var(--border-light)' }}>{c.Team_Name}</td>
-                      <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontFamily: 'monospace', border: '1px solid var(--border-light)' }}>{c.PIN}</td>
-                    </tr>
-                  ))}
+                  {data?.credentialsData?.filter(c => c.Team_Name && c.Team_Name.toLowerCase() !== 'admin').map((c) => {
+                    const teamLeadersInfo = (data?.leadersData || []).filter(l => {
+                      const lTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'];
+                      return String(lTeam || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase() === String(c.Team_Name || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+                    });
+                    const leaderName = teamLeadersInfo[0]?.Member_Name || teamLeadersInfo[0]?.Name || teamLeadersInfo[0]?.['Team Leader'] || 'N/A';
+                    const assistantName = teamLeadersInfo[1]?.Member_Name || teamLeadersInfo[1]?.Name || teamLeadersInfo[1]?.['Team Leader'] || 'N/A';
+                    
+                    return (
+                      <tr key={c.Team_Name} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '0.4rem 0.6rem', fontWeight: 'bold', border: '1px solid var(--border-light)' }}>{c.Team_Name}</td>
+                        <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{leaderName}</td>
+                        <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{assistantName}</td>
+                        <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontFamily: 'monospace', border: '1px solid var(--border-light)' }}>{c.PIN}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
