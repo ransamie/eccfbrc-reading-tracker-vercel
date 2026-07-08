@@ -42,19 +42,72 @@ export async function POST(request) {
       const inMorn = watTimeStr >= to24(mornStart) && watTimeStr <= to24(mornEnd);
       const inEve = watTimeStr >= to24(eveStart) && watTimeStr <= to24(eveEnd);
 
+import { NextResponse } from 'next/server';
+import { getDatabase } from '@/lib/googleSheets';
+
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
+const normalizeTeamName = (name) => String(name || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { action, payload } = body;
+
+    const db = await getDatabase();
+
+    if (action === 'leader_report') {
+      const { team, day, updates, reflection, currentDayNum, evictionThreshold } = payload;
+      
+      const settingsSheet = db.sheetsByTitle["Global_Settings"];
+      const settingsRows = await settingsSheet.getRows();
+      let mornStart = "04:00 AM", mornEnd = "11:00 AM", eveStart = "06:00 PM", eveEnd = "11:00 PM";
+      for (const r of settingsRows) {
+         if (r.get('Setting_Key') === 'Morning_Window_Start') mornStart = r.get('Setting_Value') || "04:00 AM";
+         if (r.get('Setting_Key') === 'Morning_Window_End') mornEnd = r.get('Setting_Value') || "11:00 AM";
+         if (r.get('Setting_Key') === 'Evening_Window_Start') eveStart = r.get('Setting_Value') || "06:00 PM";
+         if (r.get('Setting_Key') === 'Evening_Window_End') eveEnd = r.get('Setting_Value') || "11:00 PM";
+      }
+
+      const to24 = (t12) => {
+        const match = String(t12).match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (!match) return "00:00";
+        let [_, h, m, mod] = match;
+        if (h === '12') h = '00';
+        if (mod.toUpperCase() === 'PM') h = parseInt(h, 10) + 12;
+        return `${String(h).padStart(2, '0')}:${m}`;
+      };
+
+      const now = new Date();
+      const watOptions = { timeZone: 'Africa/Lagos', hour: '2-digit', minute: '2-digit', hour12: false };
+      const watTimeStr = new Intl.DateTimeFormat('en-GB', watOptions).format(now);
+      
+      const inMorn = watTimeStr >= to24(mornStart) && watTimeStr <= to24(mornEnd);
+      const inEve = watTimeStr >= to24(eveStart) && watTimeStr <= to24(eveEnd);
+
       if (!inMorn && !inEve) {
           return NextResponse.json({ success: false, error: `Reporting is closed. The daily windows are ${mornStart} - ${mornEnd} and ${eveStart} - ${eveEnd}.` }, { status: 400 });
       }
       
       const trackerSheet = db.sheetsByTitle["Tracker_Data"];
       await trackerSheet.loadHeaderRow();
-      if (!trackerSheet.headerValues.includes(day)) {
-        const newHeaders = [...trackerSheet.headerValues, day];
-        if (newHeaders.length > trackerSheet.columnCount) {
-          await trackerSheet.resize({ rowCount: trackerSheet.rowCount, columnCount: newHeaders.length + 5 });
+        let trackerHeadersChanged = false;
+        let trackerNewHeaders = [...trackerSheet.headerValues];
+        for (let d = 1; d <= currentDayNum; d++) {
+          const dStr = `Day_${d}`;
+          if (!trackerNewHeaders.includes(dStr)) {
+            trackerNewHeaders.push(dStr);
+            trackerHeadersChanged = true;
+          }
         }
-        await trackerSheet.setHeaderRow(newHeaders);
-      }
+        if (trackerHeadersChanged) {
+          if (trackerNewHeaders.length > trackerSheet.columnCount) {
+            await trackerSheet.resize({ rowCount: trackerSheet.rowCount, columnCount: trackerNewHeaders.length + 5 });
+          }
+          await trackerSheet.setHeaderRow(trackerNewHeaders);
+          await trackerSheet.loadHeaderRow();
+        }
       
       const rows = await trackerSheet.getRows();
 
@@ -168,14 +221,22 @@ export async function POST(request) {
       }
 
       await leadersSheet.loadHeaderRow();
-      if (!leadersSheet.headerValues.includes(day)) {
-        const newHeaders = [...leadersSheet.headerValues, day];
-        if (newHeaders.length > leadersSheet.columnCount) {
-          await leadersSheet.resize({ rowCount: leadersSheet.rowCount, columnCount: newHeaders.length + 5 });
+        let leadersHeadersChanged = false;
+        let leadersNewHeaders = [...leadersSheet.headerValues];
+        for (let d = 1; d <= currentDayNum; d++) {
+          const dStr = `Day_${d}`;
+          if (!leadersNewHeaders.includes(dStr)) {
+            leadersNewHeaders.push(dStr);
+            leadersHeadersChanged = true;
+          }
         }
-        await leadersSheet.setHeaderRow(newHeaders);
-        await leadersSheet.loadHeaderRow(); // Reload to update headerValues correctly
-      }
+        if (leadersHeadersChanged) {
+          if (leadersNewHeaders.length > leadersSheet.columnCount) {
+            await leadersSheet.resize({ rowCount: leadersSheet.rowCount, columnCount: leadersNewHeaders.length + 5 });
+          }
+          await leadersSheet.setHeaderRow(leadersNewHeaders);
+          await leadersSheet.loadHeaderRow(); // Reload to update headerValues correctly
+        }
       
       const dayColIndex = leadersSheet.headerValues.indexOf(day);
       const statusColIndex = leadersSheet.headerValues.indexOf('Status');
