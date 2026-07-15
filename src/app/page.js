@@ -92,7 +92,7 @@ export default function Home() {
           width: '90px', height: '90px', backgroundColor: '#000', borderRadius: '50%',
           display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 1.25rem auto'
         }}>
-          <img src="/eccfbrclogo.png" alt="ECCF Logo" style={{ maxHeight: '70px', maxWidth: '70px' }} />
+          <img src="/logo-cropped.png" alt="ECCF Logo" style={{ maxHeight: '70px', maxWidth: '70px', backgroundColor: '#000', padding: '8px', borderRadius: '50%', objectFit: 'contain' }} />
         </div>
         <h2 style={{ fontSize: "1.75rem", fontWeight: "700", margin: "0", textAlign: "center", lineHeight: "1.3" }}>ECCF Bible Reading Challenge Tracker</h2>
         <p style={{ color: "var(--text-secondary)", fontWeight: 500, marginTop: "10px", textAlign: "center", fontSize: "1.1rem" }}>
