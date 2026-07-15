@@ -98,9 +98,10 @@ export default function InstallPwaButton() {
           cursor: "pointer",
           transition: "all 0.2s ease",
           whiteSpace: "nowrap",
+          flex: 1,
         }}
       >
-        <Download size={16} /> <span className="hide-on-mobile">Install App</span>
+        <Download size={16} /> <span>Install App</span>
       </button>
 
       {showIosInstruction && (

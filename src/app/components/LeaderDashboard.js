@@ -332,7 +332,7 @@ export default function LeaderDashboard({ team, onLogout }) {
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+          <div className="header-actions">
           <InstallPwaButton />
           <button 
             onClick={() => loadData(true)} 
