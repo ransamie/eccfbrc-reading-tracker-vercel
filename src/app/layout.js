@@ -5,6 +5,11 @@ import 'ag-grid-community/styles/ag-theme-alpine.css';
 export const metadata = {
   title: "ECCFBRC Tracker",
   description: "ECCF Bible Reading Challenge Tracker",
+  manifest: "/manifest.json",
+};
+
+export const viewport = {
+  themeColor: "#238636",
 };
 
 import { Analytics } from "@vercel/analytics/react";
