@@ -489,7 +489,7 @@ export default function AdminDashboard({ onLogout }) {
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
         <div style={{ fontSize: '1.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src="/logo-cropped.png" alt="Logo" style={{ width: '48px', height: '48px', backgroundColor: '#000', padding: '6px', borderRadius: '50%', objectFit: 'contain' }} />
+          <img src="/logo-cropped.png" alt="Logo" style={{ width: '48px', height: '48px', backgroundColor: '#000', padding: '6px', borderRadius: '10%', objectFit: 'contain' }} />
           Admin Command Center
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>

@@ -321,7 +321,7 @@ export default function LeaderDashboard({ team, onLogout }) {
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src="/logo-cropped.png" alt="Logo" style={{ width: '48px', height: '48px', backgroundColor: '#000', padding: '6px', borderRadius: '50%', objectFit: 'contain' }} />
+          <img src="/logo-cropped.png" alt="Logo" style={{ width: '48px', height: '48px', backgroundColor: '#000', padding: '6px', borderRadius: '10%', objectFit: 'contain' }} />
           <div>
             <div style={{ fontSize: '1.5rem', fontWeight: '600' }}>Team {team}</div>
             {data?.leadersData && (
