@@ -52,11 +52,20 @@ export default function InstallPwaButton() {
   }, []);
 
   const handleInstallClick = async () => {
+    // Check if device is iOS first
+    const isIos = /iPad|iPhone|iPod/i.test(navigator.userAgent) || 
+                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                 
+    if (isIos) {
+      setShowIosInstruction(true);
+      return;
+    }
+
     // Check global variable one last time right when they click it
     const promptToUse = deferredPrompt || window.deferredPWA;
     
     if (promptToUse) {
-      // Chrome/Android: show native prompt
+      // Chrome/Android/PC: show native prompt
       promptToUse.prompt();
       const { outcome } = await promptToUse.userChoice;
       if (outcome === "accepted") {
@@ -65,14 +74,8 @@ export default function InstallPwaButton() {
       setDeferredPrompt(null);
       window.deferredPWA = null;
     } else {
-      // Safari/iOS or browsers that don't support beforeinstallprompt
-      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      
-      if (isIos) {
-        setShowIosInstruction(true);
-      } else {
-        setShowGenericInstruction(true);
-      }
+      // Browsers that don't support beforeinstallprompt and aren't iOS
+      setShowGenericInstruction(true);
     }
   };
 
