@@ -15,15 +15,30 @@ export default function InstallPwaButton() {
       setIsInstallable(true);
     }
 
+    if (window.deferredPWA) {
+      setDeferredPrompt(window.deferredPWA);
+    }
+
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      window.deferredPWA = e;
       setIsInstallable(true);
     };
+
+    // Also poll for it just in case the event listener missed it and the script caught it early
+    const interval = setInterval(() => {
+      if (window.deferredPWA && !deferredPrompt) {
+        setDeferredPrompt(window.deferredPWA);
+        setIsInstallable(true);
+        clearInterval(interval);
+      }
+    }, 500);
 
     const handleAppInstalled = () => {
       setIsInstallable(false);
       setDeferredPrompt(null);
+      window.deferredPWA = null;
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -32,18 +47,23 @@ export default function InstallPwaButton() {
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
+      clearInterval(interval);
     };
   }, []);
 
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
+    // Check global variable one last time right when they click it
+    const promptToUse = deferredPrompt || window.deferredPWA;
+    
+    if (promptToUse) {
       // Chrome/Android: show native prompt
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+      promptToUse.prompt();
+      const { outcome } = await promptToUse.userChoice;
       if (outcome === "accepted") {
         setIsInstallable(false);
       }
       setDeferredPrompt(null);
+      window.deferredPWA = null;
     } else {
       // Safari/iOS or browsers that don't support beforeinstallprompt
       const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);

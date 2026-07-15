@@ -17,6 +17,19 @@ import { Analytics } from "@vercel/analytics/react";
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.deferredPWA = null;
+              window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                window.deferredPWA = e;
+              });
+            `,
+          }}
+        />
+      </head>
       <body>
         {children}
         <Analytics />
