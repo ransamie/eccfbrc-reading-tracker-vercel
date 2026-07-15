@@ -427,5 +427,15 @@ input[type="checkbox"]:checked::before {
 }
 
 @media (max-width: 600px) { .hide-on-mobile { display: none; } }
-. h e a d e r - a c t i o n s   {   d i s p l a y :   f l e x ;   g a p :   0 . 5 r e m ;   m a r g i n - l e f t :   a u t o ;   }   @ m e d i a   ( m a x - w i d t h :   6 0 0 p x )   {   . h e a d e r - a c t i o n s   {   w i d t h :   1 0 0 % ;   m a r g i n - l e f t :   0 ;   }   }  
- 
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+@media (max-width: 600px) {
+  .header-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+}
