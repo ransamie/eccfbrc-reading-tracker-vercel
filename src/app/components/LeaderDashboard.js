@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut } from "lucide-react";
+import InstallPwaButton from "./InstallPwaButton";
 
 export default function LeaderDashboard({ team, onLogout }) {
   const [data, setData] = useState(null);
@@ -332,6 +333,7 @@ export default function LeaderDashboard({ team, onLogout }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+          <InstallPwaButton />
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 

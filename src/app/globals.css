@@ -425,3 +425,5 @@ input[type="checkbox"]:checked::before {
   from { width: 100%; }
   to { width: 0%; }
 }
+
+@media (max-width: 600px) { .hide-on-mobile { display: none; } }
