@@ -439,3 +439,35 @@ input[type="checkbox"]:checked::before {
     margin-left: 0;
   }
 }
+
+/* Custom Select Styling */
+select, select.input-field {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F9FAFB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2em;
+  padding: 0.75rem 2.5rem 0.75rem 1rem !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid var(--border-light) !important;
+  background-color: var(--surface-secondary) !important;
+  color: var(--text-primary) !important;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+select:focus, select.input-field:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+select option {
+  background-color: var(--surface-secondary);
+  color: var(--text-primary);
+  padding: 0.5rem;
+}
