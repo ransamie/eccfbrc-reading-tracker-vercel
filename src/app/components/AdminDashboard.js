@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut } from "lucide-react";
+import InstallPwaButton from "./InstallPwaButton";
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 
@@ -492,7 +493,8 @@ export default function AdminDashboard({ onLogout }) {
           <img src="/logo-cropped.png" alt="Logo" style={{ width: '48px', height: '48px', backgroundColor: '#000', padding: '6px', borderRadius: '10%', objectFit: 'contain' }} />
           Admin Command Center
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
+        <div className="header-actions">
+          <InstallPwaButton />
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
