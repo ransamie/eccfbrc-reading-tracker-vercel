@@ -339,7 +339,7 @@ export default function AdminDashboard({ onLogout }) {
         yetToUpdate.push(`* @${memberNameStr} (${daysStr})`);
         if (showEvictionList && missedDaysInCurrentRound > evictionThreshold) {
            const dayWord = missedDaysInCurrentRound === 1 ? "day" : "days";
-           evictionList.push(`* @${memberNameStr} (${missedDaysInCurrentRound} ${dayWord} behind this round)`);
+           evictionList.push(`* @${memberNameStr} (${missedDaysInCurrentRound} ${dayWord} behind)`);
         }
       } else {
         upToDate.push(`* @${memberNameStr}`);

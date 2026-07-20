@@ -281,7 +281,7 @@ export default function LeaderDashboard({ team, onLogout }) {
         
         if (showEvictionList && missedDaysInCurrentRound > evictionThreshold) {
            const dayWord = missedDaysInCurrentRound === 1 ? "day" : "days";
-           evictionList.push(`* @${memberNameStr} (${missedDaysInCurrentRound} ${dayWord} behind this round)`);
+           evictionList.push(`* @${memberNameStr} (${missedDaysInCurrentRound} ${dayWord} behind)`);
         }
       } else {
         upToDate.push(`* @${memberNameStr}`);
