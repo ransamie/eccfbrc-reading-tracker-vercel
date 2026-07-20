@@ -48,12 +48,29 @@ export async function POST(request) {
       
       const trackerSheet = db.sheetsByTitle["Tracker_Data"];
       await trackerSheet.loadHeaderRow();
-      if (!trackerSheet.headerValues.includes(day)) {
-        const newHeaders = [...trackerSheet.headerValues, day];
-        if (newHeaders.length > trackerSheet.columnCount) {
-          await trackerSheet.resize({ rowCount: trackerSheet.rowCount, columnCount: newHeaders.length + 5 });
+      
+      const editingDayNum = parseInt(day.split('_')[1] || 1);
+      let headersChanged = false;
+      const currentHeaders = [...trackerSheet.headerValues];
+      
+      for (let i = 1; i <= editingDayNum; i++) {
+        const dStr = `Day_${i}`;
+        if (!currentHeaders.includes(dStr)) {
+          currentHeaders.push(dStr);
+          headersChanged = true;
         }
-        await trackerSheet.setHeaderRow(newHeaders);
+      }
+      
+      if (!currentHeaders.includes(day)) {
+        currentHeaders.push(day);
+        headersChanged = true;
+      }
+      
+      if (headersChanged) {
+        if (currentHeaders.length > trackerSheet.columnCount) {
+          await trackerSheet.resize({ rowCount: trackerSheet.rowCount, columnCount: currentHeaders.length + 5 });
+        }
+        await trackerSheet.setHeaderRow(currentHeaders);
       }
       
       const rows = await trackerSheet.getRows();
@@ -168,12 +185,28 @@ export async function POST(request) {
       }
 
       await leadersSheet.loadHeaderRow();
-      if (!leadersSheet.headerValues.includes(day)) {
-        const newHeaders = [...leadersSheet.headerValues, day];
-        if (newHeaders.length > leadersSheet.columnCount) {
-          await leadersSheet.resize({ rowCount: leadersSheet.rowCount, columnCount: newHeaders.length + 5 });
+      
+      let headersChanged = false;
+      const currentHeaders = [...leadersSheet.headerValues];
+      
+      for (let i = 1; i <= currentDayNum; i++) {
+        const dStr = `Day_${i}`;
+        if (!currentHeaders.includes(dStr)) {
+          currentHeaders.push(dStr);
+          headersChanged = true;
         }
-        await leadersSheet.setHeaderRow(newHeaders);
+      }
+      
+      if (!currentHeaders.includes(day)) {
+        currentHeaders.push(day);
+        headersChanged = true;
+      }
+      
+      if (headersChanged) {
+        if (currentHeaders.length > leadersSheet.columnCount) {
+          await leadersSheet.resize({ rowCount: leadersSheet.rowCount, columnCount: currentHeaders.length + 5 });
+        }
+        await leadersSheet.setHeaderRow(currentHeaders);
         await leadersSheet.loadHeaderRow(); // Reload to update headerValues correctly
       }
       

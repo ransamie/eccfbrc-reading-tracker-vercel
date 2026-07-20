@@ -82,6 +82,8 @@ export default function AdminDashboard({ onLogout }) {
   const [showAdminDays, setShowAdminDays] = useState(false);
   const [reflection, setReflection] = useState("");
   const [reportText, setReportText] = useState("");
+  const [leaderSearchQuery, setLeaderSearchQuery] = useState("");
+  const [rosterSearchQuery, setRosterSearchQuery] = useState("");
   const reportRef = useRef(null);
 
   useEffect(() => {
@@ -181,7 +183,16 @@ export default function AdminDashboard({ onLogout }) {
 
   const handleAdminSelectAll = (val) => {
     const newUpdates = { ...adminUpdates };
-    Object.keys(newUpdates).forEach(k => newUpdates[k] = val);
+    const filteredLeaders = (data?.leadersData?.filter(m => String(m.Status || '').trim().toLowerCase() === 'active') || []).filter(m => {
+      const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+      const team = String(m.Team || m.Team_Name || '').trim();
+      const q = leaderSearchQuery.toLowerCase();
+      return name.toLowerCase().includes(q) || team.toLowerCase().includes(q);
+    });
+    filteredLeaders.forEach(m => {
+      const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+      newUpdates[name] = val;
+    });
     setAdminUpdates(newUpdates);
   };
 
@@ -577,21 +588,44 @@ export default function AdminDashboard({ onLogout }) {
           </div>
 
           <div style={{ marginTop: '1.5rem' }}>
+            <input 
+              type="text" 
+              placeholder="Search leaders by name or team..." 
+              value={leaderSearchQuery} 
+              onChange={e => setLeaderSearchQuery(e.target.value)}
+              className="input-field"
+              style={{ marginBottom: '1rem' }}
+            />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              {activeLeaders.length === 0 ? <p>No active leaders.</p> : activeLeaders.map(m => {
-                const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
-                return (
-                  <label key={name} className="checkbox-label">
-                    <input type="checkbox" checked={adminUpdates[name] || false} onChange={() => handleAdminCheckbox(name)} />
-                    {name} ({m.Team || m.Team_Name || "Unknown"})
-                  </label>
-                );
-              })}
+              {(() => {
+                const filteredLeaders = activeLeaders.filter(m => {
+                  const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+                  const team = String(m.Team || m.Team_Name || '').trim();
+                  const q = leaderSearchQuery.toLowerCase();
+                  return name.toLowerCase().includes(q) || team.toLowerCase().includes(q);
+                });
+                if (filteredLeaders.length === 0) return <p>No leaders found.</p>;
+                return filteredLeaders.map(m => {
+                  const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+                  return (
+                    <label key={name} className="checkbox-label">
+                      <input type="checkbox" checked={adminUpdates[name] || false} onChange={() => handleAdminCheckbox(name)} />
+                      {name} ({m.Team || m.Team_Name || "Unknown"})
+                    </label>
+                  );
+                });
+              })()}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '1rem' }}>
               {(() => {
-                const allSelected = activeLeaders.length > 0 && activeLeaders.every(m => adminUpdates[String(m['Team Leader'] || m.Name || m.Member_Name || '').trim()]);
+                const filteredLeaders = activeLeaders.filter(m => {
+                  const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+                  const team = String(m.Team || m.Team_Name || '').trim();
+                  const q = leaderSearchQuery.toLowerCase();
+                  return name.toLowerCase().includes(q) || team.toLowerCase().includes(q);
+                });
+                const allSelected = filteredLeaders.length > 0 && filteredLeaders.every(m => adminUpdates[String(m['Team Leader'] || m.Name || m.Member_Name || '').trim()]);
                 return (
                   <button 
                     onClick={() => handleAdminSelectAll(!allSelected)} 
@@ -646,8 +680,22 @@ export default function AdminDashboard({ onLogout }) {
           <h3 className="mb-2">Manage Team Leaders Roster</h3>
           <p className="label mb-3">Update a leader's status if they have been evicted or declined the challenge. Changes made here will update the Leaders Tracker Data.</p>
           
+          <input 
+            type="text" 
+            placeholder="Search roster by name or team..." 
+            value={rosterSearchQuery} 
+            onChange={e => setRosterSearchQuery(e.target.value)}
+            className="input-field"
+            style={{ marginBottom: '1rem' }}
+          />
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {(data?.leadersData || []).map(m => {
+            {(data?.leadersData || []).filter(m => {
+              const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+              const team = String(m.Team || m.Team_Name || '').trim();
+              const q = rosterSearchQuery.toLowerCase();
+              return name.toLowerCase().includes(q) || team.toLowerCase().includes(q);
+            }).map(m => {
               const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
               if (!name) return null;
               const currentStatus = adminRosterUpdates[name] || String(m.Status || '').trim() || 'Active';
