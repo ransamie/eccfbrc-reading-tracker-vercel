@@ -497,7 +497,8 @@ export default function LeaderDashboard({ team, onLogout }) {
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {allMembers.map(m => {
-                  const currentStatus = rosterUpdates[m.Member_Name] || String(m.Status || '').trim() || 'Active';
+                  const trimmedName = String(m.Member_Name || '').trim();
+                  const currentStatus = rosterUpdates[trimmedName] || String(m.Status || '').trim() || 'Active';
                   
                   let statusColor = "var(--text-primary)";
                   let statusBg = "var(--surface)";
@@ -518,7 +519,7 @@ export default function LeaderDashboard({ team, onLogout }) {
                   }
 
                   return (
-                    <div key={m.Member_Name} style={{ 
+                    <div key={trimmedName} style={{ 
                       display: 'flex', 
                       justifyContent: 'space-between', 
                       alignItems: 'center', 
@@ -537,7 +538,7 @@ export default function LeaderDashboard({ team, onLogout }) {
                         }}>
                            {m.Member_Name.trim().charAt(0).toUpperCase()}
                         </div>
-                        <span style={{ fontSize: '0.95rem', fontWeight: '600', lineHeight: '1.2', display: 'block', wordBreak: 'break-word' }}>{m.Member_Name}</span>
+                         <span style={{ fontSize: '0.95rem', fontWeight: '600', lineHeight: '1.2', display: 'block', wordBreak: 'break-word' }}>{trimmedName}</span>
                       </div>
                       <select 
                         className="input-field" 
@@ -555,7 +556,7 @@ export default function LeaderDashboard({ team, onLogout }) {
                           fontSize: '0.85rem'
                         }} 
                         value={currentStatus}
-                        onChange={(e) => setRosterUpdates(prev => ({ ...prev, [m.Member_Name]: e.target.value }))}
+                        onChange={(e) => setRosterUpdates(prev => ({ ...prev, [trimmedName]: e.target.value }))}
                       >
                         <option value="Active" style={{ color: 'var(--text-primary)', background: 'var(--surface)' }}>Active</option>
                         <option value="Evicted" style={{ color: 'var(--text-primary)', background: 'var(--surface)' }}>Evicted</option>
