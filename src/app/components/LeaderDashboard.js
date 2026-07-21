@@ -147,6 +147,8 @@ export default function LeaderDashboard({ team, onLogout }) {
       if (!res.ok) {
         let errMessage = "Failed to save report";
         try { const errData = await res.json(); errMessage = errData.message || errData.error || errMessage; } catch(e) {}
+        if (errMessage.includes('429') || errMessage.includes('Quota exceeded')) errMessage = "Server is busy (Code: 429). Please try again in a minute.";
+        else if (errMessage.includes('Google API error')) errMessage = "Server Error (Code: 500). Please notify the admin.";
         throw new Error(errMessage);
       }
       
@@ -176,8 +178,10 @@ export default function LeaderDashboard({ team, onLogout }) {
         })
       });
       if (!res.ok) {
-        let errMessage = "Failed to save report";
+        let errMessage = "Failed to save roster";
         try { const errData = await res.json(); errMessage = errData.message || errData.error || errMessage; } catch(e) {}
+        if (errMessage.includes('429') || errMessage.includes('Quota exceeded')) errMessage = "Server is busy (Code: 429). Please try again in a minute.";
+        else if (errMessage.includes('Google API error')) errMessage = "Server Error (Code: 500). Please notify the admin.";
         throw new Error(errMessage);
       }
       showToast("Team roster successfully updated!");
