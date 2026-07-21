@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/googleSheets';
+import { getDatabase, fetchGlobalData, invalidateCache } from '@/lib/googleSheets';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -16,15 +16,11 @@ export async function POST(request) {
     if (action === 'leader_report') {
       const { team, day, updates, reflection, currentDayNum, evictionThreshold } = payload;
       
-      const settingsSheet = db.sheetsByTitle["Global_Settings"];
-      const settingsRows = await settingsSheet.getRows();
-      let mornStart = "04:00 AM", mornEnd = "11:00 AM", eveStart = "06:00 PM", eveEnd = "11:00 PM";
-      for (const r of settingsRows) {
-         if (r.get('Setting_Key') === 'Morning_Window_Start') mornStart = r.get('Setting_Value') || "04:00 AM";
-         if (r.get('Setting_Key') === 'Morning_Window_End') mornEnd = r.get('Setting_Value') || "11:00 AM";
-         if (r.get('Setting_Key') === 'Evening_Window_Start') eveStart = r.get('Setting_Value') || "06:00 PM";
-         if (r.get('Setting_Key') === 'Evening_Window_End') eveEnd = r.get('Setting_Value') || "11:00 PM";
-      }
+      const globalData = await fetchGlobalData();
+      const mornStart = globalData.settings['Morning_Window_Start'] || "04:00 AM";
+      const mornEnd = globalData.settings['Morning_Window_End'] || "11:00 AM";
+      const eveStart = globalData.settings['Evening_Window_Start'] || "06:00 PM";
+      const eveEnd = globalData.settings['Evening_Window_End'] || "11:00 PM";
 
       const to24 = (t12) => {
         const match = String(t12).match(/(\d+):(\d+)\s*(AM|PM)/i);
@@ -137,6 +133,7 @@ export async function POST(request) {
         }
       }
 
+      invalidateCache();
       return NextResponse.json({ success: true });
     }
     
@@ -155,6 +152,7 @@ export async function POST(request) {
           await row.save();
         }
       }
+      invalidateCache();
       return NextResponse.json({ success: true });
     }
 
@@ -283,6 +281,7 @@ export async function POST(request) {
       if (hasUpdates) {
         await leadersSheet.saveUpdatedCells();
       }
+      invalidateCache();
       return NextResponse.json({ success: true });
     }
 
@@ -309,6 +308,7 @@ export async function POST(request) {
       if (hasUpdates) {
         await leadersSheet.saveUpdatedCells();
       }
+      invalidateCache();
       return NextResponse.json({ success: true });
     }
 
@@ -342,6 +342,7 @@ export async function POST(request) {
          }
       }
 
+      invalidateCache();
       return NextResponse.json({ success: true });
     }
 
@@ -349,6 +350,7 @@ export async function POST(request) {
       const { newTeamName, newTeamPin } = payload;
       const credsSheet = db.sheetsByTitle["Team_Credentials"];
       await credsSheet.addRow({ Team_Name: newTeamName, PIN: newTeamPin, Current_Reflection: '' });
+      invalidateCache();
       return NextResponse.json({ success: true });
     }
     
@@ -363,6 +365,7 @@ export async function POST(request) {
            break;
         }
       }
+      invalidateCache();
       return NextResponse.json({ success: true });
     }
     
@@ -385,6 +388,7 @@ export async function POST(request) {
         await settingsSheet.addRow({ Setting_Key: 'ADMIN_PIN', Setting_Value: newPin });
       }
       
+      invalidateCache();
       return NextResponse.json({ success: true });
     }
     
@@ -423,6 +427,7 @@ export async function POST(request) {
            await row.save();
         }
       }
+      invalidateCache();
       return NextResponse.json({ success: true });
     }
     
@@ -432,6 +437,7 @@ export async function POST(request) {
       // Pre-fill Status as Active
       const newRows = members.map(m => ({ ...m, Status: 'Active' }));
       await trackerSheet.addRows(newRows);
+      invalidateCache();
       return NextResponse.json({ success: true });
     }
 

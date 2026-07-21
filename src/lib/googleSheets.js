@@ -27,6 +27,15 @@ const serviceAccountAuth = new JWT({
 
 let docInstance = null;
 
+let globalCache = { data: null, timestamp: 0 };
+let leadersCache = { data: null, timestamp: 0 };
+const CACHE_TTL = 15000; // 15 seconds
+
+export function invalidateCache() {
+  globalCache.timestamp = 0;
+  leadersCache.timestamp = 0;
+}
+
 export async function getDatabase() {
   if (docInstance) return docInstance;
 
@@ -41,6 +50,10 @@ export async function getDatabase() {
 }
 
 export async function fetchGlobalData() {
+  if (globalCache.data && Date.now() - globalCache.timestamp < CACHE_TTL) {
+    return globalCache.data;
+  }
+
   const db = await getDatabase();
   
   const settingsSheet = db.sheetsByTitle["Global_Settings"];
@@ -79,7 +92,7 @@ export async function fetchGlobalData() {
     }
   });
 
-  return {
+  globalCache.data = {
     settings,
     trackerData,
     credentialsData,
@@ -87,12 +100,22 @@ export async function fetchGlobalData() {
     validTeams,
     teamReflections
   };
+  globalCache.timestamp = Date.now();
+  
+  return globalCache.data;
 }
 
 export async function fetchLeadersData() {
+  if (leadersCache.data && Date.now() - leadersCache.timestamp < CACHE_TTL) {
+    return leadersCache.data;
+  }
+
   const db = await getDatabase();
   const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
   await leadersSheet.loadHeaderRow();
   const leadersRows = await leadersSheet.getRows();
-  return leadersRows.map(row => row.toObject());
+  
+  leadersCache.data = leadersRows.map(row => row.toObject());
+  leadersCache.timestamp = Date.now();
+  return leadersCache.data;
 }
