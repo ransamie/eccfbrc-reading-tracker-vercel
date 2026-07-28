@@ -321,17 +321,18 @@ export default function AdminDashboard({ onLogout }) {
     activeLeaders.forEach(m => {
       let missedDays = [];
       const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
-      let missedDaysInCurrentRound = 0;
+      let lastCompletedDay = 0;
       for (let i = 1; i <= currentDayNum; i++) {
         const dStr = `Day_${i}`;
         const val = (i === currentDayNum && adminSelectedDay === currentDayStr) ? adminUpdates[name] : (String(m[dStr] || '').toUpperCase() === 'TRUE');
         if (!val) {
           missedDays.push(i);
-          if (i >= currentRoundStart) {
-            missedDaysInCurrentRound++;
-          }
+        } else {
+          lastCompletedDay = i;
         }
       }
+      
+      const daysBehindRoundEnd = (currentRound * daysPerRound) - lastCompletedDay;
       
       const teamStr = m.Team || m.Team_Name || "Unknown";
       const memberNameStr = `${name} (${teamStr})`;
@@ -339,9 +340,9 @@ export default function AdminDashboard({ onLogout }) {
       if (missedDays.length > 0) {
         const daysStr = missedDays.length === 1 ? `Day ${missedDays[0]}` : `Day ${missedDays[0]} - ${missedDays[missedDays.length - 1]}`;
         yetToUpdate.push(`* @${memberNameStr} (${daysStr})`);
-        if (showEvictionList && missedDaysInCurrentRound > evictionThreshold) {
-           const dayWord = missedDaysInCurrentRound === 1 ? "day" : "days";
-           evictionList.push(`* @${memberNameStr} (${missedDaysInCurrentRound} ${dayWord} behind)`);
+        if (showEvictionList && daysBehindRoundEnd > evictionThreshold) {
+           const dayWord = daysBehindRoundEnd === 1 ? "day" : "days";
+           evictionList.push(`* @${memberNameStr} (${daysBehindRoundEnd} ${dayWord} behind)`);
         }
       } else {
         upToDate.push(`* @${memberNameStr}`);

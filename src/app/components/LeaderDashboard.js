@@ -264,28 +264,28 @@ export default function LeaderDashboard({ team, onLogout }) {
     activeMembers.forEach(m => {
       let missedDays = [];
       const memberName = String(m.Member_Name || '').trim();
-      let missedDaysInCurrentRound = 0;
-      const currentRoundStartDay = (currentRound - 1) * daysPerRound + 1;
+      let lastCompletedDay = 0;
       
       for (let i = 1; i <= currentDayNum; i++) {
         const dStr = `Day_${i}`;
         const val = (i === currentDayNum && selectedDay === currentDay) ? updates[memberName] : (String(m[dStr] || '').toUpperCase() === 'TRUE');
         if (!val) {
           missedDays.push(i);
-          if (i >= currentRoundStartDay) {
-            missedDaysInCurrentRound++;
-          }
+        } else {
+          lastCompletedDay = i;
         }
       }
+      
+      const daysBehindRoundEnd = (currentRound * daysPerRound) - lastCompletedDay;
       
       const memberNameStr = m.Member_Name.trim();
       if (missedDays.length > 0) {
         const daysStr = missedDays.length === 1 ? `Day ${missedDays[0]}` : `Day ${missedDays[0]} - ${missedDays[missedDays.length - 1]}`;
         yetToUpdate.push(`* @${memberNameStr} (${daysStr})`);
         
-        if (showEvictionList && missedDaysInCurrentRound > evictionThreshold) {
-           const dayWord = missedDaysInCurrentRound === 1 ? "day" : "days";
-           evictionList.push(`* @${memberNameStr} (${missedDaysInCurrentRound} ${dayWord} behind)`);
+        if (showEvictionList && daysBehindRoundEnd > evictionThreshold) {
+           const dayWord = daysBehindRoundEnd === 1 ? "day" : "days";
+           evictionList.push(`* @${memberNameStr} (${daysBehindRoundEnd} ${dayWord} behind)`);
         }
       } else {
         upToDate.push(`* @${memberNameStr}`);
