@@ -11,16 +11,24 @@ import {
   Lock, 
   LogOut, 
   Check, 
-  Filter,
-  Users,
-  ArrowLeft,
-  Copy,
-  CheckCheck,
-  Share2,
-  Power,
-  Pencil,
-  X
+  Filter, 
+  Users, 
+  ArrowLeft, 
+  Copy, 
+  CheckCheck, 
+  Share2, 
+  Power, 
+  Pencil, 
+  X,
+  FileText,
+  Upload,
+  ChevronDown,
+  Sparkles,
+  HelpCircle,
+  Clock,
+  ListOrdered
 } from "lucide-react";
+import { parseQuizQuestions } from "@/lib/quizParser";
 
 export default function AdminQuizPage() {
   const [pin, setPin] = useState("");
@@ -28,8 +36,10 @@ export default function AdminQuizPage() {
   const [authError, setAuthError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Quiz Data
+  // Workspace Tabs: 'control' | 'builder' | 'bulk' | 'leaderboard'
   const [activeTab, setActiveTab] = useState("control");
+  
+  // Data States
   const [settings, setSettings] = useState({ Active_Round: "Round 1", Time_Limit_Minutes: "15", Is_Quiz_Live: "FALSE" });
   const [isQuizLive, setIsQuizLive] = useState(false);
   const [questions, setQuestions] = useState([]);
@@ -39,7 +49,14 @@ export default function AdminQuizPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [quizUrl, setQuizUrl] = useState("");
 
-  // Edit / Create Form States
+  // Toast
+  const [toastMessage, setToastMessage] = useState("");
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(""), 3500);
+  };
+
+  // Edit / Create Single Form States
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [questionForm, setQuestionForm] = useState({
     round: "Round 1",
@@ -51,6 +68,13 @@ export default function AdminQuizPage() {
     correctAnswer: ""
   });
   const [saveStatus, setSaveStatus] = useState("");
+
+  // Bulk Importer States
+  const [bulkText, setBulkText] = useState("");
+  const [bulkRound, setBulkRound] = useState("Round 1");
+  const [parsedBulk, setParsedBulk] = useState({ questions: [], errors: [], totalDetected: 0 });
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [showFormatGuide, setShowFormatGuide] = useState(false);
 
   // 1. Check Authentication on Mount
   useEffect(() => {
@@ -79,6 +103,7 @@ export default function AdminQuizPage() {
         setQuestions(data.questions || []);
         setResults(data.results || []);
         setQuestionForm(prev => ({ ...prev, round: loadedSettings.Active_Round || "Round 1" }));
+        setBulkRound(loadedSettings.Active_Round || "Round 1");
         sessionStorage.setItem("admin_quiz_pin", inputPin);
         setPin(inputPin);
         setIsAuthenticated(true);
@@ -93,6 +118,25 @@ export default function AdminQuizPage() {
     }
   };
 
+  const fetchWorkspaceData = async () => {
+    if (!pin) return;
+    try {
+      const res = await fetch("/api/quiz/admin", {
+        headers: { "Authorization": pin }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const loadedSettings = data.settings || { Active_Round: "Round 1", Time_Limit_Minutes: "15", Is_Quiz_Live: "FALSE" };
+        setSettings(loadedSettings);
+        setIsQuizLive(String(loadedSettings.Is_Quiz_Live).toUpperCase() === "TRUE");
+        setQuestions(data.questions || []);
+        setResults(data.results || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     if (pin) verifyAndLoad(pin);
@@ -104,24 +148,18 @@ export default function AdminQuizPage() {
     setPin("");
   };
 
-  const handleCopyLink = () => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(quizUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-    }
-  };
-
-  // 2. Control Center Actions
+  // 2. Settings Updates (Active Round, Time Limit, Live Switch)
   const handleSaveSettings = async (e) => {
     e.preventDefault();
-    setSaveStatus("saving");
+    setLoading(true);
+    setSaveStatus("");
+
     try {
       const res = await fetch("/api/quiz/admin", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": pin 
+          "Authorization": pin
         },
         body: JSON.stringify({
           action: "updateSettings",
@@ -132,62 +170,38 @@ export default function AdminQuizPage() {
       });
 
       if (res.ok) {
-        setSaveStatus("success");
-        setTimeout(() => setSaveStatus(""), 3000);
+        setSaveStatus("Settings saved successfully!");
+        showToast("Settings updated successfully!");
       } else {
-        setSaveStatus("error");
+        setSaveStatus("Failed to save settings.");
       }
-    } catch (e) {
-      setSaveStatus("error");
+    } catch (err) {
+      setSaveStatus("Error connecting to server.");
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSaveStatus(""), 3500);
     }
   };
 
-  // 3. Question Builder Actions (Add / Edit / Delete)
-  const handleStartEdit = (q) => {
-    setEditingQuestionId(q.id);
-    setQuestionForm({
-      round: q.round || settings.Active_Round || "Round 1",
-      question: q.question || "",
-      option1: q.option1 || (q.options ? q.options[0] : "") || "",
-      option2: q.option2 || (q.options ? q.options[1] : "") || "",
-      option3: q.option3 || (q.options ? q.options[2] : "") || "",
-      option4: q.option4 || (q.options ? q.options[3] : "") || "",
-      correctAnswer: q.correctAnswer || ""
-    });
-    // Scroll smoothly to form on mobile
-    window.scrollTo({ top: 120, behavior: 'smooth' });
-  };
-
-  const handleCancelEdit = () => {
-    setEditingQuestionId(null);
-    setQuestionForm({
-      round: settings.Active_Round || "Round 1",
-      question: "",
-      option1: "",
-      option2: "",
-      option3: "",
-      option4: "",
-      correctAnswer: ""
-    });
-  };
-
+  // 3. Question Form (Add / Edit)
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!questionForm.correctAnswer) {
-      alert("Please select the radio button for the correct answer option!");
-      return;
-    }
-    
     setLoading(true);
 
-    if (editingQuestionId) {
-      // UPDATE EXISTING QUESTION
-      try {
+    if (!questionForm.correctAnswer) {
+      alert("Please designate a correct answer by selecting the corresponding option!");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      if (editingQuestionId) {
+        // UPDATE existing question
         const res = await fetch("/api/quiz/admin", {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
-            "Authorization": pin 
+            "Authorization": pin
           },
           body: JSON.stringify({
             action: "updateQuestion",
@@ -197,25 +211,19 @@ export default function AdminQuizPage() {
         });
 
         if (res.ok) {
+          showToast("Question updated successfully!");
           setQuestions(prev => prev.map(q => q.id === editingQuestionId ? { ...questionForm, id: editingQuestionId } : q));
-          alert("Question updated successfully!");
           handleCancelEdit();
         } else {
           alert("Failed to update question.");
         }
-      } catch (err) {
-        alert("Error updating question.");
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      // ADD NEW QUESTION
-      try {
+      } else {
+        // ADD new question
         const res = await fetch("/api/quiz/admin", {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
-            "Authorization": pin 
+            "Authorization": pin
           },
           body: JSON.stringify({
             action: "addQuestion",
@@ -225,38 +233,65 @@ export default function AdminQuizPage() {
 
         if (res.ok) {
           const data = await res.json();
-          setQuestions(prev => [...prev, { ...questionForm, id: data.id }]);
-          setQuestionForm({
-            round: settings.Active_Round || "Round 1",
+          showToast("Question added successfully!");
+          setQuestions(prev => [{ ...questionForm, id: data.id }, ...prev]);
+          setQuestionForm(prev => ({
+            ...prev,
             question: "",
             option1: "",
             option2: "",
             option3: "",
             option4: "",
             correctAnswer: ""
-          });
-          alert("Question added successfully!");
+          }));
         } else {
           alert("Failed to add question.");
         }
-      } catch (err) {
-        alert("Error adding question.");
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      alert("Failed to save question.");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleStartEdit = (q) => {
+    setEditingQuestionId(q.id);
+    setQuestionForm({
+      round: q.round || "Round 1",
+      question: q.question || "",
+      option1: q.option1 || "",
+      option2: q.option2 || "",
+      option3: q.option3 || "",
+      option4: q.option4 || "",
+      correctAnswer: q.correctAnswer || ""
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingQuestionId(null);
+    setQuestionForm(prev => ({
+      ...prev,
+      round: settings.Active_Round || "Round 1",
+      question: "",
+      option1: "",
+      option2: "",
+      option3: "",
+      option4: "",
+      correctAnswer: ""
+    }));
   };
 
   const handleDeleteQuestion = async (id) => {
     if (!confirm("Are you sure you want to delete this question?")) return;
-    
-    setLoading(true);
+
     try {
       const res = await fetch("/api/quiz/admin", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": pin 
+          "Authorization": pin
         },
         body: JSON.stringify({
           action: "deleteQuestion",
@@ -265,35 +300,117 @@ export default function AdminQuizPage() {
       });
 
       if (res.ok) {
+        showToast("Question deleted.");
         setQuestions(prev => prev.filter(q => q.id !== id));
-        if (editingQuestionId === id) {
-          handleCancelEdit();
-        }
+        if (editingQuestionId === id) handleCancelEdit();
       } else {
         alert("Failed to delete question.");
       }
     } catch (err) {
       alert("Error deleting question.");
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Calculations for Leaderboard
-  const sortedResults = [...results]
-    .filter(r => (selectedRoundFilter === "All" || r.round === selectedRoundFilter) &&
-                 (selectedTeamFilter === "All" || (r.team && r.team.toLowerCase() === selectedTeamFilter.toLowerCase())))
+  // 4. Bulk Importer Handlers
+  const handleBulkTextChange = (text) => {
+    setBulkText(text);
+    if (!text.trim()) {
+      setParsedBulk({ questions: [], errors: [], totalDetected: 0 });
+      return;
+    }
+    const result = parseQuizQuestions(text, bulkRound);
+    setParsedBulk(result);
+  };
+
+  const handleBulkRoundChange = (r) => {
+    setBulkRound(r);
+    if (bulkText.trim()) {
+      const result = parseQuizQuestions(bulkText, r);
+      setParsedBulk(result);
+    }
+  };
+
+  const handleExecuteBulkImport = async () => {
+    if (parsedBulk.questions.length === 0) return;
+    setBulkImporting(true);
+    try {
+      const res = await fetch("/api/quiz/admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": pin
+        },
+        body: JSON.stringify({
+          action: "bulkAddQuestions",
+          questions: parsedBulk.questions
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to bulk import questions");
+      
+      showToast(`Successfully imported ${data.count} questions to ${bulkRound}!`);
+      setBulkText("");
+      setParsedBulk({ questions: [], errors: [], totalDetected: 0 });
+      fetchWorkspaceData();
+      setActiveTab("builder");
+    } catch (e) {
+      alert(e.message || "Failed to import questions");
+    } finally {
+      setBulkImporting(false);
+    }
+  };
+
+  const sampleQABlock = `1. Who led the children of Israel across the Red Sea?
+A. Aaron
+B. Moses
+C. Joshua
+D. Caleb
+Answer: B
+
+2. How many days and nights did rain fall during Noah's flood?
+A. 30 days
+B. 50 days
+C. 40 days
+D. 70 days
+Answer: C
+
+3. Which apostle was known as the 'beloved disciple'?
+*A. John
+B. Peter
+C. James
+D. Andrew`;
+
+  const sampleTableBlock = `Who was the first king of Israel?\tDavid\tSaul\tSolomon\tSamuel\tSaul
+Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
+
+  // 5. Copy Link Handler
+  const handleCopyLink = () => {
+    if (typeof window !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(quizUrl);
+      setCopiedLink(true);
+      showToast("Quiz Link copied to clipboard!");
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
+  };
+
+  // Filtered Questions and Leaderboard
+  const uniqueRounds = Array.from(new Set(questions.map(q => q.round).filter(Boolean)));
+  const uniqueTeams = Array.from(new Set(results.map(r => r.team).filter(Boolean))).sort((a, b) => {
+    const numA = parseInt(a, 10);
+    const numB = parseInt(b, 10);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return String(a).localeCompare(String(b));
+  });
+
+  const sortedResults = results
+    .filter(r => selectedRoundFilter === "All" || r.round === selectedRoundFilter)
+    .filter(r => selectedTeamFilter === "All" || r.team === selectedTeamFilter)
     .sort((a, b) => {
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
-      return new Date(a.timestamp) - new Date(b.timestamp);
+      if (b.score !== a.score) return b.score - a.score;
+      return new Date(a.timestamp || 0) - new Date(b.timestamp || 0);
     });
 
-  const uniqueRounds = Array.from(new Set(questions.map(q => q.round).concat(results.map(r => r.round)).filter(Boolean)));
-  const uniqueTeams = Array.from(new Set(results.map(r => r.team).filter(Boolean)));
-
-  // --- SCREEN 1: ADMIN PIN GATE ---
+  // --- SCREEN 1: ADMIN LOGIN ---
   if (!isAuthenticated) {
     return (
       <div style={{
@@ -301,47 +418,50 @@ export default function AdminQuizPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '1.5rem',
+        padding: '2rem 1rem',
         background: 'radial-gradient(ellipse at top, #1e293b 0%, #0f172a 100%)',
         color: 'var(--text-primary)',
         fontFamily: 'var(--font-sans)'
       }}>
         <div style={{
-          maxWidth: '420px',
+          maxWidth: '400px',
           width: '100%',
-          backgroundColor: 'rgba(17, 24, 39, 0.8)',
+          backgroundColor: 'rgba(17, 24, 39, 0.75)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderRadius: '1.25rem',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          padding: '2.5rem 2rem',
           boxShadow: '0 25px 60px rgba(0, 0, 0, 0.5)',
+          padding: '2.5rem 2rem',
           textAlign: 'center'
         }}>
+          
           <div style={{
-            width: '60px',
-            height: '60px',
-            borderRadius: '50%',
-            backgroundColor: 'var(--accent-light)',
-            color: 'var(--accent-hover)',
+            width: '64px',
+            height: '64px',
+            borderRadius: '16px',
+            backgroundColor: 'rgba(37, 99, 235, 0.15)',
+            border: '1.5px solid var(--accent)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 1.25rem auto',
-            border: '1px solid rgba(37, 99, 235, 0.3)'
+            margin: '0 auto 1.5rem auto',
+            boxShadow: '0 0 25px rgba(37, 99, 235, 0.25)'
           }}>
-            <Lock size={28} />
+            <Lock size={30} style={{ color: 'var(--accent)' }} />
           </div>
-          
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0 0 0.4rem 0' }}>Quiz Control Center</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 2rem 0' }}>
-            Enter Super Admin PIN to authenticate
+
+          <h1 style={{ fontSize: '1.45rem', fontWeight: '800', margin: '0 0 0.4rem 0' }}>
+            Quiz Control Center
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: '0 0 1.75rem 0' }}>
+            Super Admin access required to manage settings and questions.
           </p>
 
-          <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <input
               type="password"
-              placeholder="Enter PIN"
+              placeholder="Enter Super Admin PIN"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               required
@@ -396,20 +516,6 @@ export default function AdminQuizPage() {
             >
               {loading ? "Verifying..." : "Access Quiz Workspace"}
             </button>
-
-            <a
-              href="/"
-              style={{
-                color: 'var(--text-secondary)',
-                fontSize: '0.85rem',
-                textDecoration: 'none',
-                marginTop: '0.5rem'
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
-            >
-              ← Back to Main Dashboard
-            </a>
           </form>
         </div>
       </div>
@@ -426,6 +532,29 @@ export default function AdminQuizPage() {
       paddingBottom: '5rem'
     }}>
       
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '2rem',
+          right: '2rem',
+          backgroundColor: '#10B981',
+          color: '#fff',
+          padding: '0.75rem 1.25rem',
+          borderRadius: '0.6rem',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          zIndex: 100,
+          fontWeight: 600,
+          fontSize: '0.9rem'
+        }}>
+          <Check size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* Header */}
       <header style={{
         backgroundColor: 'var(--surface)',
@@ -439,62 +568,62 @@ export default function AdminQuizPage() {
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--accent)',
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              backgroundColor: '#000',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#fff'
+              padding: '4px'
             }}>
-              <Settings size={20} />
+              <img src="/eccfbrclogo.png" alt="ECCF Logo" style={{ maxWidth: '28px', maxHeight: '28px', objectFit: 'contain' }} />
             </div>
             <div>
-              <h1 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, lineHeight: 1.2 }}>Quiz Control Center</h1>
-              <span style={{ fontSize: '0.75rem', color: isQuizLive ? 'var(--success)' : 'var(--warning)', fontWeight: 600 }}>
-                {isQuizLive ? '● Live for Participants' : '○ Closed (Coming Soon)'}
-              </span>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, lineHeight: '1.2' }}>Quiz Control Center</h2>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Super Admin Workspace</span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <a
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <a 
               href="/"
               style={{
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.45rem 0.8rem',
+                gap: '0.4rem',
+                padding: '0.45rem 0.85rem',
                 backgroundColor: 'var(--surface-secondary)',
                 color: 'var(--text-primary)',
-                border: '1px solid var(--border-light)',
+                border: '1px solid var(--border)',
                 borderRadius: '0.5rem',
-                fontSize: '0.82rem',
+                fontSize: '0.85rem',
                 fontWeight: '600',
-                textDecoration: 'none'
+                textDecoration: 'none',
+                transition: 'all 0.2s ease'
               }}
             >
-              <ArrowLeft size={14} /> Back to Dashboard
+              <ArrowLeft size={15} /> Dashboard
             </a>
 
             <button
               onClick={handleLogout}
               style={{
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.45rem 0.8rem',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                gap: '0.4rem',
+                padding: '0.45rem 0.85rem',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
                 color: '#F87171',
                 border: '1px solid rgba(239, 68, 68, 0.25)',
                 borderRadius: '0.5rem',
-                fontSize: '0.82rem',
+                fontSize: '0.85rem',
                 fontWeight: '600',
                 cursor: 'pointer'
               }}
             >
-              <LogOut size={14} /> Logout
+              <LogOut size={15} /> Logout
             </button>
           </div>
 
@@ -509,6 +638,7 @@ export default function AdminQuizPage() {
           {[
             { id: 'control', label: 'Control Center', icon: Settings },
             { id: 'builder', label: editingQuestionId ? 'Editing Question' : 'Question Builder', icon: editingQuestionId ? Pencil : PlusCircle },
+            { id: 'bulk', label: 'Bulk Import', icon: Upload },
             { id: 'leaderboard', label: 'Live Leaderboard', icon: Trophy }
           ].map(tab => {
             const Icon = tab.icon;
@@ -598,7 +728,6 @@ export default function AdminQuizPage() {
                     fontSize: '0.85rem',
                     fontWeight: '700',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
                     whiteSpace: 'nowrap'
                   }}
                 >
@@ -608,194 +737,179 @@ export default function AdminQuizPage() {
               </div>
             </div>
 
-            {/* Global Settings Card */}
+            {/* Global Settings Form */}
             <div style={{
               backgroundColor: 'var(--surface)',
               borderRadius: '1rem',
               border: '1px solid var(--border)',
-              padding: '1.75rem',
+              padding: '1.5rem',
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
             }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Settings size={20} style={{ color: 'var(--accent)' }} /> Global Quiz Controls
-              </h3>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                <Settings size={20} style={{ color: 'var(--accent)' }} />
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: 0 }}>Quiz Configuration</h3>
+              </div>
 
-              <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 
-                {/* Live / Coming Soon Switch */}
+                {/* Live / Coming Soon Switch Card */}
                 <div style={{
+                  padding: '1.25rem',
+                  borderRadius: '0.75rem',
+                  backgroundColor: isQuizLive ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                  border: `1.5px solid ${isQuizLive ? 'var(--success)' : '#F59E0B'}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  backgroundColor: isQuizLive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                  border: `1.5px solid ${isQuizLive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
-                  borderRadius: '0.85rem',
-                  padding: '1.1rem 1.25rem',
-                  gap: '1rem'
+                  gap: '1rem',
+                  flexWrap: 'wrap'
                 }}>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.2rem' }}>
-                      <Power size={18} style={{ color: isQuizLive ? 'var(--success)' : '#F59E0B' }} />
-                      <span style={{ fontSize: '0.98rem', fontWeight: '700', color: isQuizLive ? '#34D399' : '#FCD34D' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                      <Power size={18} color={isQuizLive ? "#10B981" : "#F59E0B"} />
+                      <span style={{ fontSize: '1rem', fontWeight: '800', color: isQuizLive ? '#34D399' : '#FCD34D' }}>
                         {isQuizLive ? "Quiz is LIVE & Active" : "Quiz is in Maintenance (Coming Soon)"}
                       </span>
                     </div>
                     <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                      {isQuizLive
-                        ? "Participants can currently access and submit their quiz answers."
-                        : "Anyone opening the link sees a 'Coming Soon' screen and cannot submit."}
+                      {isQuizLive 
+                        ? "Participants can currently access, start, and submit their quiz."
+                        : "Access is blocked. Visitors will see the Coming Soon holding screen."}
                     </p>
                   </div>
 
-                  {/* Toggle Button */}
                   <button
                     type="button"
                     onClick={() => setIsQuizLive(!isQuizLive)}
                     style={{
-                      width: '56px',
-                      height: '30px',
-                      borderRadius: '999px',
-                      backgroundColor: isQuizLive ? '#10B981' : '#4B5563',
+                      padding: '0.65rem 1.25rem',
+                      borderRadius: '0.5rem',
                       border: 'none',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      transition: 'background-color 0.25s ease',
-                      flexShrink: 0,
-                      padding: 0
-                    }}
-                  >
-                    <div style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      backgroundColor: '#FFFFFF',
-                      position: 'absolute',
-                      top: '3px',
-                      left: isQuizLive ? '28px' : '4px',
-                      transition: 'left 0.25s ease',
-                      boxShadow: '0 2px 5px rgba(0,0,0,0.3)'
-                    }} />
-                  </button>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                      Active Quiz Round
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.Active_Round || ""}
-                      onChange={(e) => setSettings(prev => ({ ...prev, Active_Round: e.target.value }))}
-                      placeholder="e.g. Round 1"
-                      required
-                      style={{
-                        width: '100%',
-                        padding: '0.85rem 1rem',
-                        backgroundColor: 'var(--surface-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.6rem',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.95rem',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
-                      Questions with this round tag will be shown.
-                    </span>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                      Time Limit (Minutes)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={settings.Time_Limit_Minutes || ""}
-                      onChange={(e) => setSettings(prev => ({ ...prev, Time_Limit_Minutes: e.target.value }))}
-                      placeholder="e.g. 15"
-                      required
-                      style={{
-                        width: '100%',
-                        padding: '0.85rem 1rem',
-                        backgroundColor: 'var(--surface-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.6rem',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.95rem',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
-                      Unstoppable wall-clock timer limit.
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  borderTop: '1px solid var(--border-light)',
-                  paddingTop: '1.25rem',
-                  marginTop: '0.5rem',
-                  flexWrap: 'wrap',
-                  gap: '0.75rem'
-                }}>
-                  <div>
-                    {saveStatus === "saving" && <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Saving settings...</span>}
-                    {saveStatus === "success" && (
-                      <span style={{ color: '#34D399', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <Check size={16} /> Settings Saved
-                      </span>
-                    )}
-                    {saveStatus === "error" && <span style={{ color: '#F87171', fontSize: '0.85rem' }}>Failed to save settings</span>}
-                  </div>
-
-                  <button
-                    type="submit"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      padding: '0.75rem 1.5rem',
-                      background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                      backgroundColor: isQuizLive ? '#EF4444' : '#10B981',
                       color: '#fff',
-                      border: 'none',
-                      borderRadius: '0.6rem',
-                      fontSize: '0.95rem',
+                      fontSize: '0.88rem',
                       fontWeight: '700',
                       cursor: 'pointer',
-                      boxShadow: '0 4px 15px rgba(37, 99, 235, 0.3)'
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
                     }}
                   >
-                    <Save size={16} /> Save Settings
+                    {isQuizLive ? "Close Quiz" : "Go Live Now"}
                   </button>
                 </div>
 
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                    Active Round Tag
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.Active_Round}
+                    onChange={(e) => setSettings(prev => ({ ...prev, Active_Round: e.target.value }))}
+                    placeholder="e.g. Round 8"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.8rem 1rem',
+                      backgroundColor: 'var(--surface-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.6rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.95rem',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
+                    Participants will take questions assigned to this exact round tag.
+                  </span>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                    Time Limit (Minutes)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="180"
+                    value={settings.Time_Limit_Minutes}
+                    onChange={(e) => setSettings(prev => ({ ...prev, Time_Limit_Minutes: e.target.value }))}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.8rem 1rem',
+                      backgroundColor: 'var(--surface-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.6rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.95rem',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
+                    Unstoppable countdown timer allocated per candidate session.
+                  </span>
+                </div>
+
+                {saveStatus && (
+                  <div style={{
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    backgroundColor: saveStatus.includes('success') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    color: saveStatus.includes('success') ? '#34D399' : '#F87171',
+                    fontSize: '0.88rem',
+                    fontWeight: '600'
+                  }}>
+                    {saveStatus}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    padding: '0.85rem',
+                    background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '0.6rem',
+                    fontSize: '0.95rem',
+                    fontWeight: '700',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)',
+                    marginTop: '0.5rem'
+                  }}
+                >
+                  <Save size={18} />
+                  <span>{loading ? "Saving..." : "Save Settings"}</span>
+                </button>
               </form>
             </div>
-
           </div>
         )}
 
-        {/* TAB 2: QUESTION BUILDER & EDITOR */}
+        {/* TAB 2: QUESTION BUILDER (Single Edit / Create + Bank) */}
         {activeTab === 'builder' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'flex-start' }}>
             
-            {/* Creator / Editor Form Card */}
+            {/* Form Column */}
             <div style={{
               backgroundColor: 'var(--surface)',
               borderRadius: '1rem',
               border: `1.5px solid ${editingQuestionId ? 'var(--accent)' : 'var(--border)'}`,
               padding: '1.5rem',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-              height: 'fit-content'
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   {editingQuestionId ? (
                     <>
@@ -803,7 +917,7 @@ export default function AdminQuizPage() {
                     </>
                   ) : (
                     <>
-                      <PlusCircle size={18} style={{ color: 'var(--accent)' }} /> Add New Question
+                      <PlusCircle size={18} style={{ color: 'var(--accent)' }} /> Add Single Question
                     </>
                   )}
                 </h3>
@@ -839,7 +953,7 @@ export default function AdminQuizPage() {
                     type="text"
                     value={questionForm.round}
                     onChange={(e) => setQuestionForm(prev => ({ ...prev, round: e.target.value }))}
-                    placeholder="e.g. Round 1"
+                    placeholder="e.g. Round 8"
                     required
                     style={{
                       width: '100%',
@@ -898,19 +1012,22 @@ export default function AdminQuizPage() {
                             alignItems: 'center',
                             gap: '0.65rem',
                             backgroundColor: isCorrect ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-secondary)',
-                            border: `1px solid ${isCorrect ? 'var(--success)' : 'var(--border-light)'}`,
-                            padding: '0.4rem 0.65rem',
-                            borderRadius: '0.5rem'
+                            border: `1px solid ${isCorrect ? 'var(--success)' : 'var(--border)'}`,
+                            borderRadius: '0.5rem',
+                            padding: '0.35rem 0.65rem',
+                            transition: 'all 0.2s ease'
                           }}
                         >
                           <input
                             type="radio"
-                            name="correctAnswerSelect"
+                            name="correctAnswerOption"
                             checked={isCorrect}
-                            onChange={() => setQuestionForm(prev => ({ ...prev, correctAnswer: prev[`option${num}`] }))}
-                            disabled={!questionForm[`option${num}`]}
-                            title="Set as correct answer"
-                            style={{ cursor: 'pointer' }}
+                            onChange={() => {
+                              if (questionForm[`option${num}`]) {
+                                setQuestionForm(prev => ({ ...prev, correctAnswer: prev[`option${num}`] }));
+                              }
+                            }}
+                            style={{ cursor: 'pointer', transform: 'scale(1.15)' }}
                           />
                           <input
                             type="text"
@@ -1002,30 +1119,40 @@ export default function AdminQuizPage() {
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
             }}>
               
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>Questions ({questions.length})</h3>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Filter size={15} style={{ color: 'var(--text-secondary)' }} />
-                  <select
-                    value={selectedRoundFilter}
-                    onChange={(e) => setSelectedRoundFilter(e.target.value)}
-                    style={{
-                      padding: '0.4rem 0.8rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.4rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.85rem',
-                      outline: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="All">All Rounds</option>
-                    {uniqueRounds.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
+                  
+                  {/* Nicely Spaced Dropdown */}
+                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                    <select
+                      value={selectedRoundFilter}
+                      onChange={(e) => setSelectedRoundFilter(e.target.value)}
+                      style={{
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'none',
+                        padding: '0.45rem 2.25rem 0.45rem 0.85rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        minWidth: '130px'
+                      }}
+                    >
+                      <option value="All">All Rounds</option>
+                      {uniqueRounds.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
+                  </div>
                 </div>
               </div>
 
@@ -1145,7 +1272,266 @@ export default function AdminQuizPage() {
           </div>
         )}
 
-        {/* TAB 3: LIVE LEADERBOARD */}
+        {/* TAB 3: BULK IMPORTER */}
+        {activeTab === 'bulk' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '820px' }}>
+            
+            <div style={{
+              backgroundColor: 'var(--surface)',
+              borderRadius: '1rem',
+              border: '1px solid var(--border)',
+              padding: '1.5rem',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
+            }}>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Upload size={20} style={{ color: 'var(--accent)' }} />
+                  <div>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0 }}>Bulk Import Questions</h3>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                      Paste questions directly from your Word document, WhatsApp, or notes
+                    </span>
+                  </div>
+                </div>
+
+                {/* Target Round Selector */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Target Round:</span>
+                  <input
+                    type="text"
+                    value={bulkRound}
+                    onChange={(e) => handleBulkRoundChange(e.target.value)}
+                    placeholder="e.g. Round 8"
+                    style={{
+                      width: '110px',
+                      padding: '0.45rem 0.75rem',
+                      backgroundColor: 'var(--surface-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.5rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.88rem',
+                      fontWeight: '700',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Sample Format Quick Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => handleBulkTextChange(sampleQABlock)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.4rem 0.75rem',
+                    backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                    border: '1px solid rgba(37, 99, 235, 0.3)',
+                    borderRadius: '0.4rem',
+                    color: 'var(--accent-hover)',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <FileText size={14} /> Load Sample Q&A Text
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleBulkTextChange(sampleTableBlock)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.4rem 0.75rem',
+                    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '0.4rem',
+                    color: '#34D399',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <ListOrdered size={14} /> Load Sample Table
+                </button>
+
+                {bulkText && (
+                  <button
+                    type="button"
+                    onClick={() => handleBulkTextChange("")}
+                    style={{
+                      padding: '0.4rem 0.75rem',
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid var(--border-light)',
+                      borderRadius: '0.4rem',
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Clear Text
+                  </button>
+                )}
+              </div>
+
+              {/* Paste Textarea */}
+              <textarea
+                rows={12}
+                value={bulkText}
+                onChange={(e) => handleBulkTextChange(e.target.value)}
+                placeholder={`Paste your questions document here...\n\nExample:\n1. Who was the first king of Israel?\nA. David\nB. Saul\nC. Solomon\nD. Samuel\nAnswer: B`}
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  backgroundColor: 'var(--surface-secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '0.75rem',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.9rem',
+                  fontFamily: 'monospace',
+                  lineHeight: '1.55',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  resize: 'vertical'
+                }}
+              />
+
+              {/* Real-time Parser Results Bar */}
+              {bulkText.trim() && (
+                <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '0.6rem',
+                    backgroundColor: parsedBulk.questions.length > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                    border: `1px solid ${parsedBulk.questions.length > 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                  }}>
+                    <span style={{ fontSize: '0.92rem', fontWeight: 700, color: parsedBulk.questions.length > 0 ? '#34D399' : '#F87171' }}>
+                      {parsedBulk.questions.length > 0 
+                        ? `✓ ${parsedBulk.questions.length} Question${parsedBulk.questions.length > 1 ? 's' : ''} successfully parsed for ${bulkRound}` 
+                        : "No valid questions detected in the pasted text."}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={parsedBulk.questions.length === 0 || bulkImporting}
+                      onClick={handleExecuteBulkImport}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.65rem 1.25rem',
+                        backgroundColor: 'var(--success)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.92rem',
+                        fontWeight: '700',
+                        cursor: parsedBulk.questions.length === 0 || bulkImporting ? 'not-allowed' : 'pointer',
+                        opacity: parsedBulk.questions.length === 0 || bulkImporting ? 0.6 : 1,
+                        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)'
+                      }}
+                    >
+                      <Upload size={16} />
+                      <span>{bulkImporting ? "Importing..." : `Import All (${parsedBulk.questions.length})`}</span>
+                    </button>
+                  </div>
+
+                  {parsedBulk.errors.length > 0 && (
+                    <div style={{
+                      padding: '0.75rem 1rem',
+                      borderRadius: '0.6rem',
+                      backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      fontSize: '0.82rem',
+                      color: '#FCD34D'
+                    }}>
+                      <strong>Notice:</strong>
+                      <ul style={{ margin: '0.35rem 0 0 1rem', padding: 0 }}>
+                        {parsedBulk.errors.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Live Parsed Preview Cards */}
+                  {parsedBulk.questions.length > 0 && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.6rem 0', color: 'var(--text-secondary)' }}>
+                        Live Import Preview ({parsedBulk.questions.length} cards):
+                      </h4>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '420px', overflowY: 'auto', paddingRight: '0.35rem' }}>
+                        {parsedBulk.questions.map((q, idx) => (
+                          <div 
+                            key={idx}
+                            style={{
+                              backgroundColor: 'var(--surface-secondary)',
+                              border: '1px solid var(--border-light)',
+                              borderRadius: '0.65rem',
+                              padding: '0.85rem 1rem'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'var(--accent-light)', color: 'var(--accent-hover)', padding: '0.15rem 0.45rem', borderRadius: '0.3rem' }}>
+                                #{idx + 1} • {q.round}
+                              </span>
+                            </div>
+
+                            <p style={{ margin: '0 0 0.6rem 0', fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                              {q.question}
+                            </p>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.4rem' }}>
+                              {[
+                                { label: 'A', val: q.option1 },
+                                { label: 'B', val: q.option2 },
+                                { label: 'C', val: q.option3 },
+                                { label: 'D', val: q.option4 }
+                              ].filter(o => Boolean(o.val)).map((opt, i) => {
+                                const isAns = opt.val === q.correctAnswer;
+                                return (
+                                  <div
+                                    key={i}
+                                    style={{
+                                      fontSize: '0.8rem',
+                                      padding: '0.35rem 0.6rem',
+                                      borderRadius: '0.35rem',
+                                      backgroundColor: isAns ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                                      color: isAns ? '#34D399' : 'var(--text-secondary)',
+                                      border: `1px solid ${isAns ? 'var(--success)' : 'transparent'}`,
+                                      fontWeight: isAns ? 700 : 400
+                                    }}
+                                  >
+                                    <strong>{opt.label}.</strong> {opt.val} {isAns ? '✓' : ''}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB 4: LIVE LEADERBOARD */}
         {activeTab === 'leaderboard' && (
           <div style={{
             backgroundColor: 'var(--surface)',
@@ -1160,54 +1546,70 @@ export default function AdminQuizPage() {
                 <Trophy size={20} style={{ color: '#F59E0B' }} /> Submissions ({sortedResults.length})
               </h3>
 
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
                 
                 {/* Round Filter */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Filter size={14} style={{ color: 'var(--text-secondary)' }} />
-                  <select
-                    value={selectedRoundFilter}
-                    onChange={(e) => setSelectedRoundFilter(e.target.value)}
-                    style={{
-                      padding: '0.4rem 0.75rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.4rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.82rem',
-                      outline: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="All">All Rounds</option>
-                    {uniqueRounds.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
+                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                    <select
+                      value={selectedRoundFilter}
+                      onChange={(e) => setSelectedRoundFilter(e.target.value)}
+                      style={{
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'none',
+                        padding: '0.45rem 2.25rem 0.45rem 0.85rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        minWidth: '130px'
+                      }}
+                    >
+                      <option value="All">All Rounds</option>
+                      {uniqueRounds.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
+                  </div>
                 </div>
 
                 {/* Team Filter */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Users size={14} style={{ color: 'var(--text-secondary)' }} />
-                  <select
-                    value={selectedTeamFilter}
-                    onChange={(e) => setSelectedTeamFilter(e.target.value)}
-                    style={{
-                      padding: '0.4rem 0.75rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.4rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.82rem',
-                      outline: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="All">All Teams</option>
-                    {uniqueTeams.map(t => (
-                      <option key={t} value={t}>Team {t}</option>
-                    ))}
-                  </select>
+                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                    <select
+                      value={selectedTeamFilter}
+                      onChange={(e) => setSelectedTeamFilter(e.target.value)}
+                      style={{
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'none',
+                        padding: '0.45rem 2.25rem 0.45rem 0.85rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        minWidth: '130px'
+                      }}
+                    >
+                      <option value="All">All Teams</option>
+                      {uniqueTeams.map(t => (
+                        <option key={t} value={t}>Team {t}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
+                  </div>
                 </div>
 
               </div>
@@ -1248,40 +1650,34 @@ export default function AdminQuizPage() {
                         <td style={{ padding: '0.75rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                           {r.fullName}
                         </td>
-                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: '0.82rem' }}>
-                          {r.whatsApp}
+                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+                          {r.whatsapp}
                         </td>
                         <td style={{ padding: '0.75rem' }}>
-                          <span style={{
-                            padding: '0.15rem 0.5rem',
-                            backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                            color: 'var(--success)',
-                            borderRadius: '0.35rem',
-                            fontSize: '0.78rem',
-                            fontWeight: '700'
-                          }}>
-                            {r.team}
+                          <span style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent-hover)', padding: '0.2rem 0.5rem', borderRadius: '0.3rem', fontSize: '0.8rem', fontWeight: '700' }}>
+                            Team {r.team}
                           </span>
                         </td>
-                        <td style={{ padding: '0.75rem' }}>
-                          <span style={{
-                            padding: '0.15rem 0.5rem',
-                            backgroundColor: 'var(--surface-secondary)',
-                            borderRadius: '0.35rem',
-                            fontSize: '0.78rem',
-                            border: '1px solid var(--border-light)'
-                          }}>
-                            {r.round}
-                          </span>
+                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>
+                          {r.round}
                         </td>
                         <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                          <span style={{ fontWeight: '800', color: 'var(--accent-hover)', fontSize: '0.95rem' }}>
+                          <span style={{ 
+                            fontWeight: '800', 
+                            fontSize: '0.95rem',
+                            color: (r.score / (r.totalQuestions || 10)) >= 0.7 ? '#34D399' : 'var(--text-primary)' 
+                          }}>
                             {r.score}
                           </span>
-                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}> / {r.totalQuestions}</span>
+                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}> / {r.totalQuestions}</span>
                         </td>
-                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
-                          {new Date(r.timestamp).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                          {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : 'N/A'}
                         </td>
                       </tr>
                     ))
@@ -1294,6 +1690,7 @@ export default function AdminQuizPage() {
         )}
 
       </main>
+
     </div>
   );
 }

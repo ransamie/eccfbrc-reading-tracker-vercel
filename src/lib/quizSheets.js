@@ -239,6 +239,34 @@ export async function addQuizQuestion(q) {
   return id;
 }
 
+export async function bulkAddQuizQuestions(questionsList) {
+  const sheet = await getSheetByTitle("Quiz_Questions", [
+    "ID",
+    "Round",
+    "Question",
+    "Option_1",
+    "Option_2",
+    "Option_3",
+    "Option_4",
+    "Correct_Answer"
+  ]);
+  const now = Date.now();
+  const rowsToAdd = questionsList.map((q, idx) => ({
+    ID: q.id || `q_${now}_${idx + 1}`,
+    Round: q.round,
+    Question: q.question,
+    Option_1: q.option1,
+    Option_2: q.option2,
+    Option_3: q.option3,
+    Option_4: q.option4,
+    Correct_Answer: q.correctAnswer
+  }));
+  if (rowsToAdd.length > 0) {
+    await sheet.addRows(rowsToAdd);
+  }
+  return rowsToAdd.length;
+}
+
 export async function updateQuizQuestion(id, q) {
   const sheet = await getSheetByTitle("Quiz_Questions", [
     "ID",

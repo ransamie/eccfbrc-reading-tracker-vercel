@@ -5,6 +5,7 @@ import {
   getAllQuestions, 
   getAllQuizResults, 
   addQuizQuestion, 
+  bulkAddQuizQuestions,
   updateQuizQuestion,
   deleteQuizQuestion 
 } from "@/lib/quizSheets";
@@ -81,6 +82,15 @@ export async function POST(request) {
       }
       const newId = await addQuizQuestion(question);
       return NextResponse.json({ success: true, id: newId, message: "Question added successfully" });
+    }
+
+    if (action === "bulkAddQuestions") {
+      const { questions } = body;
+      if (!Array.isArray(questions) || questions.length === 0) {
+        return NextResponse.json({ error: "No valid questions provided for bulk import" }, { status: 400 });
+      }
+      const count = await bulkAddQuizQuestions(questions);
+      return NextResponse.json({ success: true, count, message: `Successfully imported ${count} questions` });
     }
 
     if (action === "updateQuestion") {
