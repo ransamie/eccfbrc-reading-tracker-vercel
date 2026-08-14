@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import AdminDashboard from "./components/AdminDashboard";
 import LeaderDashboard from "./components/LeaderDashboard";
-import { Eye, EyeOff, Trophy, ChevronRight } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Home() {
   const [session, setSession] = useState(null); // { role: 'admin' | 'leader', team?: string }
@@ -222,78 +222,6 @@ export default function Home() {
                   {loading ? "Verifying..." : "Login"}
                 </button>
               </form>
-            </div>
-
-            {/* Quick Access to Bible Challenge Quiz */}
-            <div style={{ marginTop: '1.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <a
-                href="/quiz"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '1rem 1.25rem',
-                  background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(79, 70, 229, 0.15) 100%)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                  borderRadius: '0.75rem',
-                  color: 'var(--text-primary)',
-                  textDecoration: 'none',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--accent)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    background: 'var(--accent)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#fff'
-                  }}>
-                    <Trophy size={18} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>Bible Reading Quiz</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Take the current round challenge</div>
-                  </div>
-                </div>
-                <ChevronRight size={18} style={{ color: 'var(--text-secondary)' }} />
-              </a>
-
-              {loginType === "Super Admin" && (
-                <a
-                  href="/admin/quiz"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    padding: '0.6rem',
-                    background: 'transparent',
-                    border: '1px dashed var(--border-light)',
-                    borderRadius: '0.5rem',
-                    color: 'var(--text-secondary)',
-                    textDecoration: 'none',
-                    fontSize: '0.85rem',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
-                  onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-light)'; }}
-                >
-                  ⚙️ Open Super Admin Quiz Control Center
-                </a>
-              )}
             </div>
           </>
         )}

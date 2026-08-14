@@ -5,6 +5,7 @@ import {
   getAllQuestions, 
   getAllQuizResults, 
   addQuizQuestion, 
+  updateQuizQuestion,
   deleteQuizQuestion 
 } from "@/lib/quizSheets";
 import { fetchGlobalData } from "@/lib/googleSheets";
@@ -60,12 +61,15 @@ export async function POST(request) {
     const { action } = body;
 
     if (action === "updateSettings") {
-      const { activeRound, timeLimitMinutes } = body;
+      const { activeRound, timeLimitMinutes, isQuizLive } = body;
       if (activeRound !== undefined) {
         await updateQuizSettings("Active_Round", activeRound);
       }
       if (timeLimitMinutes !== undefined) {
         await updateQuizSettings("Time_Limit_Minutes", String(timeLimitMinutes));
+      }
+      if (isQuizLive !== undefined) {
+        await updateQuizSettings("Is_Quiz_Live", isQuizLive ? "TRUE" : "FALSE");
       }
       return NextResponse.json({ success: true, message: "Settings updated successfully" });
     }
@@ -77,6 +81,19 @@ export async function POST(request) {
       }
       const newId = await addQuizQuestion(question);
       return NextResponse.json({ success: true, id: newId, message: "Question added successfully" });
+    }
+
+    if (action === "updateQuestion") {
+      const { id, question } = body;
+      if (!id || !question || !question.round || !question.question || !question.correctAnswer) {
+        return NextResponse.json({ error: "Missing required question parameters for update" }, { status: 400 });
+      }
+      const updated = await updateQuizQuestion(id, question);
+      if (updated) {
+        return NextResponse.json({ success: true, message: "Question updated successfully" });
+      } else {
+        return NextResponse.json({ error: "Question not found" }, { status: 404 });
+      }
     }
 
     if (action === "deleteQuestion") {

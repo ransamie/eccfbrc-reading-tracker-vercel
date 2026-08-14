@@ -14,7 +14,11 @@ async function getSheetByTitle(title, headers = []) {
 export async function getQuizSettings() {
   const sheet = await getSheetByTitle("Quiz_Settings", ["Setting_Key", "Setting_Value"]);
   const rows = await sheet.getRows();
-  const settings = {};
+  const settings = {
+    Active_Round: "Round 1",
+    Time_Limit_Minutes: "15",
+    Is_Quiz_Live: "FALSE"
+  };
   rows.forEach((row) => {
     const key = row.get("Setting_Key");
     const val = row.get("Setting_Value");
@@ -235,6 +239,33 @@ export async function addQuizQuestion(q) {
   return id;
 }
 
+export async function updateQuizQuestion(id, q) {
+  const sheet = await getSheetByTitle("Quiz_Questions", [
+    "ID",
+    "Round",
+    "Question",
+    "Option_1",
+    "Option_2",
+    "Option_3",
+    "Option_4",
+    "Correct_Answer"
+  ]);
+  const rows = await sheet.getRows();
+  const targetRow = rows.find((row) => String(row.get("ID")).trim() === String(id).trim());
+  if (targetRow) {
+    if (q.round !== undefined) targetRow.set("Round", q.round);
+    if (q.question !== undefined) targetRow.set("Question", q.question);
+    if (q.option1 !== undefined) targetRow.set("Option_1", q.option1);
+    if (q.option2 !== undefined) targetRow.set("Option_2", q.option2);
+    if (q.option3 !== undefined) targetRow.set("Option_3", q.option3);
+    if (q.option4 !== undefined) targetRow.set("Option_4", q.option4);
+    if (q.correctAnswer !== undefined) targetRow.set("Correct_Answer", q.correctAnswer);
+    await targetRow.save();
+    return true;
+  }
+  return false;
+}
+
 export async function deleteQuizQuestion(id) {
   const sheet = await getSheetByTitle("Quiz_Questions", [
     "ID",
@@ -254,3 +285,4 @@ export async function deleteQuizQuestion(id) {
   }
   return false;
 }
+

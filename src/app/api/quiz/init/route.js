@@ -6,6 +6,24 @@ import {
   getQuestionsForRound 
 } from "@/lib/quizSheets";
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
+export async function GET() {
+  try {
+    const settings = await getQuizSettings();
+    const isLive = String(settings.Is_Quiz_Live).toUpperCase() === "TRUE";
+    return NextResponse.json({
+      isLive,
+      activeRound: settings.Active_Round || "Round 1",
+      timeLimitMinutes: settings.Time_Limit_Minutes || "15"
+    }, { status: 200 });
+  } catch (error) {
+    console.error("Quiz Status GET Error:", error);
+    return NextResponse.json({ isLive: false, error: "Failed to fetch status" }, { status: 500 });
+  }
+}
+
 export async function POST(req) {
   try {
     const { whatsapp, fullName } = await req.json();
@@ -14,11 +32,19 @@ export async function POST(req) {
       return NextResponse.json({ error: "Missing WhatsApp number or Full Name" }, { status: 400 });
     }
 
-    // 1. Normalize WhatsApp number: strip non-numeric characters and leading zeros
-    const normalizedWhatsApp = whatsapp.replace(/\D/g, "").replace(/^0+/, "");
-
-    // 2. Fetch active settings (round & duration limit)
+    // 1. Fetch active settings and check if live
     const settings = await getQuizSettings();
+    const isLive = String(settings.Is_Quiz_Live).toUpperCase() === "TRUE";
+
+    if (!isLive) {
+      return NextResponse.json(
+        { error: "The Bible Reading Quiz is not active yet. Coming soon!" },
+        { status: 403 }
+      );
+    }
+
+    // 2. Normalize WhatsApp number: strip non-numeric characters and leading zeros
+    const normalizedWhatsApp = whatsapp.replace(/\D/g, "").replace(/^0+/, "");
     const activeRound = settings.Active_Round || "Round 1";
     const timeLimitMinutes = parseInt(settings.Time_Limit_Minutes || "15", 10);
 
@@ -37,7 +63,6 @@ export async function POST(req) {
     // 5. Fetch questions and strip answers to prevent client payload inspection
     const rawQuestions = await getQuestionsForRound(activeRound);
     const securedQuestions = rawQuestions.map((q) => {
-      // Create a shallow copy without correctAnswer
       const { correctAnswer, ...clientQuestion } = q;
       return clientQuestion;
     });

@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, User, Phone, Users, Play, ShieldAlert, ArrowLeft } from "lucide-react";
+import { BookOpen, User, Phone, Users, Play, ShieldAlert, ArrowLeft, Clock, Sparkles } from "lucide-react";
 
 export default function QuizLandingPage() {
   const router = useRouter();
   
+  const [isLive, setIsLive] = useState(null); // null = loading, true = active, false = coming soon
+  const [activeRound, setActiveRound] = useState("Round 1");
   const [fullName, setFullName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [teams, setTeams] = useState([]);
@@ -22,7 +24,19 @@ export default function QuizLandingPage() {
       return;
     }
 
-    // Fetch valid teams list
+    // 1. Fetch Quiz Status (isLive & round)
+    fetch("/api/quiz/init")
+      .then((res) => res.json())
+      .then((data) => {
+        setIsLive(!!data.isLive);
+        if (data.activeRound) setActiveRound(data.activeRound);
+      })
+      .catch((err) => {
+        console.error("Failed to check quiz status:", err);
+        setIsLive(false);
+      });
+
+    // 2. Fetch valid teams list
     fetch("/api/data?type=valid_teams")
       .then((res) => res.json())
       .then((data) => {
@@ -63,13 +77,126 @@ export default function QuizLandingPage() {
       fullName: fullName.trim(),
       whatsapp: whatsapp.replace(/\D/g, "").replace(/^0+/, ""),
       team: selectedTeam,
-      round: "Active Round"
+      round: activeRound
     };
 
     localStorage.setItem("quiz_pending_start", JSON.stringify(pendingInfo));
     router.push("/quiz/take");
   };
 
+  // Loading State
+  if (isLive === null) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--background)',
+        color: 'var(--text-primary)',
+        fontFamily: 'var(--font-sans)'
+      }}>
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
+  // --- COMING SOON SCREEN ---
+  if (!isLive) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1.5rem 1rem',
+        background: 'radial-gradient(ellipse at top, #1e293b 0%, #0f172a 100%)',
+        color: 'var(--text-primary)',
+        fontFamily: 'var(--font-sans)'
+      }}>
+        <div style={{
+          maxWidth: '460px',
+          width: '100%',
+          backgroundColor: 'rgba(17, 24, 39, 0.8)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderRadius: '1.25rem',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.5)',
+          padding: '2.5rem 1.75rem',
+          textAlign: 'center'
+        }}>
+          {/* Animated Icon Halo */}
+          <div style={{
+            width: '72px',
+            height: '72px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(79, 70, 229, 0.2) 100%)',
+            border: '1.5px solid var(--accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1.25rem auto',
+            boxShadow: '0 0 25px rgba(37, 99, 235, 0.3)'
+          }}>
+            <Sparkles size={36} color="#3B82F6" />
+          </div>
+
+          {/* Badge */}
+          <span style={{
+            display: 'inline-block',
+            padding: '0.25rem 0.85rem',
+            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            color: '#FCD34D',
+            fontSize: '0.8rem',
+            fontWeight: '700',
+            borderRadius: '999px',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            marginBottom: '1rem'
+          }}>
+            Coming Soon
+          </span>
+
+          <h1 style={{ fontSize: '1.6rem', fontWeight: '800', margin: '0 0 0.5rem 0' }}>
+            Bible Reading Quiz
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6', margin: '0 0 2rem 0' }}>
+            The quiz challenge for <strong style={{ color: '#fff' }}>{activeRound}</strong> is currently being prepared and is not open for submissions yet.
+            Please stay tuned for announcements from your team leader!
+          </p>
+
+          <a
+            href="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              width: '100%',
+              padding: '0.85rem',
+              backgroundColor: 'var(--surface-secondary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '0.65rem',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              textDecoration: 'none',
+              transition: 'all 0.2s ease',
+              boxSizing: 'border-box'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; }}
+          >
+            <ArrowLeft size={16} /> Return to Reading Tracker
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // --- LIVE QUIZ REGISTRATION SCREEN ---
   return (
     <div style={{
       minHeight: '100vh',
@@ -114,7 +241,7 @@ export default function QuizLandingPage() {
             Bible Challenge Quiz
           </h1>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.4rem', fontSize: '0.92rem' }}>
-            Test your memory on the latest reading rounds
+            {activeRound} • Test your memory & reading knowledge
           </p>
         </div>
 
@@ -128,7 +255,6 @@ export default function QuizLandingPage() {
             </label>
             <input
               type="text"
-              className="input-field"
               placeholder="e.g. Smith John"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
@@ -155,7 +281,6 @@ export default function QuizLandingPage() {
             </label>
             <input
               type="tel"
-              className="input-field"
               placeholder="e.g. 2348012345678"
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
@@ -173,7 +298,7 @@ export default function QuizLandingPage() {
               }}
             />
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
-              Used to prevent duplicate entries and record your round score.
+              Used to record your round submission once.
             </span>
           </div>
 
