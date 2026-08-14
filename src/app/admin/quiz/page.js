@@ -26,7 +26,11 @@ import {
   Sparkles,
   HelpCircle,
   Clock,
-  ListOrdered
+  ListOrdered,
+  Key,
+  BookOpen,
+  RefreshCw,
+  Sliders
 } from "lucide-react";
 import { parseQuizQuestions } from "@/lib/quizParser";
 
@@ -36,7 +40,7 @@ export default function AdminQuizPage() {
   const [authError, setAuthError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Workspace Tabs: 'control' | 'builder' | 'bulk' | 'leaderboard'
+  // Workspace Tabs: 'control' | 'builder' | 'bulk' | 'ai' | 'leaderboard'
   const [activeTab, setActiveTab] = useState("control");
   
   // Data States
@@ -74,12 +78,25 @@ export default function AdminQuizPage() {
   const [bulkRound, setBulkRound] = useState("Round 1");
   const [parsedBulk, setParsedBulk] = useState({ questions: [], errors: [], totalDetected: 0 });
   const [bulkImporting, setBulkImporting] = useState(false);
-  const [showFormatGuide, setShowFormatGuide] = useState(false);
+
+  // AI Generator States
+  const [aiRound, setAiRound] = useState("Round 7");
+  const [aiScripture, setAiScripture] = useState("Colossians 3 - Hebrews 6");
+  const [aiCount, setAiCount] = useState(10);
+  const [aiDifficulty, setAiDifficulty] = useState("Balanced");
+  const [aiCustomInstructions, setAiCustomInstructions] = useState("");
+  const [aiApiKey, setAiApiKey] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiGeneratedQuestions, setAiGeneratedQuestions] = useState([]);
+  const [aiSaving, setAiSaving] = useState(false);
+  const [showApiKeySetting, setShowApiKeySetting] = useState(false);
 
   // 1. Check Authentication on Mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       setQuizUrl(`${window.location.origin}/quiz`);
+      const savedAiKey = sessionStorage.getItem("admin_gemini_api_key") || "";
+      if (savedAiKey) setAiApiKey(savedAiKey);
     }
 
     const savedPin = sessionStorage.getItem("admin_quiz_pin");
@@ -104,6 +121,7 @@ export default function AdminQuizPage() {
         setResults(data.results || []);
         setQuestionForm(prev => ({ ...prev, round: loadedSettings.Active_Round || "Round 1" }));
         setBulkRound(loadedSettings.Active_Round || "Round 1");
+        setAiRound(loadedSettings.Active_Round || "Round 7");
         sessionStorage.setItem("admin_quiz_pin", inputPin);
         setPin(inputPin);
         setIsAuthenticated(true);
@@ -183,7 +201,7 @@ export default function AdminQuizPage() {
     }
   };
 
-  // 3. Question Form (Add / Edit)
+  // 3. Single Question Form (Add / Edit)
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -196,7 +214,6 @@ export default function AdminQuizPage() {
 
     try {
       if (editingQuestionId) {
-        // UPDATE existing question
         const res = await fetch("/api/quiz/admin", {
           method: "POST",
           headers: {
@@ -218,7 +235,6 @@ export default function AdminQuizPage() {
           alert("Failed to update question.");
         }
       } else {
-        // ADD new question
         const res = await fetch("/api/quiz/admin", {
           method: "POST",
           headers: {
@@ -360,6 +376,104 @@ export default function AdminQuizPage() {
     }
   };
 
+  // 5. AI Question Generator Handlers
+  const handleTriggerAIGenerate = async (e) => {
+    if (e) e.preventDefault();
+    if (!aiScripture.trim()) {
+      alert("Please specify the scripture range (e.g. Colossians 3 - Hebrews 6)");
+      return;
+    }
+
+    setAiGenerating(true);
+    setAiGeneratedQuestions([]);
+
+    try {
+      const res = await fetch("/api/quiz/ai-generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": pin
+        },
+        body: JSON.stringify({
+          round: aiRound,
+          scripture: aiScripture,
+          questionCount: aiCount,
+          difficulty: aiDifficulty,
+          customInstructions: aiCustomInstructions,
+          apiKey: aiApiKey
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate questions with AI.");
+      }
+
+      setAiGeneratedQuestions(data.questions || []);
+      showToast(`✨ Generated ${data.questions.length} questions from ${aiScripture}!`);
+      
+      if (aiApiKey) {
+        sessionStorage.setItem("admin_gemini_api_key", aiApiKey);
+      }
+    } catch (err) {
+      alert(err.message || "AI Generation error. Please check your internet or Gemini API key.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const handleUpdateAIQuestionField = (idx, field, value) => {
+    setAiGeneratedQuestions(prev => prev.map((q, i) => {
+      if (i === idx) {
+        return { ...q, [field]: value };
+      }
+      return q;
+    }));
+  };
+
+  const handleSelectAICorrectAnswer = (idx, answerText) => {
+    setAiGeneratedQuestions(prev => prev.map((q, i) => {
+      if (i === idx) {
+        return { ...q, correctAnswer: answerText };
+      }
+      return q;
+    }));
+  };
+
+  const handleRemoveAIQuestion = (idx) => {
+    setAiGeneratedQuestions(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSaveAIGeneratedToBank = async () => {
+    if (aiGeneratedQuestions.length === 0) return;
+    setAiSaving(true);
+    try {
+      const res = await fetch("/api/quiz/admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": pin
+        },
+        body: JSON.stringify({
+          action: "bulkAddQuestions",
+          questions: aiGeneratedQuestions
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save AI questions to bank.");
+
+      showToast(`Saved ${data.count} AI generated questions to ${aiRound}!`);
+      setAiGeneratedQuestions([]);
+      fetchWorkspaceData();
+      setActiveTab("builder");
+    } catch (e) {
+      alert(e.message || "Failed to save questions to database.");
+    } finally {
+      setAiSaving(false);
+    }
+  };
+
   const sampleQABlock = `1. Who led the children of Israel across the Red Sea?
 A. Aaron
 B. Moses
@@ -383,7 +497,7 @@ D. Andrew`;
   const sampleTableBlock = `Who was the first king of Israel?\tDavid\tSaul\tSolomon\tSamuel\tSaul
 Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
-  // 5. Copy Link Handler
+  // 6. Copy Link Handler
   const handleCopyLink = () => {
     if (typeof window !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(quizUrl);
@@ -639,6 +753,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
             { id: 'control', label: 'Control Center', icon: Settings },
             { id: 'builder', label: editingQuestionId ? 'Editing Question' : 'Question Builder', icon: editingQuestionId ? Pencil : PlusCircle },
             { id: 'bulk', label: 'Bulk Import', icon: Upload },
+            { id: 'ai', label: '✨ AI Generator', icon: Sparkles },
             { id: 'leaderboard', label: 'Live Leaderboard', icon: Trophy }
           ].map(tab => {
             const Icon = tab.icon;
@@ -663,7 +778,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   whiteSpace: 'nowrap'
                 }}
               >
-                <Icon size={17} style={{ color: isActive ? 'var(--accent)' : 'inherit' }} />
+                <Icon size={17} style={{ color: isActive ? (tab.id === 'ai' ? '#F59E0B' : 'var(--accent)') : 'inherit' }} />
                 {tab.label}
               </button>
             );
@@ -1125,7 +1240,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Filter size={15} style={{ color: 'var(--text-secondary)' }} />
                   
-                  {/* Nicely Spaced Dropdown */}
+                  {/* Clean Dropdown with Separated Chevron */}
                   <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                     <select
                       value={selectedRoundFilter}
@@ -1531,7 +1646,501 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
           </div>
         )}
 
-        {/* TAB 4: LIVE LEADERBOARD */}
+        {/* TAB 4: ✨ AI QUESTION GENERATOR */}
+        {activeTab === 'ai' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '880px' }}>
+            
+            {/* AI Generator Settings Card */}
+            <div style={{
+              backgroundColor: 'var(--surface)',
+              borderRadius: '1rem',
+              border: '1.5px solid rgba(245, 158, 11, 0.3)',
+              padding: '1.75rem',
+              boxShadow: '0 12px 35px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              
+              {/* Decorative Glow */}
+              <div style={{
+                position: 'absolute',
+                top: '-40px',
+                right: '-40px',
+                width: '120px',
+                height: '120px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, transparent 70%)',
+                pointerEvents: 'none'
+              }}></div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.35)'
+                  }}>
+                    <Sparkles size={22} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', margin: 0 }}>AI Scripture Question Generator</h3>
+                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      Automatically generate biblically accurate multiple-choice questions for any reading passage.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowApiKeySetting(!showApiKeySetting)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.4rem 0.75rem',
+                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '0.5rem',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Key size={13} /> {showApiKeySetting ? "Hide API Key" : "Gemini API Key"}
+                </button>
+              </div>
+
+              {/* Optional Gemini API Key Box */}
+              {showApiKeySetting && (
+                <div style={{
+                  backgroundColor: 'var(--surface-secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '0.75rem',
+                  padding: '1rem',
+                  marginBottom: '1.25rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <label style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                      Google Gemini API Key (Optional Override)
+                    </label>
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '0.75rem', color: 'var(--accent-hover)', textDecoration: 'none' }}
+                    >
+                      Get Free Key at Google AI Studio ↗
+                    </a>
+                  </div>
+                  <input
+                    type="password"
+                    value={aiApiKey}
+                    onChange={(e) => setAiApiKey(e.target.value)}
+                    placeholder="AIzaSy... (Leave empty to use server default GEMINI_API_KEY)"
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.85rem',
+                      backgroundColor: 'var(--surface)',
+                      border: '1px solid var(--border-light)',
+                      borderRadius: '0.5rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.88rem',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              )}
+
+              <form onSubmit={handleTriggerAIGenerate} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                  
+                  {/* Round Tag */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+                      Target Round Tag
+                    </label>
+                    <input
+                      type="text"
+                      value={aiRound}
+                      onChange={(e) => setAiRound(e.target.value)}
+                      placeholder="e.g. Round 7"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 0.9rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.92rem',
+                        fontWeight: '600',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  {/* Question Count */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+                      Number of Questions
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      {[5, 10, 15, 20].map(cnt => (
+                        <button
+                          key={cnt}
+                          type="button"
+                          onClick={() => setAiCount(cnt)}
+                          style={{
+                            flex: 1,
+                            padding: '0.75rem 0.4rem',
+                            backgroundColor: aiCount === cnt ? 'var(--accent)' : 'var(--surface-secondary)',
+                            color: aiCount === cnt ? '#fff' : 'var(--text-secondary)',
+                            border: `1px solid ${aiCount === cnt ? 'var(--accent)' : 'var(--border)'}`,
+                            borderRadius: '0.5rem',
+                            fontSize: '0.9rem',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {cnt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Scripture Passage Range */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+                    Scripture / Reading Plan Range
+                  </label>
+                  <input
+                    type="text"
+                    value={aiScripture}
+                    onChange={(e) => setAiScripture(e.target.value)}
+                    placeholder="e.g. Colossians 3 - Hebrews 6"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.8rem 1rem',
+                      backgroundColor: 'var(--surface-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.5rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.95rem',
+                      fontWeight: '600',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Examples:</span>
+                    {["Colossians 3 - Hebrews 6", "Matthew 1 - 7", "Genesis 1 - 12", "Romans 1 - 8"].map(ex => (
+                      <button
+                        key={ex}
+                        type="button"
+                        onClick={() => setAiScripture(ex)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          color: 'var(--accent-hover)',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        {ex}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Difficulty & Custom Instructions */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                      Question Difficulty
+                    </label>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <select
+                        value={aiDifficulty}
+                        onChange={(e) => setAiDifficulty(e.target.value)}
+                        style={{
+                          width: '100%',
+                          appearance: 'none',
+                          WebkitAppearance: 'none',
+                          MozAppearance: 'none',
+                          padding: '0.75rem 2.25rem 0.75rem 0.9rem',
+                          backgroundColor: 'var(--surface-secondary)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '0.5rem',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.88rem',
+                          outline: 'none',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="Balanced">Balanced (Standard Challenge)</option>
+                        <option value="Easy">Foundational / Key Facts</option>
+                        <option value="Challenging">In-depth / Chapter Details</option>
+                      </select>
+                      <ChevronDown size={15} style={{ position: 'absolute', right: '0.85rem', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                      Extra Instructions (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={aiCustomInstructions}
+                      onChange={(e) => setAiCustomInstructions(e.target.value)}
+                      placeholder="e.g. Focus on memory verses and faith"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 0.9rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.88rem',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={aiGenerating}
+                  style={{
+                    width: '100%',
+                    padding: '0.95rem',
+                    background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '0.65rem',
+                    fontSize: '1rem',
+                    fontWeight: '800',
+                    cursor: aiGenerating ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 8px 25px rgba(245, 158, 11, 0.35)',
+                    marginTop: '0.5rem',
+                    opacity: aiGenerating ? 0.7 : 1
+                  }}
+                >
+                  <Sparkles size={18} />
+                  <span>{aiGenerating ? `Generating ${aiCount} Questions from Scripture...` : `✨ Generate ${aiCount} Questions with AI`}</span>
+                </button>
+
+              </form>
+            </div>
+
+            {/* Generated Questions Review Grid */}
+            {aiGeneratedQuestions.length > 0 && (
+              <div style={{
+                backgroundColor: 'var(--surface)',
+                borderRadius: '1rem',
+                border: '1px solid var(--border)',
+                padding: '1.5rem',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
+              }}>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Check size={20} color="#10B981" /> Generated Questions ({aiGeneratedQuestions.length})
+                    </h3>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                      Review, edit wording or options before saving to your Google Sheets database.
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      disabled={aiSaving}
+                      onClick={handleSaveAIGeneratedToBank}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.65rem 1.25rem',
+                        backgroundColor: 'var(--success)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.92rem',
+                        fontWeight: '700',
+                        cursor: aiSaving ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)'
+                      }}
+                    >
+                      <Save size={16} />
+                      <span>{aiSaving ? "Saving to Database..." : `Save All (${aiGeneratedQuestions.length}) to Question Bank`}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setAiGeneratedQuestions([])}
+                      style={{
+                        padding: '0.65rem 0.85rem',
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Discard
+                    </button>
+                  </div>
+                </div>
+
+                {/* Editable Question Cards */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '650px', overflowY: 'auto', paddingRight: '0.35rem' }}>
+                  {aiGeneratedQuestions.map((q, idx) => (
+                    <div 
+                      key={idx}
+                      style={{
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: '0.75rem',
+                        padding: '1.25rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 800, backgroundColor: 'var(--accent-light)', color: 'var(--accent-hover)', padding: '0.2rem 0.55rem', borderRadius: '0.35rem' }}>
+                          Question {idx + 1} • {q.round}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAIQuestion(idx)}
+                          title="Remove this question"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#F87171',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      {/* Question Prompt Editor */}
+                      <textarea
+                        rows={2}
+                        value={q.question}
+                        onChange={(e) => handleUpdateAIQuestionField(idx, 'question', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.65rem 0.85rem',
+                          backgroundColor: 'var(--surface)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '0.5rem',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.92rem',
+                          fontWeight: '600',
+                          marginBottom: '0.75rem',
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                          resize: 'vertical'
+                        }}
+                      />
+
+                      {/* 4 Options & Correct Answer Selector */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.5rem' }}>
+                        {[
+                          { key: 'option1', label: 'A' },
+                          { key: 'option2', label: 'B' },
+                          { key: 'option3', label: 'C' },
+                          { key: 'option4', label: 'D' }
+                        ].map((opt) => {
+                          const isCorrect = q.correctAnswer === q[opt.key] && q[opt.key] !== "";
+
+                          return (
+                            <div 
+                              key={opt.key}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                backgroundColor: isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface)',
+                                border: `1px solid ${isCorrect ? 'var(--success)' : 'var(--border-light)'}`,
+                                borderRadius: '0.45rem',
+                                padding: '0.35rem 0.65rem'
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name={`correct_ai_${idx}`}
+                                checked={isCorrect}
+                                onChange={() => handleSelectAICorrectAnswer(idx, q[opt.key])}
+                                style={{ cursor: 'pointer', transform: 'scale(1.1)' }}
+                                title="Set as correct answer"
+                              />
+                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{opt.label}.</span>
+                              <input
+                                type="text"
+                                value={q[opt.key]}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  handleUpdateAIQuestionField(idx, opt.key, val);
+                                  if (isCorrect) {
+                                    handleSelectAICorrectAnswer(idx, val);
+                                  }
+                                }}
+                                style={{
+                                  flex: 1,
+                                  backgroundColor: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text-primary)',
+                                  fontSize: '0.85rem',
+                                  outline: 'none'
+                                }}
+                              />
+                              {isCorrect && (
+                                <span style={{ fontSize: '0.72rem', color: 'var(--success)', fontWeight: 800 }}>✓</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* TAB 5: LIVE LEADERBOARD */}
         {activeTab === 'leaderboard' && (
           <div style={{
             backgroundColor: 'var(--surface)',
