@@ -15,6 +15,18 @@ async function verifyAdminAuth(request) {
   }
 }
 
+// Current available Gemini models with automatic fallback
+const CANDIDATE_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-3.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-3.1-pro",
+  "gemini-2.5-pro",
+  "gemini-flash-latest",
+  "gemini-pro-latest"
+];
+
 export async function POST(request) {
   try {
     if (!(await verifyAdminAuth(request))) {
@@ -46,9 +58,6 @@ export async function POST(request) {
     }
 
     const genAI = new GoogleGenerativeAI(activeApiKey);
-    
-    // Try gemini-1.5-flash first, fallback to gemini-1.5-pro or gemini-2.0-flash
-    let modelName = "gemini-1.5-flash";
     const count = Math.max(1, Math.min(parseInt(questionCount, 10) || 10, 30));
 
     const prompt = `You are a biblical scholar and Christian educator creating high-quality, biblically accurate multiple-choice quiz questions for the ECCF Bible Reading Challenge.
@@ -80,23 +89,48 @@ JSON Schema format:
 ]`;
 
     let generatedText = "";
-    try {
-      const model = genAI.getGenerativeModel({ 
-        model: modelName,
-        generationConfig: {
-          temperature: 0.2,
-          topP: 0.8,
-          responseMimeType: "application/json"
+    let lastError = null;
+    let successfulModel = "";
+
+    // Iterate through active candidate models until one succeeds
+    for (const modelName of CANDIDATE_MODELS) {
+      try {
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          generationConfig: {
+            temperature: 0.2,
+            topP: 0.8,
+            responseMimeType: "application/json"
+          }
+        });
+        const result = await model.generateContent(prompt);
+        generatedText = result.response.text();
+        if (generatedText && generatedText.trim().length > 0) {
+          successfulModel = modelName;
+          break;
         }
-      });
-      const result = await model.generateContent(prompt);
-      generatedText = result.response.text();
-    } catch (modelError) {
-      console.warn(`Primary model ${modelName} failed, attempting fallback:`, modelError.message);
-      // Fallback without responseMimeType if older model or alternative
-      const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-      const result = await fallbackModel.generateContent(prompt);
-      generatedText = result.response.text();
+      } catch (err) {
+        lastError = err;
+        console.warn(`Attempt with ${modelName} (with JSON mimeType) failed:`, err.message);
+
+        // Retry without responseMimeType if older/restricted model
+        try {
+          const fallbackModel = genAI.getGenerativeModel({ model: modelName });
+          const result = await fallbackModel.generateContent(prompt);
+          generatedText = result.response.text();
+          if (generatedText && generatedText.trim().length > 0) {
+            successfulModel = modelName;
+            break;
+          }
+        } catch (innerErr) {
+          lastError = innerErr;
+          console.warn(`Attempt with ${modelName} fallback failed:`, innerErr.message);
+        }
+      }
+    }
+
+    if (!generatedText) {
+      throw new Error(lastError?.message || "All available Gemini models failed to generate content. Please check your API key or try again.");
     }
 
     // Clean JSON response (strip ```json ... ``` code blocks if present)
@@ -151,6 +185,7 @@ JSON Schema format:
       success: true,
       round,
       scripture,
+      modelUsed: successfulModel,
       count: formattedQuestions.length,
       questions: formattedQuestions
     });
