@@ -132,20 +132,29 @@ export default function QuizLandingPage() {
           padding: '2.5rem 1.75rem',
           textAlign: 'center'
         }}>
-          {/* Animated Icon Halo */}
+          {/* Logo */}
           <div style={{
-            width: '72px',
-            height: '72px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(79, 70, 229, 0.2) 100%)',
-            border: '1.5px solid var(--accent)',
+            width: '80px',
+            height: '80px',
+            borderRadius: '18px',
+            backgroundColor: '#000',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto 1.25rem auto',
-            boxShadow: '0 0 25px rgba(37, 99, 235, 0.3)'
+            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.4)',
+            padding: '8px'
           }}>
-            <Sparkles size={36} color="#3B82F6" />
+            <img 
+              src="/eccfbrclogo.png" 
+              alt="ECCF Logo" 
+              style={{ 
+                maxWidth: '64px', 
+                maxHeight: '64px', 
+                objectFit: 'contain' 
+              }} 
+            />
           </div>
 
           {/* Badge */}
@@ -230,18 +239,27 @@ export default function QuizLandingPage() {
         {/* Logo & Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{
-            width: '64px',
-            height: '64px',
+            width: '76px',
+            height: '76px',
             borderRadius: '16px',
-            background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+            backgroundColor: '#000',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto 1.25rem auto',
-            boxShadow: '0 8px 25px rgba(37, 99, 235, 0.4)',
-            border: '1px solid rgba(255, 255, 255, 0.2)'
+            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            padding: '8px'
           }}>
-            <BookOpen size={32} color="#ffffff" />
+            <img 
+              src="/eccfbrclogo.png" 
+              alt="ECCF Logo" 
+              style={{ 
+                maxWidth: '60px', 
+                maxHeight: '60px', 
+                objectFit: 'contain' 
+              }} 
+            />
           </div>
           <h1 style={{ fontSize: '1.65rem', fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>
             Bible Challenge Quiz
