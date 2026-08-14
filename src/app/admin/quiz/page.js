@@ -403,6 +403,56 @@ export default function AdminQuizPage() {
     });
   };
 
+  const handleDeleteSubmission = (sub) => {
+    const candidateName = sub.fullName || "this candidate";
+    const subRound = sub.round || "this round";
+
+    showConfirm({
+      title: "Reset Submission & Allow Retake?",
+      message: `Are you sure you want to delete the ${subRound} submission for ${candidateName}? This will permanently remove their score from the leaderboard and reset their active session so they can retake the quiz immediately.`,
+      type: "danger",
+      confirmText: "Yes, Reset & Allow Retake",
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/quiz/admin", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": pin
+            },
+            body: JSON.stringify({
+              action: "deleteSubmission",
+              whatsApp: sub.whatsapp,
+              round: sub.round,
+              timestamp: sub.timestamp
+            })
+          });
+
+          if (res.ok) {
+            showToast(`Submission reset! ${candidateName} can now retake ${subRound}.`);
+            setResults(prev => prev.filter(r => !(
+              r.whatsapp === sub.whatsapp && 
+              r.round === sub.round && 
+              (sub.timestamp ? r.timestamp === sub.timestamp : true)
+            )));
+          } else {
+            showAlert({
+              title: "Delete Failed",
+              message: "Failed to delete submission from database.",
+              type: "danger"
+            });
+          }
+        } catch (err) {
+          showAlert({
+            title: "Network Error",
+            message: "Error deleting submission. Please check your connection.",
+            type: "danger"
+          });
+        }
+      }
+    });
+  };
+
   // 4. Bulk Importer Handlers
   const handleBulkTextChange = (text) => {
     setBulkText(text);
@@ -2616,12 +2666,13 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     <th style={{ padding: '0.65rem 0.75rem' }}>Round</th>
                     <th style={{ padding: '0.65rem 0.75rem', textAlign: 'center' }}>Score</th>
                     <th style={{ padding: '0.65rem 0.75rem' }}>Submitted</th>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sortedResults.length === 0 ? (
                     <tr>
-                      <td colSpan={7} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                      <td colSpan={8} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                         No quiz submissions recorded yet for the selected filters.
                       </td>
                     </tr>
@@ -2684,6 +2735,32 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                             hour: '2-digit',
                             minute: '2-digit'
                           }) : 'N/A'}
+                        </td>
+                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSubmission(r)}
+                            title={`Delete submission and allow ${r.fullName || 'candidate'} to retake`}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              padding: '0.35rem 0.65rem',
+                              backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                              color: '#F87171',
+                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              borderRadius: '0.4rem',
+                              fontSize: '0.78rem',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.12)'; }}
+                          >
+                            <Trash2 size={13} />
+                            <span>Reset / Retake</span>
+                          </button>
                         </td>
                       </tr>
                     ))

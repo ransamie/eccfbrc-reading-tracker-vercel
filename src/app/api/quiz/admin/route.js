@@ -7,7 +7,8 @@ import {
   addQuizQuestion, 
   bulkAddQuizQuestions,
   updateQuizQuestion,
-  deleteQuizQuestion 
+  deleteQuizQuestion,
+  deleteQuizSubmission 
 } from "@/lib/quizSheets";
 import { fetchGlobalData } from "@/lib/googleSheets";
 
@@ -126,6 +127,15 @@ export async function POST(request) {
       } else {
         return NextResponse.json({ error: "Question not found" }, { status: 404 });
       }
+    }
+
+    if (action === "deleteSubmission") {
+      const { whatsApp, round, timestamp } = body;
+      if (!whatsApp || !round) {
+        return NextResponse.json({ error: "Missing required parameters (whatsApp, round) to delete submission" }, { status: 400 });
+      }
+      await deleteQuizSubmission(whatsApp, round, timestamp);
+      return NextResponse.json({ success: true, message: "Submission and session deleted successfully. Candidate can now retake the quiz." });
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
