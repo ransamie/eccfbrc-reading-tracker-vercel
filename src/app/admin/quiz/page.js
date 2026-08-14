@@ -151,7 +151,7 @@ export default function AdminQuizPage() {
           option4: "",
           correctAnswer: ""
         });
-        alert("Question added to Google Sheets successfully!");
+        alert("Question added successfully!");
       } else {
         alert("Failed to add question.");
       }
@@ -163,7 +163,7 @@ export default function AdminQuizPage() {
   };
 
   const handleDeleteQuestion = async (id) => {
-    if (!confirm("Are you sure you want to delete this question from the database?")) return;
+    if (!confirm("Are you sure you want to delete this question?")) return;
     
     setLoading(true);
     try {
@@ -533,10 +533,10 @@ export default function AdminQuizPage() {
                 marginTop: '0.5rem'
               }}>
                 <div>
-                  {saveStatus === "saving" && <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Saving to Google Sheets...</span>}
+                  {saveStatus === "saving" && <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Saving settings...</span>}
                   {saveStatus === "success" && (
                     <span style={{ color: '#34D399', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Check size={16} /> Saved to Database
+                      <Check size={16} /> Settings Saved
                     </span>
                   )}
                   {saveStatus === "error" && <span style={{ color: '#F87171', fontSize: '0.85rem' }}>Failed to save settings</span>}
@@ -721,7 +721,7 @@ export default function AdminQuizPage() {
                     marginTop: '0.5rem'
                   }}
                 >
-                  <PlusCircle size={16} /> Add to Google Sheets
+                  <PlusCircle size={16} /> Add Question
                 </button>
               </form>
             </div>
