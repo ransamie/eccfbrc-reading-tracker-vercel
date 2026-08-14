@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Award, ChevronLeft, Check, X, BookOpen, Trophy, Download, Share2, ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
 
 export default function QuizResultPage() {
@@ -39,147 +40,236 @@ export default function QuizResultPage() {
     );
   }
 
-  const { score, totalQuestions, evaluatedAnswers, participant } = result;
-  const percentage = Math.round((score / totalQuestions) * 100);
+  const { score = 0, totalQuestions = 10, evaluatedAnswers = [], participant } = result;
+  const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
   const isHighPass = percentage >= 70;
 
-  const candidateName = participant?.fullName || result.fullName || "Candidate";
-  const rawTeam = participant?.team || result.team || "Divine";
-  const teamDisplay = rawTeam.toLowerCase().startsWith("team ") ? rawTeam : (rawTeam.toLowerCase() === "unassigned" ? "Team Unassigned" : `Team ${rawTeam}`);
+  // Resolve candidate details with comprehensive fallbacks
+  let candidateName = participant?.fullName || result.fullName;
+  if (!candidateName || candidateName.trim().toLowerCase() === "candidate" || candidateName.trim() === "") {
+    if (typeof window !== "undefined") {
+      const currentPart = sessionStorage.getItem("quiz_current_participant");
+      if (currentPart) {
+        try {
+          const parsed = JSON.parse(currentPart);
+          if (parsed.fullName) candidateName = parsed.fullName;
+        } catch (err) {}
+      }
+      if (!candidateName) {
+        candidateName = localStorage.getItem("quiz_saved_participant_name") || "ECCF Member";
+      }
+    }
+  }
+
+  let rawTeam = participant?.team || result.team;
+  if (!rawTeam || rawTeam.trim().toLowerCase() === "unassigned" || rawTeam.trim() === "") {
+    if (typeof window !== "undefined") {
+      rawTeam = localStorage.getItem("quiz_saved_participant_team") || "Divine";
+    }
+  }
+  const teamDisplay = rawTeam && rawTeam.toLowerCase().startsWith("team ") ? rawTeam : (rawTeam && rawTeam.toLowerCase() === "unassigned" ? "Team Unassigned" : `Team ${rawTeam || 'Divine'}`);
   const roundDisplay = participant?.round || result.round || "Round 7";
 
-  const handleDownloadScoreCard = () => {
+  const handleDownloadScoreCard = async () => {
     setIsGeneratingImg(true);
     try {
       const canvas = document.createElement("canvas");
-      canvas.width = 1080;
-      canvas.height = 1080;
+      // High-resolution square for crystal clear mobile and social display
+      canvas.width = 1200;
+      canvas.height = 1200;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // 1. Background Gradient
-      const bgGrad = ctx.createLinearGradient(0, 0, 1080, 1080);
-      bgGrad.addColorStop(0, "#0F172A");
-      bgGrad.addColorStop(0.5, "#172554");
-      bgGrad.addColorStop(1, "#090D16");
+      // --- 1. Background Gradient ---
+      const bgGrad = ctx.createLinearGradient(0, 0, 1200, 1200);
+      bgGrad.addColorStop(0, "#080C16");
+      bgGrad.addColorStop(0.4, "#0F172A");
+      bgGrad.addColorStop(1, "#090D18");
       ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, 1080, 1080);
+      ctx.fillRect(0, 0, 1200, 1200);
 
-      // Decorative Glows
-      const glow1 = ctx.createRadialGradient(200, 150, 20, 200, 150, 450);
-      glow1.addColorStop(0, "rgba(59, 130, 246, 0.25)");
-      glow1.addColorStop(1, "transparent");
-      ctx.fillStyle = glow1;
-      ctx.fillRect(0, 0, 1080, 1080);
+      // Ambient Corner Glows
+      const glowTop = ctx.createRadialGradient(600, 100, 20, 600, 100, 500);
+      glowTop.addColorStop(0, "rgba(37, 99, 235, 0.18)");
+      glowTop.addColorStop(1, "transparent");
+      ctx.fillStyle = glowTop;
+      ctx.fillRect(0, 0, 1200, 1200);
 
-      const glow2 = ctx.createRadialGradient(880, 900, 20, 880, 900, 450);
-      glow2.addColorStop(0, isHighPass ? "rgba(16, 185, 129, 0.25)" : "rgba(245, 158, 11, 0.25)");
-      glow2.addColorStop(1, "transparent");
-      ctx.fillStyle = glow2;
-      ctx.fillRect(0, 0, 1080, 1080);
+      const glowBottom = ctx.createRadialGradient(600, 950, 20, 600, 950, 450);
+      glowBottom.addColorStop(0, isHighPass ? "rgba(16, 185, 129, 0.18)" : "rgba(245, 158, 11, 0.15)");
+      glowBottom.addColorStop(1, "transparent");
+      ctx.fillStyle = glowBottom;
+      ctx.fillRect(0, 0, 1200, 1200);
 
-      // 2. Outer Card Frame
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-      ctx.lineWidth = 4;
+      // --- 2. Outer Luxury Card Frame ---
+      ctx.strokeStyle = "rgba(245, 158, 11, 0.3)";
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.roundRect(50, 50, 980, 980, 36);
+      ctx.roundRect(40, 40, 1120, 1120, 36);
       ctx.stroke();
 
-      // Inner Card Surface
-      ctx.fillStyle = "rgba(17, 24, 39, 0.85)";
+      // Inner Card Glass Surface
+      ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
       ctx.beginPath();
-      ctx.roundRect(70, 70, 940, 940, 30);
+      ctx.roundRect(55, 55, 1090, 1090, 28);
       ctx.fill();
       ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // 3. Header Branding
+      // --- 3. ECCF Logo ---
+      const logoImg = new window.Image();
+      logoImg.crossOrigin = "anonymous";
+      logoImg.src = "/eccfbrclogo.png";
+      await new Promise((resolve) => {
+        logoImg.onload = resolve;
+        logoImg.onerror = resolve;
+      });
+
+      if (logoImg.complete && logoImg.naturalWidth > 0) {
+        // Logo Background Circle
+        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.beginPath();
+        ctx.arc(600, 140, 52, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(600, 140, 46, 0, 2 * Math.PI);
+        ctx.clip();
+        ctx.drawImage(logoImg, 600 - 46, 140 - 46, 92, 92);
+        ctx.restore();
+      }
+
+      // --- 4. Header Branding ---
       ctx.textAlign = "center";
       ctx.fillStyle = "#F59E0B";
-      ctx.font = "bold 24px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-      ctx.fillText("ECCF BIBLE READING CHALLENGE", 540, 140);
+      ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.letterSpacing = "3px";
+      ctx.fillText("ECCF BIBLE READING CHALLENGE", 600, 225);
 
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "800 42px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-      ctx.fillText("Official Assessment Scorecard", 540, 195);
+      ctx.font = "800 36px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.letterSpacing = "0px";
+      ctx.fillText("Official Assessment Scorecard", 600, 275);
 
-      // 4. Pill Badges
+      // --- 5. Symmetrical Round & Team Badges ---
       // Round Pill
-      ctx.fillStyle = "rgba(59, 130, 246, 0.2)";
+      ctx.fillStyle = "rgba(37, 99, 235, 0.18)";
       ctx.beginPath();
-      ctx.roundRect(280, 230, 220, 44, 22);
+      ctx.roundRect(320, 305, 240, 42, 21);
       ctx.fill();
-      ctx.strokeStyle = "#3B82F6";
+      ctx.strokeStyle = "rgba(59, 130, 246, 0.5)";
       ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.fillStyle = "#93C5FD";
-      ctx.font = "bold 20px sans-serif";
-      ctx.fillText(roundDisplay, 390, 260);
+      ctx.font = "bold 18px sans-serif";
+      ctx.fillText(`📖 ${roundDisplay}`, 440, 332);
 
       // Team Pill
-      ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+      ctx.fillStyle = "rgba(16, 185, 129, 0.18)";
       ctx.beginPath();
-      ctx.roundRect(520, 230, 280, 44, 22);
+      ctx.roundRect(580, 305, 300, 42, 21);
       ctx.fill();
-      ctx.strokeStyle = "#10B981";
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.5)";
       ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.fillStyle = "#6EE7B7";
-      ctx.font = "bold 20px sans-serif";
-      ctx.fillText(teamDisplay, 660, 260);
+      ctx.font = "bold 18px sans-serif";
+      ctx.fillText(`🛡️ ${teamDisplay}`, 730, 332);
 
-      // 5. Candidate Name Card
-      ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+      // --- 6. Participant Nameplate Card ---
+      ctx.fillStyle = "rgba(30, 41, 59, 0.75)";
       ctx.beginPath();
-      ctx.roundRect(140, 310, 800, 100, 20);
+      ctx.roundRect(160, 375, 880, 105, 20);
       ctx.fill();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      ctx.fillStyle = "#9CA3AF";
-      ctx.font = "bold 16px sans-serif";
-      ctx.fillText("PARTICIPANT", 540, 345);
+      ctx.fillStyle = "#94A3B8";
+      ctx.font = "bold 14px sans-serif";
+      ctx.letterSpacing = "2px";
+      ctx.fillText("CERTIFIED PARTICIPANT", 600, 410);
 
       ctx.fillStyle = "#FFFFFF";
       ctx.font = "bold 34px sans-serif";
-      ctx.fillText(candidateName, 540, 388);
+      ctx.letterSpacing = "0px";
+      ctx.fillText(candidateName, 600, 455);
 
-      // 6. Central Score Ring Display
-      ctx.fillStyle = isHighPass ? "rgba(16, 185, 129, 0.15)" : "rgba(37, 99, 235, 0.15)";
+      // --- 7. Precision Gauge Score Ring ---
+      const centerX = 600;
+      const centerY = 650;
+      const radius = 115;
+
+      // Track ring background
       ctx.beginPath();
-      ctx.arc(540, 570, 130, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.strokeStyle = isHighPass ? "#10B981" : "#3B82F6";
-      ctx.lineWidth = 6;
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.lineWidth = 14;
       ctx.stroke();
 
-      // Score Text
-      ctx.fillStyle = isHighPass ? "#34D399" : "#60A5FA";
-      ctx.font = "900 96px sans-serif";
-      ctx.fillText(`${score}`, 505, 595);
-
-      ctx.fillStyle = "#9CA3AF";
-      ctx.font = "bold 44px sans-serif";
-      ctx.fillText(`/${totalQuestions}`, 605, 590);
-
-      ctx.fillStyle = isHighPass ? "#6EE7B7" : "#93C5FD";
-      ctx.font = "800 28px sans-serif";
-      ctx.fillText(`${percentage}% OVERALL ACCURACY`, 540, 740);
-
-      // 7. Integrity Badge
-      ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
+      // Active progress arc
+      const progressEndAngle = -Math.PI / 2 + (percentage / 100) * 2 * Math.PI;
       ctx.beginPath();
-      ctx.roundRect(240, 780, 600, 50, 25);
+      ctx.arc(centerX, centerY, radius, -Math.PI / 2, progressEndAngle);
+      const ringGrad = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+      if (isHighPass) {
+        ringGrad.addColorStop(0, "#10B981");
+        ringGrad.addColorStop(1, "#06B6D4");
+      } else {
+        ringGrad.addColorStop(0, "#3B82F6");
+        ringGrad.addColorStop(1, "#8B5CF6");
+      }
+      ctx.strokeStyle = ringGrad;
+      ctx.lineWidth = 14;
+      ctx.lineCap = "round";
+      ctx.stroke();
+
+      // Score Center Digits
+      ctx.fillStyle = isHighPass ? "#34D399" : "#60A5FA";
+      ctx.font = "900 84px sans-serif";
+      ctx.fillText(`${score}`, 565, 665);
+
+      ctx.fillStyle = "#94A3B8";
+      ctx.font = "bold 36px sans-serif";
+      ctx.fillText(`/${totalQuestions}`, 665, 660);
+
+      // Percentage label below gauge
+      ctx.fillStyle = isHighPass ? "#6EE7B7" : "#93C5FD";
+      ctx.font = "800 24px sans-serif";
+      ctx.letterSpacing = "1.5px";
+      ctx.fillText(`${percentage}% OVERALL ACCURACY`, 600, 810);
+
+      // Performance Badge
+      const perfTitle = percentage >= 90 ? "🏆 EXCEPTIONAL EXCELLENCE" : percentage >= 70 ? "✨ COMMENDED HIGH PASS" : percentage >= 50 ? "🌟 SUCCESSFUL COMPLETION" : "📖 SINCERE EFFORT";
+      ctx.fillStyle = isHighPass ? "rgba(16, 185, 129, 0.15)" : "rgba(59, 130, 246, 0.15)";
+      ctx.beginPath();
+      ctx.roundRect(400, 835, 400, 36, 18);
       ctx.fill();
-      ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
+      ctx.strokeStyle = isHighPass ? "rgba(16, 185, 129, 0.4)" : "rgba(59, 130, 246, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = isHighPass ? "#34D399" : "#93C5FD";
+      ctx.font = "bold 15px sans-serif";
+      ctx.fillText(perfTitle, 600, 859);
+
+      // --- 8. Christian Integrity Badge ---
+      ctx.fillStyle = "rgba(245, 158, 11, 0.12)";
+      ctx.beginPath();
+      ctx.roundRect(260, 900, 680, 52, 26);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(245, 158, 11, 0.35)";
       ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.fillStyle = "#FCD34D";
-      ctx.font = "bold 19px sans-serif";
-      ctx.fillText("🛡️ Christian Integrity Certified Assessment", 540, 812);
+      ctx.font = "bold 18px sans-serif";
+      ctx.fillText("🛡️ Christian Integrity Certified Assessment", 600, 933);
 
-      // 8. Footer Scripture & Date
+      // --- 9. Footer Scripture & Metadata ---
       const nowStr = new Date().toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'short',
@@ -188,13 +278,13 @@ export default function QuizResultPage() {
         minute: '2-digit'
       });
 
-      ctx.fillStyle = "#6B7280";
-      ctx.font = "italic 18px sans-serif";
-      ctx.fillText('"The Word of God is living and active." — Hebrews 4:12', 540, 890);
+      ctx.fillStyle = "#64748B";
+      ctx.font = "italic 17px sans-serif";
+      ctx.fillText('"The Word of God is living and active." — Hebrews 4:12', 600, 1000);
 
-      ctx.fillStyle = "#9CA3AF";
-      ctx.font = "600 16px sans-serif";
-      ctx.fillText(`Completed on ${nowStr} • ECCF Reading Tracker`, 540, 930);
+      ctx.fillStyle = "#94A3B8";
+      ctx.font = "600 15px sans-serif";
+      ctx.fillText(`Official Record Verified on ${nowStr} • ECCF Reading Tracker`, 600, 1040);
 
       // Trigger Instant Download
       const dataUrl = canvas.toDataURL("image/png");
@@ -237,61 +327,73 @@ export default function QuizResultPage() {
           position: 'relative',
           overflow: 'hidden'
         }}>
-          {/* Trophy Badge */}
+          
+          {/* ECCF Challenge Logo */}
           <div style={{
-            width: '80px',
-            height: '80px',
+            width: '88px',
+            height: '88px',
             borderRadius: '50%',
-            backgroundColor: isHighPass ? 'rgba(16, 185, 129, 0.15)' : 'var(--accent-light)',
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            border: '2px solid rgba(245, 158, 11, 0.4)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto 1.25rem auto',
-            border: `1.5px solid ${isHighPass ? 'var(--success)' : 'var(--accent)'}`
+            padding: '6px',
+            boxShadow: '0 0 25px rgba(245, 158, 11, 0.2)'
           }}>
-            <Trophy size={42} color={isHighPass ? "#10B981" : "#3B82F6"} />
+            <Image 
+              src="/eccfbrclogo.png" 
+              alt="ECCF Logo" 
+              width={76} 
+              height={76} 
+              style={{ objectFit: 'contain', borderRadius: '50%' }}
+              priority
+            />
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
             <span style={{
               backgroundColor: 'rgba(59, 130, 246, 0.15)',
               color: '#93C5FD',
-              padding: '0.2rem 0.6rem',
+              padding: '0.25rem 0.75rem',
               borderRadius: '9999px',
-              fontSize: '0.78rem',
-              fontWeight: '700'
+              fontSize: '0.82rem',
+              fontWeight: '700',
+              border: '1px solid rgba(59, 130, 246, 0.3)'
             }}>
-              {roundDisplay}
+              📖 {roundDisplay}
             </span>
             <span style={{
               backgroundColor: 'rgba(16, 185, 129, 0.15)',
               color: '#6EE7B7',
-              padding: '0.2rem 0.6rem',
+              padding: '0.25rem 0.75rem',
               borderRadius: '9999px',
-              fontSize: '0.78rem',
-              fontWeight: '700'
+              fontSize: '0.82rem',
+              fontWeight: '700',
+              border: '1px solid rgba(16, 185, 129, 0.3)'
             }}>
-              {teamDisplay}
+              🛡️ {teamDisplay}
             </span>
           </div>
 
           <h1 style={{ fontSize: '1.85rem', fontWeight: '800', margin: '0 0 0.4rem 0' }}>
             Quiz Completed!
           </h1>
-          <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.95rem' }}>
-            Candidate: <strong style={{ color: 'var(--text-primary)' }}>{candidateName}</strong>
+          <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '1.05rem' }}>
+            Candidate: <strong style={{ color: '#FFFFFF', fontWeight: '800' }}>{candidateName}</strong>
           </p>
 
           {/* Big Score Display */}
           <div style={{ margin: '2rem 0' }}>
             <div style={{
-              fontSize: '4rem',
+              fontSize: '4.25rem',
               fontWeight: '900',
               lineHeight: '1',
               color: isHighPass ? '#34D399' : 'var(--accent-hover)',
               letterSpacing: '-1px'
             }}>
-              {score} <span style={{ fontSize: '1.75rem', fontWeight: '500', color: 'var(--text-secondary)' }}>/ {totalQuestions}</span>
+              {score} <span style={{ fontSize: '1.85rem', fontWeight: '500', color: 'var(--text-secondary)' }}>/ {totalQuestions}</span>
             </div>
             <div style={{
               fontSize: '0.95rem',

@@ -190,8 +190,22 @@ export default function QuizTakePage() {
       
       const resultData = await res.json();
       
+      const mergedParticipant = {
+        fullName: participant.fullName || (typeof window !== "undefined" ? localStorage.getItem("quiz_saved_participant_name") : "") || "",
+        whatsapp: participant.whatsapp || (typeof window !== "undefined" ? localStorage.getItem("quiz_saved_whatsapp") : "") || "",
+        team: participant.team || (typeof window !== "undefined" ? localStorage.getItem("quiz_saved_participant_team") : "") || "",
+        round: participant.round || "Round 7",
+        ...(resultData.participant || {})
+      };
+
+      const finalResultData = {
+        ...resultData,
+        participant: mergedParticipant
+      };
+
       localStorage.removeItem("quiz_in_progress");
-      sessionStorage.setItem("quiz_result_data", JSON.stringify(resultData));
+      sessionStorage.setItem("quiz_result_data", JSON.stringify(finalResultData));
+      sessionStorage.setItem("quiz_current_participant", JSON.stringify(mergedParticipant));
       
       router.push("/quiz/result");
       

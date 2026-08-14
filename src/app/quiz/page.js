@@ -87,6 +87,10 @@ export default function QuizLandingPage() {
     };
 
     localStorage.setItem("quiz_pending_start", JSON.stringify(pendingInfo));
+    localStorage.setItem("quiz_saved_participant_name", fullName.trim());
+    localStorage.setItem("quiz_saved_participant_team", selectedTeam);
+    localStorage.setItem("quiz_saved_whatsapp", whatsapp.trim());
+    sessionStorage.setItem("quiz_current_participant", JSON.stringify(pendingInfo));
     router.push("/quiz/take");
   };
 
