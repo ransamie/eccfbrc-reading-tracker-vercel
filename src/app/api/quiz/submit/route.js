@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession, getQuestionsForRound, saveQuizResult } from "@/lib/quizSheets";
+import { fetchGlobalData } from "@/lib/googleSheets";
 
 export async function POST(req) {
   try {
@@ -52,11 +53,28 @@ export async function POST(req) {
       };
     });
 
-    // 3. Save to Google Sheets Database
+    // 3. Resolve Team Name (if missing or Unassigned, lookup candidate in members database)
+    let resolvedTeam = participant.team;
+    if (!resolvedTeam || resolvedTeam.toLowerCase() === "unassigned" || resolvedTeam.trim() === "") {
+      try {
+        const globalData = await fetchGlobalData();
+        const member = globalData.members?.find(m => 
+          (m.whatsapp && normalizedWhatsApp && m.whatsapp.replace(/\D/g, "").replace(/^0+/, "") === normalizedWhatsApp) ||
+          (m.name && participant.fullName && m.name.trim().toLowerCase() === participant.fullName.trim().toLowerCase())
+        );
+        if (member && member.team) {
+          resolvedTeam = member.team;
+        }
+      } catch (lookupErr) {
+        console.warn("Could not lookup member team:", lookupErr);
+      }
+    }
+
+    // 4. Save to Google Sheets Database
     const finalResult = {
       fullName: participant.fullName,
       whatsApp: normalizedWhatsApp,
-      team: participant.team || "Unassigned",
+      team: resolvedTeam || "Unassigned",
       round: participant.round,
       score,
       totalQuestions: questions.length,
@@ -66,12 +84,19 @@ export async function POST(req) {
 
     await saveQuizResult(finalResult);
 
-    // 4. Return result to client for the Result Screen
+    // 5. Return result to client for the Result Screen and PNG Scorecard
     return NextResponse.json({
       success: true,
       score,
       totalQuestions: questions.length,
-      evaluatedAnswers
+      evaluatedAnswers,
+      participant: {
+        fullName: participant.fullName,
+        whatsapp: normalizedWhatsApp,
+        team: resolvedTeam || "Unassigned",
+        round: participant.round
+      },
+      timestamp: finalResult.timestamp
     }, { status: 200 });
 
   } catch (error) {

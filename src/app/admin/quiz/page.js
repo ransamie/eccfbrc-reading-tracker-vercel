@@ -32,7 +32,8 @@ import {
   Sliders,
   AlertTriangle,
   CheckCircle2,
-  Info
+  Info,
+  Eye
 } from "lucide-react";
 import { parseQuizQuestions } from "@/lib/quizParser";
 
@@ -998,6 +999,31 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <a 
+              href={`/quiz/preview?round=${encodeURIComponent(settings.Active_Round || 'Round 1')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.45rem 0.85rem',
+                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                color: '#34D399',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                borderRadius: '0.5rem',
+                fontSize: '0.85rem',
+                fontWeight: '700',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 10px rgba(16, 185, 129, 0.2)'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.25)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.15)'; }}
+            >
+              <Eye size={15} /> Preview Quiz
+            </a>
+
+            <a 
               href="/"
               style={{
                 display: 'flex',
@@ -1043,8 +1069,18 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       {/* Main Container */}
       <main style={{ maxWidth: '1050px', margin: '1.5rem auto 0 auto', padding: '0 1rem' }}>
         
-        {/* Tab Buttons */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', marginBottom: '1.75rem', gap: '0.5rem', overflowX: 'auto' }}>
+        {/* Tab Buttons (Responsive, No Horizontal Scrollbar) */}
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(17, 24, 39, 0.6)',
+          border: '1px solid var(--border)',
+          padding: '0.4rem',
+          borderRadius: '0.75rem',
+          marginBottom: '2rem',
+          gap: '0.4rem'
+        }}>
           {[
             { id: 'control', label: 'Control Center', icon: Settings },
             { id: 'builder', label: editingQuestionId ? 'Editing Question' : 'Question Builder', icon: editingQuestionId ? Pencil : PlusCircle },
@@ -1061,20 +1097,24 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 style={{
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '0.45rem',
-                  padding: '0.75rem 1.1rem',
-                  background: 'none',
+                  padding: '0.65rem 1.1rem',
+                  backgroundColor: isActive ? 'var(--accent)' : 'transparent',
                   border: 'none',
-                  borderBottom: `3px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
+                  borderRadius: '0.5rem',
                   color: isActive ? '#fff' : 'var(--text-secondary)',
-                  fontSize: '0.92rem',
+                  fontSize: '0.88rem',
                   fontWeight: isActive ? '700' : '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
+                  boxShadow: isActive ? '0 4px 15px rgba(37, 99, 235, 0.35)' : 'none',
+                  flex: '1 1 auto',
+                  minWidth: '130px',
+                  textAlign: 'center'
                 }}
               >
-                <Icon size={17} style={{ color: isActive ? (tab.id === 'ai' ? '#F59E0B' : 'var(--accent)') : 'inherit' }} />
+                <Icon size={16} style={{ color: isActive ? (tab.id === 'ai' ? '#F59E0B' : '#fff') : 'inherit' }} />
                 {tab.label}
               </button>
             );
@@ -1083,7 +1123,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
         {/* TAB 1: CONTROL CENTER */}
         {activeTab === 'control' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '680px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '750px', margin: '0 auto' }}>
             
             {/* Shareable Link Card */}
             <div style={{
@@ -1124,27 +1164,55 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     fontFamily: 'monospace'
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.55rem 1rem',
-                    backgroundColor: copiedLink ? 'var(--success)' : 'var(--accent)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.85rem',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  {copiedLink ? <CheckCheck size={16} /> : <Copy size={16} />}
-                  <span>{copiedLink ? "Copied!" : "Copy Link"}</span>
-                </button>
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      padding: '0.55rem 1rem',
+                      backgroundColor: copiedLink ? 'var(--success)' : 'var(--accent)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.85rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {copiedLink ? <CheckCheck size={16} /> : <Copy size={16} />}
+                    <span>{copiedLink ? "Copied!" : "Copy Link"}</span>
+                  </button>
+
+                  <a
+                    href={`/quiz/preview?round=${encodeURIComponent(settings.Active_Round || 'Round 1')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      padding: '0.55rem 1rem',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      color: '#fff',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.85rem',
+                      fontWeight: '700',
+                      textDecoration: 'none',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; }}
+                  >
+                    <Eye size={15} />
+                    <span>Preview User View</span>
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -1309,7 +1377,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
         {/* TAB 2: QUESTION BUILDER (Single Edit / Create + Bank) */}
         {activeTab === 'builder' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'flex-start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'flex-start', maxWidth: '1050px', margin: '0 auto' }}>
             
             {/* Form Column */}
             <div style={{
@@ -1679,7 +1747,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
         {/* TAB 3: BULK IMPORTER */}
         {activeTab === 'bulk' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '820px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '850px', margin: '0 auto' }}>
             
             <div style={{
               backgroundColor: 'var(--surface)',
@@ -1938,7 +2006,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
         {/* TAB 4: ✨ AI QUESTION GENERATOR */}
         {activeTab === 'ai' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '880px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '880px', margin: '0 auto' }}>
             
             {/* AI Generator Settings Card */}
             <div style={{
@@ -2469,7 +2537,9 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
             borderRadius: '1rem',
             border: '1px solid var(--border)',
             padding: '1.5rem',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+            maxWidth: '1050px',
+            margin: '0 auto'
           }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -2573,9 +2643,26 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                           {r.whatsapp}
                         </td>
                         <td style={{ padding: '0.75rem' }}>
-                          <span style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent-hover)', padding: '0.2rem 0.5rem', borderRadius: '0.3rem', fontSize: '0.8rem', fontWeight: '700' }}>
-                            Team {r.team}
-                          </span>
+                          {(() => {
+                            const raw = String(r.team || '').trim();
+                            const displayTeam = !raw || raw.toLowerCase() === 'unassigned'
+                              ? 'Unassigned'
+                              : (raw.toLowerCase().startsWith('team ') ? raw : `Team ${raw}`);
+                            const isUnassigned = displayTeam === 'Unassigned';
+
+                            return (
+                              <span style={{
+                                backgroundColor: isUnassigned ? 'rgba(255, 255, 255, 0.08)' : 'var(--accent-light)',
+                                color: isUnassigned ? 'var(--text-secondary)' : 'var(--accent-hover)',
+                                padding: '0.2rem 0.55rem',
+                                borderRadius: '0.35rem',
+                                fontSize: '0.8rem',
+                                fontWeight: '700'
+                              }}>
+                                {displayTeam}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>
                           {r.round}

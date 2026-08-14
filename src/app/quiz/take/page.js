@@ -396,16 +396,17 @@ export default function QuizTakePage() {
       paddingBottom: '6rem'
     }}>
       
-      {/* Sticky HUD Bar */}
+      {/* Fixed / Sticky HUD Bar */}
       <header style={{
         position: 'sticky',
         top: 0,
-        zIndex: 50,
-        backgroundColor: isWarning ? 'rgba(127, 29, 29, 0.95)' : 'rgba(17, 24, 39, 0.92)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        zIndex: 100,
+        width: '100%',
+        backgroundColor: isWarning ? 'rgba(127, 29, 29, 0.98)' : 'rgba(17, 24, 39, 0.96)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         borderBottom: `1px solid ${isWarning ? '#EF4444' : 'var(--border)'}`,
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
         transition: 'background-color 0.3s ease, border-color 0.3s ease'
       }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0.85rem 1rem' }}>

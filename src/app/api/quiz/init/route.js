@@ -9,14 +9,27 @@ import {
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
-export async function GET() {
+export async function GET(req) {
   try {
+    const { searchParams } = new URL(req.url);
+    const targetRound = searchParams.get("round");
+    const isPreview = searchParams.get("preview") === "true";
+
     const settings = await getQuizSettings();
     const isLive = String(settings.Is_Quiz_Live).toUpperCase() === "TRUE";
+    const activeRound = targetRound || settings.Active_Round || "Round 1";
+    const timeLimitMinutes = settings.Time_Limit_Minutes || "15";
+
+    let questions = [];
+    if (isPreview || targetRound) {
+      questions = await getQuestionsForRound(activeRound);
+    }
+
     return NextResponse.json({
       isLive,
-      activeRound: settings.Active_Round || "Round 1",
-      timeLimitMinutes: settings.Time_Limit_Minutes || "15"
+      activeRound,
+      timeLimitMinutes,
+      questions
     }, { status: 200 });
   } catch (error) {
     console.error("Quiz Status GET Error:", error);
