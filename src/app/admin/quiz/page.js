@@ -489,7 +489,7 @@ export default function AdminQuizPage() {
       }
 
       setAiGeneratedQuestions(data.questions || []);
-      showToast(`✨ Generated ${data.questions.length} questions from ${aiScripture}!`);
+      showToast(`Generated ${data.questions.length} questions from ${aiScripture}!`);
       
       if (aiApiKey) {
         sessionStorage.setItem("admin_gemini_api_key", aiApiKey);
@@ -998,7 +998,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
             { id: 'control', label: 'Control Center', icon: Settings },
             { id: 'builder', label: editingQuestionId ? 'Editing Question' : 'Question Builder', icon: editingQuestionId ? Pencil : PlusCircle },
             { id: 'bulk', label: 'Bulk Import', icon: Upload },
-            { id: 'ai', label: '✨ AI Generator', icon: Sparkles },
+            { id: 'ai', label: 'AI Generator', icon: Sparkles },
             { id: 'leaderboard', label: 'Live Leaderboard', icon: Trophy }
           ].map(tab => {
             const Icon = tab.icon;
@@ -2181,7 +2181,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   }}
                 >
                   <Sparkles size={18} />
-                  <span>{aiGenerating ? `Generating ${aiCount} Questions from Scripture...` : `✨ Generate ${aiCount} Questions with AI`}</span>
+                  <span>{aiGenerating ? `Generating ${aiCount} Questions from Scripture...` : `Generate ${aiCount} Questions with AI`}</span>
                 </button>
 
               </form>
