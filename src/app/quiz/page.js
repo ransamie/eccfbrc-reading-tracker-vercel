@@ -177,35 +177,10 @@ export default function QuizLandingPage() {
           <h1 style={{ fontSize: '1.6rem', fontWeight: '800', margin: '0 0 0.5rem 0' }}>
             Bible Reading Quiz
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6', margin: '0 0 2rem 0' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6', margin: '0' }}>
             The quiz challenge for <strong style={{ color: '#fff' }}>{activeRound}</strong> is currently being prepared and is not open for submissions yet.
             Please stay tuned for announcements from your team leader!
           </p>
-
-          <a
-            href="/"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              width: '100%',
-              padding: '0.85rem',
-              backgroundColor: 'var(--surface-secondary)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-light)',
-              borderRadius: '0.65rem',
-              fontSize: '0.95rem',
-              fontWeight: '600',
-              textDecoration: 'none',
-              transition: 'all 0.2s ease',
-              boxSizing: 'border-box'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; }}
-          >
-            <ArrowLeft size={16} /> Return to Reading Tracker
-          </a>
         </div>
       </div>
     );
@@ -401,25 +376,6 @@ export default function QuizLandingPage() {
             {loading ? "Preparing Quiz..." : "Access Quiz"}
             {!loading && <Play size={18} />}
           </button>
-
-          <a
-            href="/"
-            style={{
-              textAlign: 'center',
-              color: 'var(--text-secondary)',
-              fontSize: '0.85rem',
-              textDecoration: 'none',
-              marginTop: '0.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.35rem'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
-          >
-            <ArrowLeft size={14} /> Return to Reading Tracker
-          </a>
 
         </form>
       </div>

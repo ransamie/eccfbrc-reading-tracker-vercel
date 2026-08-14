@@ -108,28 +108,21 @@ export default function QuizResultPage() {
             </div>
           </div>
 
-          <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem', display: 'flex', justifyContent: 'center' }}>
-            <button
-              onClick={() => router.push("/")}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                backgroundColor: 'var(--surface-secondary)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border)',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '0.6rem',
-                fontSize: '0.95rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
-            >
-              <ChevronLeft size={18} /> Return to Reading Tracker
-            </button>
+          <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem', display: 'flex', justifyContent: 'center' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+              color: '#34D399',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              padding: '0.65rem 1.25rem',
+              borderRadius: '0.6rem',
+              fontSize: '0.92rem',
+              fontWeight: '600'
+            }}>
+              <Check size={18} /> Submission Recorded Successfully
+            </div>
           </div>
         </div>
 
