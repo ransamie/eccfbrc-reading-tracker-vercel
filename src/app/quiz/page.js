@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, User, Phone, Users, Play, ShieldAlert } from "lucide-react";
+import { BookOpen, User, Phone, Users, Play, ShieldAlert, ArrowLeft } from "lucide-react";
 
 export default function QuizLandingPage() {
   const router = useRouter();
@@ -61,9 +61,9 @@ export default function QuizLandingPage() {
     // Save to pending start and navigate to taking screen
     const pendingInfo = {
       fullName: fullName.trim(),
-      whatsapp: whatsapp.replace(/\D/g, "").replace(/^0+/, ""), // Normalize numbers
+      whatsapp: whatsapp.replace(/\D/g, "").replace(/^0+/, ""),
       team: selectedTeam,
-      round: "Active Round" // Handled by /api/quiz/init
+      round: "Active Round"
     };
 
     localStorage.setItem("quiz_pending_start", JSON.stringify(pendingInfo));
@@ -71,70 +71,138 @@ export default function QuizLandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 flex items-center justify-center p-4 font-sans text-slate-100">
-      <div className="max-w-md w-full bg-slate-900/60 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/5 relative overflow-hidden">
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '2rem 1rem',
+      background: 'radial-gradient(ellipse at top, #1e293b 0%, #0f172a 100%)',
+      color: 'var(--text-primary)',
+      fontFamily: 'var(--font-sans)'
+    }}>
+      <div style={{
+        maxWidth: '480px',
+        width: '100%',
+        backgroundColor: 'rgba(17, 24, 39, 0.75)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderRadius: '1.25rem',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 25px 60px rgba(0, 0, 0, 0.5)',
+        padding: '2.5rem 2rem',
+        position: 'relative'
+      }}>
         
-        {/* Decorative elements */}
-        <div className="absolute -top-16 -right-16 w-32 h-32 bg-blue-500/10 rounded-full blur-xl"></div>
-        <div className="absolute -bottom-16 -left-16 w-32 h-32 bg-indigo-500/10 rounded-full blur-xl"></div>
-
-        <div className="text-center mb-8 relative z-10">
-          <div className="w-16 h-16 bg-blue-600/90 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
-            <BookOpen size={30} className="text-white" />
+        {/* Logo & Header */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1.25rem auto',
+            boxShadow: '0 8px 25px rgba(37, 99, 235, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            <BookOpen size={32} color="#ffffff" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Bible Challenge Quiz</h1>
-          <p className="text-slate-400 mt-2 text-sm">Test your memory on the latest reading rounds</p>
+          <h1 style={{ fontSize: '1.65rem', fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>
+            Bible Challenge Quiz
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.4rem', fontSize: '0.92rem' }}>
+            Test your memory on the latest reading rounds
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-              <User size={16} className="text-blue-500" />
+          {/* Full Name */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+              <User size={16} style={{ color: 'var(--accent)' }} />
               Full Name (Surname First)
             </label>
             <input
               type="text"
-              className="w-full px-4 py-3 rounded-xl bg-slate-800/80 border border-slate-700 focus:outline-none focus:border-blue-500 text-white placeholder-slate-500 transition-colors"
-              placeholder="e.g., Smith John"
+              className="input-field"
+              placeholder="e.g. Smith John"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
+              style={{
+                width: '100%',
+                padding: '0.85rem 1rem',
+                backgroundColor: 'var(--surface-secondary)',
+                border: '1px solid var(--border)',
+                borderRadius: '0.65rem',
+                color: 'var(--text-primary)',
+                fontSize: '0.98rem',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-              <Phone size={16} className="text-blue-500" />
+          {/* WhatsApp Number */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+              <Phone size={16} style={{ color: 'var(--accent)' }} />
               WhatsApp Number
             </label>
             <input
               type="tel"
-              className="w-full px-4 py-3 rounded-xl bg-slate-800/80 border border-slate-700 focus:outline-none focus:border-blue-500 text-white placeholder-slate-500 transition-colors"
-              placeholder="e.g., 2348012345678"
+              className="input-field"
+              placeholder="e.g. 2348012345678"
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
               required
+              style={{
+                width: '100%',
+                padding: '0.85rem 1rem',
+                backgroundColor: 'var(--surface-secondary)',
+                border: '1px solid var(--border)',
+                borderRadius: '0.65rem',
+                color: 'var(--text-primary)',
+                fontSize: '0.98rem',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
             />
-            <p className="text-[11px] text-slate-500 leading-normal">
-              Enter number with country code. Used to prevent duplicate entries and check eligibility.
-            </p>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
+              Used to prevent duplicate entries and record your round score.
+            </span>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-              <Users size={16} className="text-blue-500" />
+          {/* Team Dropdown */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+              <Users size={16} style={{ color: 'var(--accent)' }} />
               Select Your Team
             </label>
             <select
-              className="w-full px-4 py-3 rounded-xl bg-slate-800/80 border border-slate-700 focus:outline-none focus:border-blue-500 text-white transition-colors cursor-pointer"
               value={selectedTeam}
               onChange={(e) => setSelectedTeam(e.target.value)}
               required
+              style={{
+                width: '100%',
+                padding: '0.85rem 1rem',
+                backgroundColor: 'var(--surface-secondary)',
+                border: '1px solid var(--border)',
+                borderRadius: '0.65rem',
+                color: 'var(--text-primary)',
+                fontSize: '0.98rem',
+                outline: 'none',
+                cursor: 'pointer',
+                boxSizing: 'border-box'
+              }}
             >
               <option value="" disabled>Tap to select your assigned team...</option>
               {teams.map((t) => (
-                <option key={t} value={t} className="bg-slate-800 text-white">
+                <option key={t} value={t}>
                   Team {t}
                 </option>
               ))}
@@ -142,8 +210,18 @@ export default function QuizLandingPage() {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-red-400 bg-red-950/20 border border-red-500/20 p-3 rounded-xl text-xs">
-              <ShieldAlert size={16} />
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid var(--error)',
+              borderRadius: '0.6rem',
+              padding: '0.75rem 1rem',
+              color: '#F87171',
+              fontSize: '0.85rem'
+            }}>
+              <ShieldAlert size={16} style={{ flexShrink: 0 }} />
               <span>{error}</span>
             </div>
           )}
@@ -151,13 +229,50 @@ export default function QuizLandingPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30"
+            style={{
+              width: '100%',
+              padding: '0.95rem',
+              background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '0.65rem',
+              fontSize: '1.05rem',
+              fontWeight: '700',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 8px 20px rgba(37, 99, 235, 0.4)',
+              marginTop: '0.5rem',
+              transition: 'all 0.2s ease',
+              opacity: loading ? 0.7 : 1
+            }}
           >
             {loading ? "Preparing Quiz..." : "Access Quiz"}
-            {!loading && <Play size={16} />}
+            {!loading && <Play size={18} />}
           </button>
+
+          <a
+            href="/"
+            style={{
+              textAlign: 'center',
+              color: 'var(--text-secondary)',
+              fontSize: '0.85rem',
+              textDecoration: 'none',
+              marginTop: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.35rem'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
+          >
+            <ArrowLeft size={14} /> Return to Reading Tracker
+          </a>
+
         </form>
-        
       </div>
     </div>
   );

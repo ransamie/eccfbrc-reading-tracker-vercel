@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, AlertTriangle, ShieldCheck, CheckCircle2, ChevronRight, WifiOff, Users } from "lucide-react";
+import { Clock, AlertTriangle, ShieldCheck, CheckCircle2, ChevronRight, WifiOff, Users, ArrowLeft, HelpCircle } from "lucide-react";
 
 export default function QuizTakePage() {
   const router = useRouter();
@@ -34,20 +34,11 @@ export default function QuizTakePage() {
       const savedState = localStorage.getItem("quiz_in_progress");
       if (savedState) {
         const parsedState = JSON.parse(savedState);
-        
-        if (parsedState.deadline && Date.now() > parsedState.deadline) {
-          setHasStarted(true);
-          setQuestions(parsedState.questions || []);
-          setAnswers(parsedState.answers || {});
-          setParticipant(parsedState.participant || {});
-          setDeadline(parsedState.deadline);
-        } else if (parsedState.deadline) {
-          setHasStarted(true);
-          setQuestions(parsedState.questions || []);
-          setAnswers(parsedState.answers || {});
-          setParticipant(parsedState.participant || {});
-          setDeadline(parsedState.deadline);
-        }
+        setHasStarted(true);
+        setQuestions(parsedState.questions || []);
+        setAnswers(parsedState.answers || {});
+        setParticipant(parsedState.participant || {});
+        setDeadline(parsedState.deadline);
       } else {
         const pendingQuizInfo = localStorage.getItem("quiz_pending_start");
         if (pendingQuizInfo) {
@@ -84,7 +75,6 @@ export default function QuizTakePage() {
     }
   }, [answers, hasStarted, deadline, questions, participant]);
 
-
   // 3. Unstoppable Timer Logic
   const calculateTimeLeft = useCallback(() => {
     if (!deadline) return;
@@ -106,7 +96,7 @@ export default function QuizTakePage() {
 
   useEffect(() => {
     if (hasStarted && deadline && !timeExpired) {
-      calculateTimeLeft(); // Initial calculation
+      calculateTimeLeft();
       timerRef.current = setInterval(calculateTimeLeft, 1000);
     }
     return () => {
@@ -120,7 +110,6 @@ export default function QuizTakePage() {
       handleFinalSubmit();
     }
   }, [timeExpired, isSubmitting]);
-
 
   const startQuiz = async () => {
     setIsSubmitting(true);
@@ -142,9 +131,9 @@ export default function QuizTakePage() {
       
       const data = await res.json();
       
-      setQuestions(data.questions);
+      setQuestions(data.questions || []);
       setParticipant(p => ({ ...p, round: data.round }));
-      setDeadline(data.deadlineTimestamp); // Server absolute timestamp (ms)
+      setDeadline(data.deadlineTimestamp);
       setHasStarted(true);
       
       localStorage.removeItem("quiz_pending_start");
@@ -198,207 +187,509 @@ export default function QuizTakePage() {
     }
   };
 
-  // --- RENDER SCREENS ---
-
-  if (!hasStarted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4 font-sans text-slate-800">
-        <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
-          <div className="bg-blue-600 p-8 text-center text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 opacity-10">
-              <ShieldCheck size={120} className="transform translate-x-4 -translate-y-4" />
-            </div>
-            <h1 className="text-3xl font-bold mb-2 relative z-10">Integrity Check</h1>
-            <p className="text-blue-100 relative z-10">ECCF Bible Reading Challenge</p>
-          </div>
-          
-          <div className="p-8">
-            <div className="bg-amber-50 border-l-4 border-amber-500 p-6 rounded-r-lg mb-8 shadow-sm">
-              <div className="flex gap-4">
-                <AlertTriangle className="text-amber-500 flex-shrink-0 mt-1" size={28} />
-                <div>
-                  <h3 className="font-bold text-amber-900 text-lg mb-2">Christian Dignity & Truth</h3>
-                  <p className="text-amber-800 leading-relaxed">
-                    As children of God walking in truth and dignity, please complete this quiz sincerely 
-                    <strong className="font-bold"> without using Bibles, notes, or AI assistants.</strong>
-                  </p>
-                  <p className="text-amber-800 mt-2 font-medium">
-                    Let our honesty reflect His light!
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 mb-8 text-slate-600">
-              {participant.team && (
-                <div className="flex items-center gap-3 text-slate-800 font-semibold">
-                  <Users className="text-blue-500" size={20} />
-                  <span>Team: <span className="text-blue-600 font-bold">{participant.team}</span></span>
-                </div>
-              )}
-              <div className="flex items-center gap-3">
-                <Clock className="text-blue-500" size={20} />
-                <span>The timer will begin immediately and <strong className="text-slate-800">cannot be paused</strong>.</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <WifiOff className="text-blue-500" size={20} />
-                <span>Your answers save offline automatically if connection drops.</span>
-              </div>
-            </div>
-
-            <button 
-              onClick={startQuiz}
-              disabled={isSubmitting}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-200 disabled:opacity-70"
-            >
-              {isSubmitting ? "Connecting..." : "I Agree, Start Quiz"}
-              {!isSubmitting && <ChevronRight size={20} />}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const answeredCount = Object.keys(answers).length;
   const progressPercent = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
   
   const diff = deadline ? deadline - Date.now() : 0;
   const isWarning = diff > 0 && diff < 60000; 
 
+  // --- SCREEN 1: INTEGRITY CHECK GATE ---
+  if (!hasStarted) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1.5rem 1rem',
+        background: 'radial-gradient(ellipse at top, #1e293b 0%, #0f172a 100%)',
+        color: 'var(--text-primary)',
+        fontFamily: 'var(--font-sans)'
+      }}>
+        <div style={{
+          maxWidth: '560px',
+          width: '100%',
+          backgroundColor: 'rgba(17, 24, 39, 0.75)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderRadius: '1.25rem',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.5)',
+          overflow: 'hidden'
+        }}>
+          {/* Header Banner */}
+          <div style={{
+            background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%)',
+            padding: '2.25rem 2rem',
+            textAlign: 'center',
+            color: '#fff',
+            position: 'relative'
+          }}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem auto',
+              border: '1px solid rgba(255, 255, 255, 0.25)'
+            }}>
+              <ShieldCheck size={36} color="#ffffff" />
+            </div>
+            <h1 style={{ fontSize: '1.65rem', fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>
+              Christian Integrity Check
+            </h1>
+            <p style={{ margin: '0.4rem 0 0 0', opacity: 0.9, fontSize: '0.95rem' }}>
+              ECCF Bible Reading Challenge Tracker
+            </p>
+          </div>
+
+          <div style={{ padding: '2rem' }}>
+            {/* Disclaimer Callout Box */}
+            <div style={{
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: '0.85rem',
+              padding: '1.25rem',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              gap: '1rem',
+              alignItems: 'flex-start'
+            }}>
+              <AlertTriangle size={24} style={{ color: '#F59E0B', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <h4 style={{ margin: '0 0 0.4rem 0', color: '#FCD34D', fontSize: '1rem', fontWeight: '700' }}>
+                  Walk in Truth & Dignity
+                </h4>
+                <p style={{ margin: 0, color: '#E2E8F0', fontSize: '0.92rem', lineHeight: '1.55' }}>
+                  As children of God, please complete this quiz sincerely 
+                  <strong style={{ color: '#FCD34D', fontWeight: '700' }}> without using Bibles, notes, or AI assistants</strong>. 
+                  Let our honesty reflect His light!
+                </p>
+              </div>
+            </div>
+
+            {/* Participant info badge */}
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              background: 'var(--surface-secondary)',
+              padding: '1rem',
+              borderRadius: '0.75rem',
+              marginBottom: '1.5rem',
+              border: '1px solid var(--border-light)'
+            }}>
+              <div style={{ flex: '1 1 auto' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, display: 'block' }}>Candidate</span>
+                <span style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-primary)' }}>{participant.fullName || "Member"}</span>
+              </div>
+              {participant.team && (
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, display: 'block' }}>Team</span>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    background: 'var(--accent-light)',
+                    color: 'var(--accent-hover)',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '0.4rem',
+                    fontSize: '0.85rem',
+                    fontWeight: '700'
+                  }}>
+                    <Users size={13} /> {participant.team}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Rule points */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '2rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Clock size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                <span>The timer begins immediately and <strong style={{ color: 'var(--text-primary)' }}>cannot be paused</strong>.</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <WifiOff size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                <span>Answers save automatically if your mobile network drops.</span>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                onClick={startQuiz}
+                disabled={isSubmitting}
+                style={{
+                  width: '100%',
+                  padding: '0.95rem',
+                  background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '0.65rem',
+                  fontSize: '1.05rem',
+                  fontWeight: '700',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 8px 20px rgba(37, 99, 235, 0.4)',
+                  transition: 'all 0.2s ease',
+                  opacity: isSubmitting ? 0.7 : 1
+                }}
+              >
+                {isSubmitting ? "Connecting to Quiz..." : "I Agree, Start Quiz"}
+                {!isSubmitting && <ChevronRight size={20} />}
+              </button>
+
+              <button
+                onClick={() => router.push("/quiz")}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid transparent',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
+              >
+                ← Back to Details
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- SCREEN 2: ACTIVE QUIZ WORKSPACE ---
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24">
-      {/* Sticky HUD */}
-      <header className={`sticky top-0 z-50 transition-colors duration-300 ${isWarning ? 'bg-red-600' : 'bg-white'} shadow-md border-b ${isWarning ? 'border-red-700' : 'border-slate-200'}`}>
-        <div className="max-w-3xl mx-auto px-4 py-3">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className={`text-xs font-semibold uppercase tracking-wider ${isWarning ? 'text-red-200' : 'text-slate-500'}`}>
-                  {participant.round}
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: 'var(--background)',
+      color: 'var(--text-primary)',
+      fontFamily: 'var(--font-sans)',
+      paddingBottom: '6rem'
+    }}>
+      
+      {/* Sticky HUD Bar */}
+      <header style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        backgroundColor: isWarning ? 'rgba(127, 29, 29, 0.95)' : 'rgba(17, 24, 39, 0.92)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: `1px solid ${isWarning ? '#EF4444' : 'var(--border)'}`,
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+        transition: 'background-color 0.3s ease, border-color 0.3s ease'
+      }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0.85rem 1rem' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                <span style={{
+                  fontSize: '0.75rem',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  background: isWarning ? 'rgba(255, 255, 255, 0.2)' : 'var(--accent-light)',
+                  color: isWarning ? '#fff' : 'var(--accent-hover)',
+                  padding: '0.15rem 0.55rem',
+                  borderRadius: '0.35rem'
+                }}>
+                  {participant.round || "Quiz Round"}
                 </span>
+
                 {participant.team && (
-                  <span className={`text-xs px-2 py-0.5 rounded font-bold ${
-                    isWarning ? 'bg-red-800 text-red-100' : 'bg-blue-50 text-blue-700'
-                  }`}>
+                  <span style={{
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    background: isWarning ? 'rgba(0, 0, 0, 0.3)' : 'rgba(16, 185, 129, 0.15)',
+                    color: isWarning ? '#FCA5A5' : 'var(--success)',
+                    padding: '0.15rem 0.55rem',
+                    borderRadius: '0.35rem'
+                  }}>
                     Team {participant.team}
                   </span>
                 )}
               </div>
-              <span className={`font-bold mt-0.5 ${isWarning ? 'text-white' : 'text-slate-800'}`}>
+              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#fff' }}>
                 {participant.fullName}
-              </span>
+              </div>
             </div>
-            
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xl font-bold tracking-widest
-              ${isWarning ? 'bg-red-700 text-white animate-pulse' : 'bg-slate-100 text-slate-800'}
-            `}>
-              <Clock size={20} />
-              {timeLeftStr}
+
+            {/* Live Digital Timer Display */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.65rem',
+              backgroundColor: isWarning ? 'rgba(239, 68, 68, 0.25)' : 'var(--surface-secondary)',
+              border: `1.5px solid ${isWarning ? '#EF4444' : 'var(--border)'}`,
+              color: isWarning ? '#F87171' : 'var(--text-primary)',
+              fontFamily: 'monospace',
+              fontSize: '1.35rem',
+              fontWeight: '800',
+              letterSpacing: '2px',
+              boxShadow: isWarning ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none'
+            }}>
+              <Clock size={20} style={{ animation: isWarning ? 'spin 2s linear infinite' : 'none' }} />
+              <span>{timeLeftStr}</span>
             </div>
           </div>
-          
-          <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
-            <div 
-              className={`h-2.5 rounded-full transition-all duration-500 ease-out ${isWarning ? 'bg-white' : 'bg-blue-600'}`} 
-              style={{ width: `${progressPercent}%` }}
-            ></div>
+
+          {/* Progress Bar */}
+          <div style={{
+            width: '100%',
+            height: '6px',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            borderRadius: '999px',
+            overflow: 'hidden',
+            marginBottom: '0.4rem'
+          }}>
+            <div style={{
+              width: `${progressPercent}%`,
+              height: '100%',
+              background: isWarning ? '#EF4444' : 'linear-gradient(90deg, #2563EB 0%, #3B82F6 100%)',
+              transition: 'width 0.3s ease',
+              borderRadius: '999px'
+            }} />
           </div>
-          
-          <div className="flex justify-between items-center mt-1">
-            <span className={`text-xs ${isWarning ? 'text-red-200' : 'text-slate-500'}`}>
-              {answeredCount} of {questions.length} Answered
-            </span>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            <span>{answeredCount} of {questions.length} Questions Answered ({progressPercent}%)</span>
             {isOffline && (
-              <span className="text-xs font-bold text-amber-500 flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded">
-                <WifiOff size={12} /> Offline - Saving Locally
+              <span style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600 }}>
+                <WifiOff size={13} /> Offline (Answers Saving Locally)
               </span>
             )}
           </div>
+
         </div>
       </header>
 
-      {/* Questions Container */}
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        {questions.map((q, index) => (
-          <div key={q.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-              <h3 className="text-lg font-semibold text-slate-800 leading-snug">
-                <span className="text-blue-600 mr-2">{index + 1}.</span>
-                {q.question}
-              </h3>
-            </div>
-            
-            <div className="p-3">
-              {q.options.map((opt, optIndex) => {
-                const isSelected = answers[q.id] === opt;
-                return (
-                  <label 
-                    key={optIndex}
-                    className={`
-                      flex items-center p-4 my-2 rounded-lg cursor-pointer transition-all border
-                      ${isSelected 
-                        ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300' 
-                        : 'border-transparent hover:bg-slate-50 hover:border-slate-200'
-                      }
-                    `}
-                  >
-                    <div className="relative flex items-center justify-center w-6 h-6 mr-4 flex-shrink-0">
-                      <input
-                        type="radio"
-                        name={`question_${q.id}`}
-                        value={opt}
-                        checked={isSelected}
-                        onChange={() => handleOptionSelect(q.id, opt)}
-                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-                        disabled={timeExpired}
-                      />
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
-                        ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-300 bg-white'}
-                      `}>
-                        {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white"></div>}
-                      </div>
-                    </div>
-                    <span className={`text-base ${isSelected ? 'text-blue-900 font-medium' : 'text-slate-700'}`}>
-                      {opt}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      {/* Main Content Area */}
+      <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem' }}>
         
-        <div className="pt-8 pb-12 flex flex-col items-center">
-          {timeExpired ? (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl text-center w-full shadow-sm mb-6">
-              <h4 className="font-bold text-lg mb-1">Time Expired!</h4>
-              <p>Your quiz is being automatically submitted.</p>
-            </div>
-          ) : (
-            <button
-              onClick={handleFinalSubmit}
-              disabled={isSubmitting || timeExpired}
-              className="w-full md:w-auto md:min-w-[300px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-10 rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-emerald-200 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <span>Submitting...</span>
-              ) : (
-                <>
-                  <CheckCircle2 size={24} />
-                  <span>Submit Quiz</span>
-                </>
-              )}
-            </button>
-          )}
-          
-          {isOffline && (
-            <p className="mt-4 text-amber-600 text-sm font-medium flex items-center gap-2">
-              <WifiOff size={16} /> 
-              Please restore your internet connection before submitting.
+        {questions.length === 0 ? (
+          <div style={{
+            backgroundColor: 'var(--surface)',
+            borderRadius: '1rem',
+            padding: '3rem 1.5rem',
+            textAlign: 'center',
+            border: '1px solid var(--border-light)',
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)'
+          }}>
+            <HelpCircle size={48} style={{ color: 'var(--accent)', margin: '0 auto 1rem auto', opacity: 0.8 }} />
+            <h2 style={{ fontSize: '1.4rem', fontWeight: '700', marginBottom: '0.5rem' }}>No Questions Published Yet</h2>
+            <p style={{ color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 1.5rem auto', lineHeight: '1.6' }}>
+              Questions for <strong>{participant.round || "this round"}</strong> have not been released by the super admin. Please check back shortly!
             </p>
-          )}
-        </div>
+            <button
+              onClick={() => router.push("/")}
+              style={{
+                background: 'var(--surface-secondary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-light)',
+                padding: '0.7rem 1.5rem',
+                borderRadius: '0.5rem',
+                fontSize: '0.95rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Return to Reading Tracker
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+            {questions.map((q, index) => (
+              <div 
+                key={q.id}
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderRadius: '1rem',
+                  border: '1px solid var(--border)',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+                  overflow: 'hidden',
+                  transition: 'border-color 0.2s ease'
+                }}
+              >
+                {/* Question Header */}
+                <div style={{
+                  padding: '1.25rem 1.5rem',
+                  borderBottom: '1px solid var(--border-light)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                  display: 'flex',
+                  gap: '0.85rem',
+                  alignItems: 'flex-start'
+                }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--accent-light)',
+                    color: 'var(--accent-hover)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: '800',
+                    fontSize: '0.95rem',
+                    flexShrink: 0
+                  }}>
+                    {index + 1}
+                  </div>
+                  <h3 style={{
+                    fontSize: '1.08rem',
+                    fontWeight: '600',
+                    lineHeight: '1.5',
+                    margin: 0,
+                    color: 'var(--text-primary)'
+                  }}>
+                    {q.question}
+                  </h3>
+                </div>
+
+                {/* Options List */}
+                <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                  {q.options.map((opt, optIndex) => {
+                    const isSelected = answers[q.id] === opt;
+                    const optionLetter = String.fromCharCode(65 + optIndex); // A, B, C, D
+
+                    return (
+                      <div
+                        key={optIndex}
+                        onClick={() => !timeExpired && handleOptionSelect(q.id, opt)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '1rem',
+                          padding: '0.9rem 1.1rem',
+                          borderRadius: '0.75rem',
+                          cursor: timeExpired ? 'not-allowed' : 'pointer',
+                          backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.16)' : 'var(--surface-secondary)',
+                          border: `1.5px solid ${isSelected ? 'var(--accent)' : 'transparent'}`,
+                          boxShadow: isSelected ? '0 0 0 1px var(--accent)' : 'none',
+                          transition: 'all 0.15s ease',
+                          userSelect: 'none'
+                        }}
+                      >
+                        {/* Option Letter Tag */}
+                        <div style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          backgroundColor: isSelected ? 'var(--accent)' : 'rgba(255, 255, 255, 0.06)',
+                          color: isSelected ? '#fff' : 'var(--text-secondary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.85rem',
+                          fontWeight: '700',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease'
+                        }}>
+                          {optionLetter}
+                        </div>
+
+                        <span style={{
+                          fontSize: '0.98rem',
+                          color: isSelected ? '#fff' : 'var(--text-primary)',
+                          fontWeight: isSelected ? '600' : '400',
+                          flex: 1,
+                          lineHeight: '1.4'
+                        }}>
+                          {opt}
+                        </span>
+
+                        {/* Radio Dot indicator */}
+                        <div style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          border: `2px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
+                          backgroundColor: 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {isSelected && (
+                            <div style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: 'var(--accent)'
+                            }} />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Submission Section */}
+            <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+              {timeExpired ? (
+                <div style={{
+                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid var(--error)',
+                  borderRadius: '0.75rem',
+                  padding: '1.25rem',
+                  color: '#F87171'
+                }}>
+                  <h4 style={{ margin: '0 0 0.25rem 0', fontWeight: '700' }}>Time Expired!</h4>
+                  <p style={{ margin: 0, fontSize: '0.9rem' }}>Your quiz answers are being automatically submitted.</p>
+                </div>
+              ) : (
+                <button
+                  onClick={handleFinalSubmit}
+                  disabled={isSubmitting}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.75rem',
+                    padding: '1.1rem 3rem',
+                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '0.85rem',
+                    fontSize: '1.15rem',
+                    fontWeight: '800',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 12px 30px rgba(16, 185, 129, 0.4)',
+                    transition: 'all 0.2s ease',
+                    minWidth: '280px',
+                    opacity: isSubmitting ? 0.7 : 1
+                  }}
+                  onMouseOver={(e) => { if (!isSubmitting) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
+                  <CheckCircle2 size={24} />
+                  <span>{isSubmitting ? "Submitting..." : "Submit Quiz"}</span>
+                </button>
+              )}
+            </div>
+
+          </div>
+        )}
+
       </main>
     </div>
   );
