@@ -62,7 +62,7 @@ export async function POST(request) {
     const { action } = body;
 
     if (action === "updateSettings") {
-      const { activeRound, timeLimitMinutes, isQuizLive } = body;
+      const { activeRound, timeLimitMinutes, isQuizLive, geminiApiKey } = body;
       if (activeRound !== undefined) {
         await updateQuizSettings("Active_Round", activeRound);
       }
@@ -72,7 +72,16 @@ export async function POST(request) {
       if (isQuizLive !== undefined) {
         await updateQuizSettings("Is_Quiz_Live", isQuizLive ? "TRUE" : "FALSE");
       }
+      if (geminiApiKey !== undefined) {
+        await updateQuizSettings("GEMINI_API_KEY", String(geminiApiKey).trim());
+      }
       return NextResponse.json({ success: true, message: "Settings updated successfully" });
+    }
+
+    if (action === "saveGeminiApiKey") {
+      const { apiKey } = body;
+      await updateQuizSettings("GEMINI_API_KEY", String(apiKey || "").trim());
+      return NextResponse.json({ success: true, message: "Gemini API Key saved to database successfully" });
     }
 
     if (action === "addQuestion") {

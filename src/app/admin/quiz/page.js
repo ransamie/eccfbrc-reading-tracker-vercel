@@ -130,6 +130,7 @@ export default function AdminQuizPage() {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiGeneratedQuestions, setAiGeneratedQuestions] = useState([]);
   const [aiSaving, setAiSaving] = useState(false);
+  const [savingApiKey, setSavingApiKey] = useState(false);
   const [showApiKeySetting, setShowApiKeySetting] = useState(false);
 
   // 1. Check Authentication on Mount
@@ -158,6 +159,9 @@ export default function AdminQuizPage() {
         const loadedSettings = data.settings || { Active_Round: "Round 1", Time_Limit_Minutes: "15", Is_Quiz_Live: "FALSE" };
         setSettings(loadedSettings);
         setIsQuizLive(String(loadedSettings.Is_Quiz_Live).toUpperCase() === "TRUE");
+        if (loadedSettings.GEMINI_API_KEY) {
+          setAiApiKey(loadedSettings.GEMINI_API_KEY);
+        }
         setQuestions(data.questions || []);
         setResults(data.results || []);
         setQuestionForm(prev => ({ ...prev, round: loadedSettings.Active_Round || "Round 1" }));
@@ -492,6 +496,7 @@ export default function AdminQuizPage() {
       showToast(`Generated ${data.questions.length} questions from ${aiScripture}!`);
       
       if (aiApiKey) {
+        setSettings(prev => ({ ...prev, GEMINI_API_KEY: aiApiKey }));
         sessionStorage.setItem("admin_gemini_api_key", aiApiKey);
       }
     } catch (err) {
@@ -502,6 +507,52 @@ export default function AdminQuizPage() {
       });
     } finally {
       setAiGenerating(false);
+    }
+  };
+
+  const handleSaveApiKeyToDatabase = async () => {
+    if (!aiApiKey.trim()) {
+      showAlert({
+        title: "API Key Required",
+        message: "Please enter your Google Gemini API Key before saving.",
+        type: "warning"
+      });
+      return;
+    }
+
+    setSavingApiKey(true);
+    try {
+      const res = await fetch("/api/quiz/admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": pin
+        },
+        body: JSON.stringify({
+          action: "saveGeminiApiKey",
+          apiKey: aiApiKey.trim()
+        })
+      });
+
+      if (res.ok) {
+        showToast("Gemini API Key saved to database across all devices!");
+        setSettings(prev => ({ ...prev, GEMINI_API_KEY: aiApiKey.trim() }));
+        sessionStorage.setItem("admin_gemini_api_key", aiApiKey.trim());
+      } else {
+        showAlert({
+          title: "Save Failed",
+          message: "Failed to save API key to Google Sheets database.",
+          type: "danger"
+        });
+      }
+    } catch (err) {
+      showAlert({
+        title: "Save Error",
+        message: "Network error saving API key to database.",
+        type: "danger"
+      });
+    } finally {
+      setSavingApiKey(false);
     }
   };
 
@@ -1962,39 +2013,77 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   backgroundColor: 'var(--surface-secondary)',
                   border: '1px solid var(--border)',
                   borderRadius: '0.75rem',
-                  padding: '1rem',
+                  padding: '1.25rem',
                   marginBottom: '1.25rem'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                    <label style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-primary)' }}>
-                      Google Gemini API Key (Optional Override)
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                      Google Gemini API Key
                     </label>
                     <a
                       href="https://aistudio.google.com/app/apikey"
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ fontSize: '0.75rem', color: 'var(--accent-hover)', textDecoration: 'none' }}
+                      style={{ fontSize: '0.78rem', color: 'var(--accent-hover)', textDecoration: 'none' }}
                     >
                       Get Free Key at Google AI Studio ↗
                     </a>
                   </div>
-                  <input
-                    type="password"
-                    value={aiApiKey}
-                    onChange={(e) => setAiApiKey(e.target.value)}
-                    placeholder="AIzaSy... (Leave empty to use server default GEMINI_API_KEY)"
-                    style={{
-                      width: '100%',
-                      padding: '0.65rem 0.85rem',
-                      backgroundColor: 'var(--surface)',
-                      border: '1px solid var(--border-light)',
-                      borderRadius: '0.5rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.88rem',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
+
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <input
+                      type="password"
+                      value={aiApiKey}
+                      onChange={(e) => setAiApiKey(e.target.value)}
+                      placeholder="AIzaSy... (Paste Gemini API key to use across all devices)"
+                      style={{
+                        flex: 1,
+                        minWidth: '220px',
+                        padding: '0.65rem 0.85rem',
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.88rem',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+
+                    <button
+                      type="button"
+                      disabled={savingApiKey || !aiApiKey.trim()}
+                      onClick={handleSaveApiKeyToDatabase}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        padding: '0.65rem 1.1rem',
+                        backgroundColor: 'var(--accent)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.85rem',
+                        fontWeight: '700',
+                        cursor: savingApiKey || !aiApiKey.trim() ? 'not-allowed' : 'pointer',
+                        opacity: savingApiKey || !aiApiKey.trim() ? 0.6 : 1,
+                        transition: 'all 0.2s ease',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <Save size={15} />
+                      <span>{savingApiKey ? "Saving..." : "Save Key to Cloud"}</span>
+                    </button>
+                  </div>
+
+                  <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    <span>🔒 Saved directly to Google Sheets database (accessible on all your admin devices).</span>
+                    {settings.GEMINI_API_KEY && (
+                      <span style={{ color: '#34D399', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        ✓ Cloud Synced
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { fetchGlobalData } from "@/lib/googleSheets";
+import { getQuizSettings, updateQuizSettings } from "@/lib/quizSheets";
 
 // Helper to verify admin auth
 async function verifyAdminAuth(request) {
@@ -47,13 +48,26 @@ export async function POST(request) {
       return NextResponse.json({ error: "Please provide the scripture/reading passage for this round (e.g., Colossians 3 - Hebrews 6)." }, { status: 400 });
     }
 
-    // Determine API Key: request body > process.env.GEMINI_API_KEY > Global_Settings.GEMINI_API_KEY
-    const globalData = await fetchGlobalData();
-    const activeApiKey = apiKey.trim() || process.env.GEMINI_API_KEY || globalData.settings?.GEMINI_API_KEY;
+    // Determine API Key: request body > Quiz_Settings.GEMINI_API_KEY > process.env.GEMINI_API_KEY > Global_Settings.GEMINI_API_KEY
+    const [quizSettings, globalData] = await Promise.all([
+      getQuizSettings(),
+      fetchGlobalData()
+    ]);
+
+    const activeApiKey = apiKey.trim() || quizSettings.GEMINI_API_KEY || process.env.GEMINI_API_KEY || globalData.settings?.GEMINI_API_KEY;
+
+    // Auto-save the key to Quiz_Settings if provided in request body and not already saved
+    if (apiKey.trim() && apiKey.trim() !== quizSettings.GEMINI_API_KEY) {
+      try {
+        await updateQuizSettings("GEMINI_API_KEY", apiKey.trim());
+      } catch (saveErr) {
+        console.warn("Failed to auto-persist Gemini API key to Google Sheets:", saveErr.message);
+      }
+    }
 
     if (!activeApiKey) {
       return NextResponse.json({ 
-        error: "Missing Gemini API Key. Please provide a Google Gemini API Key in the generator settings or set GEMINI_API_KEY in your environment/Google Sheets settings." 
+        error: "Missing Gemini API Key. Please enter your Google Gemini API Key in the generator settings to save it across all devices." 
       }, { status: 400 });
     }
 
