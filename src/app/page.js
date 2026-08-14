@@ -89,11 +89,11 @@ export default function Home() {
     <div className="container" style={{ maxWidth: "600px", marginTop: "5vh", padding: "1rem" }}>
       <div className="text-center mb-4">
         <div style={{ 
-          width: '120px', height: '120px', backgroundColor: '#000', borderRadius: '15%',
+          width: '80px', height: '80px', backgroundColor: '#000', borderRadius: '15%',
           display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 1.25rem auto',
           overflow: 'hidden'
         }}>
-          <img src="/eccfbrclogo.png" alt="ECCF Logo" style={{ maxHeight: '112px', maxWidth: '112px', padding: '2px', objectFit: 'contain' }} />
+          <img src="/eccfbrclogo.png" alt="ECCF Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.15)' }} />
         </div>
         <h2 style={{ fontSize: "1.75rem", fontWeight: "700", margin: "0", textAlign: "center", lineHeight: "1.3" }}>ECCF Bible Reading Challenge Tracker</h2>
         <p style={{ color: "var(--text-secondary)", fontWeight: 500, marginTop: "10px", textAlign: "center", fontSize: "1.1rem" }}>
