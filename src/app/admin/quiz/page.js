@@ -22,7 +22,6 @@ import {
   X,
   FileText,
   Upload,
-  ChevronDown,
   Sparkles,
   HelpCircle,
   Clock,
@@ -1240,34 +1239,28 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Filter size={15} style={{ color: 'var(--text-secondary)' }} />
                   
-                  {/* Clean Dropdown with Separated Chevron */}
-                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                    <select
-                      value={selectedRoundFilter}
-                      onChange={(e) => setSelectedRoundFilter(e.target.value)}
-                      style={{
-                        appearance: 'none',
-                        WebkitAppearance: 'none',
-                        MozAppearance: 'none',
-                        padding: '0.45rem 2.25rem 0.45rem 0.85rem',
-                        backgroundColor: 'var(--surface-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.5rem',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        minWidth: '130px'
-                      }}
-                    >
-                      <option value="All">All Rounds</option>
-                      {uniqueRounds.map(r => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
-                  </div>
+                  {/* Native Clean Dropdown with Proper Spacing */}
+                  <select
+                    value={selectedRoundFilter}
+                    onChange={(e) => setSelectedRoundFilter(e.target.value)}
+                    style={{
+                      padding: '0.45rem 0.85rem',
+                      backgroundColor: 'var(--surface-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.5rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.85rem',
+                      fontWeight: '600',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      minWidth: '120px'
+                    }}
+                  >
+                    <option value="All">All Rounds</option>
+                    {uniqueRounds.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -1874,31 +1867,25 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
                       Question Difficulty
                     </label>
-                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                      <select
-                        value={aiDifficulty}
-                        onChange={(e) => setAiDifficulty(e.target.value)}
-                        style={{
-                          width: '100%',
-                          appearance: 'none',
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'none',
-                          padding: '0.75rem 2.25rem 0.75rem 0.9rem',
-                          backgroundColor: 'var(--surface-secondary)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '0.5rem',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.88rem',
-                          outline: 'none',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <option value="Balanced">Balanced (Standard Challenge)</option>
-                        <option value="Easy">Foundational / Key Facts</option>
-                        <option value="Challenging">In-depth / Chapter Details</option>
-                      </select>
-                      <ChevronDown size={15} style={{ position: 'absolute', right: '0.85rem', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
-                    </div>
+                    <select
+                      value={aiDifficulty}
+                      onChange={(e) => setAiDifficulty(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 0.9rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.88rem',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="Balanced">Balanced (Standard Challenge)</option>
+                      <option value="Easy">Foundational / Key Facts</option>
+                      <option value="Challenging">In-depth / Chapter Details</option>
+                    </select>
                   </div>
 
                   <div>
@@ -2160,65 +2147,53 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 {/* Round Filter */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Filter size={14} style={{ color: 'var(--text-secondary)' }} />
-                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                    <select
-                      value={selectedRoundFilter}
-                      onChange={(e) => setSelectedRoundFilter(e.target.value)}
-                      style={{
-                        appearance: 'none',
-                        WebkitAppearance: 'none',
-                        MozAppearance: 'none',
-                        padding: '0.45rem 2.25rem 0.45rem 0.85rem',
-                        backgroundColor: 'var(--surface-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.5rem',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        minWidth: '130px'
-                      }}
-                    >
-                      <option value="All">All Rounds</option>
-                      {uniqueRounds.map(r => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
-                  </div>
+                  <select
+                    value={selectedRoundFilter}
+                    onChange={(e) => setSelectedRoundFilter(e.target.value)}
+                    style={{
+                      padding: '0.45rem 0.85rem',
+                      backgroundColor: 'var(--surface-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.5rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.85rem',
+                      fontWeight: '600',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      minWidth: '120px'
+                    }}
+                  >
+                    <option value="All">All Rounds</option>
+                    {uniqueRounds.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Team Filter */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Users size={14} style={{ color: 'var(--text-secondary)' }} />
-                  <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                    <select
-                      value={selectedTeamFilter}
-                      onChange={(e) => setSelectedTeamFilter(e.target.value)}
-                      style={{
-                        appearance: 'none',
-                        WebkitAppearance: 'none',
-                        MozAppearance: 'none',
-                        padding: '0.45rem 2.25rem 0.45rem 0.85rem',
-                        backgroundColor: 'var(--surface-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.5rem',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        minWidth: '130px'
-                      }}
-                    >
-                      <option value="All">All Teams</option>
-                      {uniqueTeams.map(t => (
-                        <option key={t} value={t}>Team {t}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
-                  </div>
+                  <select
+                    value={selectedTeamFilter}
+                    onChange={(e) => setSelectedTeamFilter(e.target.value)}
+                    style={{
+                      padding: '0.45rem 0.85rem',
+                      backgroundColor: 'var(--surface-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.5rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.85rem',
+                      fontWeight: '600',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      minWidth: '120px'
+                    }}
+                  >
+                    <option value="All">All Teams</option>
+                    {uniqueTeams.map(t => (
+                      <option key={t} value={t}>Team {t}</option>
+                    ))}
+                  </select>
                 </div>
 
               </div>
