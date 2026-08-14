@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
@@ -508,6 +508,28 @@ export default function AdminDashboard({ onLogout }) {
           Admin Command Center
         </div>
         <div className="header-actions">
+          <a
+            href="/admin/quiz"
+            title="Open Quiz Control Center"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              background: 'linear-gradient(135deg, #2563EB 0%, #4F46E5 100%)',
+              color: '#FFFFFF',
+              padding: '0 0.9rem',
+              height: '2.5rem',
+              borderRadius: '0.5rem',
+              fontWeight: '600',
+              textDecoration: 'none',
+              fontSize: '0.875rem',
+              boxShadow: '0 4px 12px rgba(37,99,235,0.25)',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <Trophy size={16} /> Quiz Hub
+          </a>
           <InstallPwaButton />
           <button 
             onClick={() => loadData(true)} 
