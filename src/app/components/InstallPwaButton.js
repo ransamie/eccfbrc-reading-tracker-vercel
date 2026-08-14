@@ -9,9 +9,11 @@ export default function InstallPwaButton() {
   const [showGenericInstruction, setShowGenericInstruction] = useState(false);
 
   useEffect(() => {
-    // Check if the app is already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    if (!isStandalone) {
+    const isIos = /iPad|iPhone|iPod/i.test(navigator.userAgent) || 
+                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                 
+    if (isIos && !isStandalone) {
       setIsInstallable(true);
     }
 

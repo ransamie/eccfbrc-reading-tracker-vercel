@@ -30,6 +30,20 @@ export default function QuizTakePage() {
     window.addEventListener('offline', handleOffline);
     setIsOffline(!navigator.onLine);
 
+    // Verify if quiz is live
+    fetch(`/api/quiz/init?t=${Date.now()}`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.isLive) {
+          localStorage.removeItem("quiz_in_progress");
+          localStorage.removeItem("quiz_pending_start");
+          router.push("/quiz");
+        }
+      })
+      .catch((err) => {
+        console.error("Status check failed", err);
+      });
+
     try {
       const savedState = localStorage.getItem("quiz_in_progress");
       if (savedState) {
@@ -60,7 +74,7 @@ export default function QuizTakePage() {
       window.removeEventListener('offline', handleOffline);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [router]);
 
   // 2. Persist Answers
   useEffect(() => {

@@ -17,19 +17,25 @@ export default function QuizLandingPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // If a session is already in progress, redirect straight to `/quiz/take`
-    const inProgress = localStorage.getItem("quiz_in_progress");
-    if (inProgress) {
-      router.push("/quiz/take");
-      return;
-    }
-
-    // 1. Fetch Quiz Status (isLive & round)
-    fetch("/api/quiz/init")
+    // 1. Fetch Quiz Status (isLive & active round) from server
+    fetch(`/api/quiz/init?t=${Date.now()}`, { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
-        setIsLive(!!data.isLive);
+        const live = !!data.isLive;
+        setIsLive(live);
         if (data.activeRound) setActiveRound(data.activeRound);
+
+        if (!live) {
+          // Clean up stale local storage if quiz is turned off
+          localStorage.removeItem("quiz_in_progress");
+          localStorage.removeItem("quiz_pending_start");
+        } else {
+          // If quiz is live and there is an active session, continue quiz
+          const inProgress = localStorage.getItem("quiz_in_progress");
+          if (inProgress) {
+            router.push("/quiz/take");
+          }
+        }
       })
       .catch((err) => {
         console.error("Failed to check quiz status:", err);

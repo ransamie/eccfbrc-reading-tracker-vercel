@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 
 export default function LeaderDashboard({ team, onLogout }) {
@@ -27,9 +27,21 @@ export default function LeaderDashboard({ team, onLogout }) {
   const [showDays, setShowDays] = useState(false);
 
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [quizCopied, setQuizCopied] = useState(false);
+  
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const handleCopyQuizLink = () => {
+    if (typeof window !== "undefined" && navigator.clipboard) {
+      const url = `${window.location.origin}/quiz`;
+      navigator.clipboard.writeText(url);
+      setQuizCopied(true);
+      showToast("Quiz Link copied to clipboard! Share with your team.");
+      setTimeout(() => setQuizCopied(false), 2500);
+    }
   };
 
   const loadData = (isManualRefresh = false) => {
@@ -337,6 +349,30 @@ export default function LeaderDashboard({ team, onLogout }) {
           </div>
         </div>
           <div className="header-actions">
+          <button 
+            onClick={handleCopyQuizLink}
+            title="Copy Quiz Link to share with team"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.4rem', 
+              background: quizCopied ? 'var(--success)' : 'linear-gradient(135deg, #2563EB 0%, #4F46E5 100%)', 
+              color: '#fff', 
+              padding: '0 0.85rem', 
+              height: '2.5rem', 
+              borderRadius: '0.5rem', 
+              fontWeight: '600', 
+              fontSize: '0.85rem', 
+              border: 'none', 
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(37,99,235,0.25)',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {quizCopied ? <CheckCheck size={16} /> : <Share2 size={16} />}
+            <span>{quizCopied ? "Copied!" : "Quiz Link"}</span>
+          </button>
           <InstallPwaButton />
           <button 
             onClick={() => loadData(true)} 
@@ -360,6 +396,7 @@ export default function LeaderDashboard({ team, onLogout }) {
       <div className="st-tabs">
         <button className={`st-tab ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>Report</button>
         <button className={`st-tab ${activeTab === 'roster' ? 'active' : ''}`} onClick={() => setActiveTab('roster')}>Roster</button>
+        <button className={`st-tab ${activeTab === 'quiz' ? 'active' : ''}`} onClick={() => setActiveTab('quiz')}>🏆 Quiz Link</button>
       </div>
 
       {activeTab === 'report' && (
@@ -572,6 +609,137 @@ export default function LeaderDashboard({ team, onLogout }) {
                 })}
               </div>
               <button onClick={handleSaveRoster} disabled={saving} style={{ marginTop: '1rem', backgroundColor: 'var(--accent)', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, transition: 'all 0.2s ease', width: '100%' }}>{saving ? 'Saving...' : '💾 Save Roster Updates'}</button>
+        </div>
+      )}
+
+      {activeTab === 'quiz' && (
+        <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #2563EB 0%, #4F46E5 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff'
+            }}>
+              <Trophy size={22} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700' }}>Team {team} Quiz Link</h3>
+              <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                Share this link with your team members on WhatsApp
+              </p>
+            </div>
+          </div>
+
+          <div style={{
+            backgroundColor: 'var(--surface-secondary)',
+            border: '1px solid var(--border)',
+            borderRadius: '0.75rem',
+            padding: '1.25rem',
+            marginBottom: '1.5rem'
+          }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+              Direct Quiz URL
+            </label>
+            <div style={{
+              display: 'flex',
+              gap: '0.5rem',
+              alignItems: 'center',
+              backgroundColor: 'var(--surface)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '0.5rem',
+              padding: '0.4rem 0.5rem 0.4rem 0.85rem'
+            }}>
+              <input 
+                type="text"
+                readOnly
+                value={typeof window !== 'undefined' ? `${window.location.origin}/quiz` : '/quiz'}
+                style={{
+                  flex: 1,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.9rem',
+                  fontFamily: 'monospace',
+                  outline: 'none'
+                }}
+              />
+              <button
+                onClick={handleCopyQuizLink}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.5rem 0.9rem',
+                  backgroundColor: quizCopied ? 'var(--success)' : 'var(--accent)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '0.4rem',
+                  fontSize: '0.85rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {quizCopied ? <CheckCheck size={16} /> : <Copy size={16} />}
+                <span>{quizCopied ? "Copied!" : "Copy"}</span>
+              </button>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            fontSize: '0.88rem',
+            color: 'var(--text-secondary)',
+            marginBottom: '1.5rem',
+            lineHeight: '1.5'
+          }}>
+            <p style={{ margin: 0 }}>
+              💡 <strong>How it works:</strong>
+            </p>
+            <p style={{ margin: 0 }}>
+              1. Copy this link and send it to your WhatsApp reading group.
+            </p>
+            <p style={{ margin: 0 }}>
+              2. Members will enter their name, WhatsApp number, and select <strong>Team {team}</strong> to start.
+            </p>
+            <p style={{ margin: 0 }}>
+              3. If the Super Admin has not activated the quiz yet, members will see a <strong>"Coming Soon"</strong> screen.
+            </p>
+          </div>
+
+          <a
+            href="/quiz"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              width: '100%',
+              padding: '0.8rem',
+              backgroundColor: 'var(--surface-secondary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '0.5rem',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              textDecoration: 'none',
+              transition: 'all 0.2s ease',
+              boxSizing: 'border-box'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; }}
+          >
+            <ExternalLink size={16} /> Open Quiz in New Tab
+          </a>
         </div>
       )}
     </div>
