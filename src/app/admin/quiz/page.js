@@ -29,7 +29,10 @@ import {
   Key,
   BookOpen,
   RefreshCw,
-  Sliders
+  Sliders,
+  AlertTriangle,
+  CheckCircle2,
+  Info
 } from "lucide-react";
 import { parseQuizQuestions } from "@/lib/quizParser";
 
@@ -57,6 +60,45 @@ export default function AdminQuizPage() {
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3500);
+  };
+
+  // Custom In-App Popup Modal Dialogs
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "danger", // 'danger' | 'warning' | 'info' | 'success'
+    confirmText: "Confirm",
+    cancelText: null,
+    onConfirm: null
+  });
+
+  const showConfirm = ({ title = "Confirmation", message, type = "danger", confirmText = "Confirm", onConfirm }) => {
+    setModalState({
+      isOpen: true,
+      title,
+      message,
+      type,
+      confirmText,
+      cancelText: "Cancel",
+      onConfirm
+    });
+  };
+
+  const showAlert = ({ title = "Notice", message, type = "info", confirmText = "Got it" }) => {
+    setModalState({
+      isOpen: true,
+      title,
+      message,
+      type,
+      confirmText,
+      cancelText: null,
+      onConfirm: () => setModalState(prev => ({ ...prev, isOpen: false, onConfirm: null }))
+    });
+  };
+
+  const closeModal = () => {
+    setModalState(prev => ({ ...prev, isOpen: false, onConfirm: null }));
   };
 
   // Edit / Create Single Form States
@@ -206,7 +248,11 @@ export default function AdminQuizPage() {
     setLoading(true);
 
     if (!questionForm.correctAnswer) {
-      alert("Please designate a correct answer by selecting the corresponding option!");
+      showAlert({
+        title: "Designate Correct Answer",
+        message: "Please select which option (Option 1, 2, 3, or 4) is the correct answer by clicking its radio dot.",
+        type: "warning"
+      });
       setLoading(false);
       return;
     }
@@ -231,7 +277,11 @@ export default function AdminQuizPage() {
           setQuestions(prev => prev.map(q => q.id === editingQuestionId ? { ...questionForm, id: editingQuestionId } : q));
           handleCancelEdit();
         } else {
-          alert("Failed to update question.");
+          showAlert({
+            title: "Update Failed",
+            message: "Failed to update question in Google Sheets database.",
+            type: "danger"
+          });
         }
       } else {
         const res = await fetch("/api/quiz/admin", {
@@ -260,11 +310,19 @@ export default function AdminQuizPage() {
             correctAnswer: ""
           }));
         } else {
-          alert("Failed to add question.");
+          showAlert({
+            title: "Add Failed",
+            message: "Failed to add question to Google Sheets database.",
+            type: "danger"
+          });
         }
       }
     } catch (err) {
-      alert("Failed to save question.");
+      showAlert({
+        title: "Save Error",
+        message: "Failed to save question. Please check network connection.",
+        type: "danger"
+      });
     } finally {
       setLoading(false);
     }
@@ -298,32 +356,46 @@ export default function AdminQuizPage() {
     }));
   };
 
-  const handleDeleteQuestion = async (id) => {
-    if (!confirm("Are you sure you want to delete this question?")) return;
+  const handleDeleteQuestion = (id) => {
+    showConfirm({
+      title: "Delete Question?",
+      message: "Are you sure you want to delete this question? This action cannot be undone.",
+      type: "danger",
+      confirmText: "Delete Question",
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/quiz/admin", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": pin
+            },
+            body: JSON.stringify({
+              action: "deleteQuestion",
+              id
+            })
+          });
 
-    try {
-      const res = await fetch("/api/quiz/admin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": pin
-        },
-        body: JSON.stringify({
-          action: "deleteQuestion",
-          id
-        })
-      });
-
-      if (res.ok) {
-        showToast("Question deleted.");
-        setQuestions(prev => prev.filter(q => q.id !== id));
-        if (editingQuestionId === id) handleCancelEdit();
-      } else {
-        alert("Failed to delete question.");
+          if (res.ok) {
+            showToast("Question deleted successfully.");
+            setQuestions(prev => prev.filter(q => q.id !== id));
+            if (editingQuestionId === id) handleCancelEdit();
+          } else {
+            showAlert({
+              title: "Delete Failed",
+              message: "Failed to delete question from Google Sheets.",
+              type: "danger"
+            });
+          }
+        } catch (err) {
+          showAlert({
+            title: "Delete Error",
+            message: "Error deleting question. Please check connection.",
+            type: "danger"
+          });
+        }
       }
-    } catch (err) {
-      alert("Error deleting question.");
-    }
+    });
   };
 
   // 4. Bulk Importer Handlers
@@ -369,7 +441,11 @@ export default function AdminQuizPage() {
       fetchWorkspaceData();
       setActiveTab("builder");
     } catch (e) {
-      alert(e.message || "Failed to import questions");
+      showAlert({
+        title: "Bulk Import Error",
+        message: e.message || "Failed to import questions to database.",
+        type: "danger"
+      });
     } finally {
       setBulkImporting(false);
     }
@@ -379,7 +455,11 @@ export default function AdminQuizPage() {
   const handleTriggerAIGenerate = async (e) => {
     if (e) e.preventDefault();
     if (!aiScripture.trim()) {
-      alert("Please specify the scripture range (e.g. Colossians 3 - Hebrews 6)");
+      showAlert({
+        title: "Scripture Range Required",
+        message: "Please specify the scripture range for this round (e.g. Colossians 3 - Hebrews 6).",
+        type: "warning"
+      });
       return;
     }
 
@@ -415,7 +495,11 @@ export default function AdminQuizPage() {
         sessionStorage.setItem("admin_gemini_api_key", aiApiKey);
       }
     } catch (err) {
-      alert(err.message || "AI Generation error. Please check your internet or Gemini API key.");
+      showAlert({
+        title: "AI Generation Error",
+        message: err.message || "AI Generation error. Please check your internet or Gemini API key.",
+        type: "danger"
+      });
     } finally {
       setAiGenerating(false);
     }
@@ -467,7 +551,11 @@ export default function AdminQuizPage() {
       fetchWorkspaceData();
       setActiveTab("builder");
     } catch (e) {
-      alert(e.message || "Failed to save questions to database.");
+      showAlert({
+        title: "Save Failed",
+        message: e.message || "Failed to save questions to database.",
+        type: "danger"
+      });
     } finally {
       setAiSaving(false);
     }
@@ -665,6 +753,164 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
         }}>
           <Check size={18} />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Custom In-App Popup Modal Dialog */}
+      {modalState.isOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.25rem',
+            backgroundColor: 'rgba(0, 0, 0, 0.78)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)'
+          }}
+          onClick={closeModal}
+        >
+          <div 
+            style={{
+              width: '100%',
+              maxWidth: '440px',
+              backgroundColor: '#111827',
+              borderRadius: '1.25rem',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+              padding: '1.75rem',
+              color: 'var(--text-primary)',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close X button */}
+            <button 
+              onClick={closeModal}
+              aria-label="Close dialog"
+              style={{
+                position: 'absolute',
+                top: '1.25rem',
+                right: '1.25rem',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                padding: '0.35rem',
+                borderRadius: '0.375rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              <X size={18} />
+            </button>
+
+            {/* Icon, Title and Message */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '0.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                backgroundColor: modalState.type === 'danger' 
+                  ? 'rgba(239, 68, 68, 0.15)' 
+                  : modalState.type === 'warning'
+                  ? 'rgba(245, 158, 11, 0.15)'
+                  : modalState.type === 'success'
+                  ? 'rgba(16, 185, 129, 0.15)'
+                  : 'rgba(59, 130, 246, 0.15)',
+                border: `1px solid ${
+                  modalState.type === 'danger' 
+                    ? 'rgba(239, 68, 68, 0.35)' 
+                    : modalState.type === 'warning'
+                    ? 'rgba(245, 158, 11, 0.35)'
+                    : modalState.type === 'success'
+                    ? 'rgba(16, 185, 129, 0.35)'
+                    : 'rgba(59, 130, 246, 0.35)'
+                }`
+              }}>
+                {modalState.type === 'danger' && <Trash2 size={22} color="#EF4444" />}
+                {modalState.type === 'warning' && <AlertTriangle size={22} color="#F59E0B" />}
+                {modalState.type === 'success' && <CheckCircle2 size={22} color="#10B981" />}
+                {modalState.type === 'info' && <Info size={22} color="#3B82F6" />}
+              </div>
+
+              <div style={{ flex: 1, paddingRight: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.35rem 0', fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)' }}>
+                  {modalState.title}
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  {modalState.message}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              {modalState.cancelText && (
+                <button
+                  onClick={closeModal}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.5rem',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  {modalState.cancelText}
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  const fn = modalState.onConfirm;
+                  closeModal();
+                  if (fn) fn();
+                }}
+                style={{
+                  padding: '0.65rem 1.4rem',
+                  background: modalState.type === 'danger'
+                    ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)'
+                    : modalState.type === 'warning'
+                    ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+                    : modalState.type === 'success'
+                    ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
+                    : 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.9rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  boxShadow: modalState.type === 'danger'
+                    ? '0 4px 15px rgba(239, 68, 68, 0.35)'
+                    : '0 4px 15px rgba(59, 130, 246, 0.35)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                {modalState.confirmText}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
