@@ -1017,6 +1017,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       )}
 
       {/* Header */}
+      {/* Header */}
       <header style={{
         backgroundColor: 'var(--surface)',
         borderBottom: '1px solid var(--border)',
@@ -1025,7 +1026,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
         top: 0,
         zIndex: 40
       }}>
-        <div style={{ maxWidth: '1050px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div className="quiz-header-wrap" style={{ maxWidth: '1050px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
@@ -1037,7 +1038,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '4px'
+              padding: '4px',
+              flexShrink: 0
             }}>
               <img src="/eccfbrclogo.png" alt="ECCF Logo" style={{ maxWidth: '28px', maxHeight: '28px', objectFit: 'contain' }} />
             </div>
@@ -1047,13 +1049,13 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div className="quiz-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             <a 
               href={`/quiz/preview?round=${encodeURIComponent(settings.Active_Round || 'Round 1')}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.4rem',
                 padding: '0.45rem 0.85rem',
@@ -1070,13 +1072,13 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.25)'; }}
               onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.15)'; }}
             >
-              <Eye size={15} /> Preview Quiz
+              <Eye size={15} /> Preview
             </a>
 
             <a 
               href="/"
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.4rem',
                 padding: '0.45rem 0.85rem',
@@ -1096,7 +1098,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
             <button
               onClick={handleLogout}
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.4rem',
                 padding: '0.45rem 0.85rem',
@@ -1120,7 +1122,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       <main style={{ maxWidth: '1050px', margin: '1.5rem auto 0 auto', padding: '0 1rem' }}>
         
         {/* Tab Buttons (Responsive, No Horizontal Scrollbar) */}
-        <div style={{
+        <div className="quiz-tab-bar" style={{
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'center',
@@ -1144,6 +1146,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                className="quiz-tab-btn"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1164,8 +1167,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   textAlign: 'center'
                 }}
               >
-                <Icon size={16} style={{ color: isActive ? (tab.id === 'ai' ? '#F59E0B' : '#fff') : 'inherit' }} />
-                {tab.label}
+                <Icon size={16} style={{ color: isActive ? (tab.id === 'ai' ? '#F59E0B' : '#fff') : 'inherit', flexShrink: 0 }} />
+                <span>{tab.label}</span>
               </button>
             );
           })}
@@ -1191,21 +1194,24 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 Copy and share this direct link with your reading team members when the quiz is ready.
               </p>
 
-              <div style={{
+              <div className="quiz-share-box" style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
                 backgroundColor: 'var(--surface-secondary)',
                 border: '1px solid var(--border)',
                 borderRadius: '0.65rem',
-                padding: '0.4rem 0.5rem 0.4rem 0.9rem'
+                padding: '0.4rem 0.5rem 0.4rem 0.9rem',
+                flexWrap: 'wrap'
               }}>
                 <input
                   type="text"
                   readOnly
                   value={quizUrl}
                   style={{
-                    flex: 1,
+                    flex: '1 1 200px',
+                    minWidth: 0,
+                    width: '100%',
                     backgroundColor: 'transparent',
                     border: 'none',
                     color: 'var(--text-primary)',
@@ -1214,7 +1220,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     fontFamily: 'monospace'
                   }}
                 />
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <div className="quiz-share-buttons" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     onClick={handleCopyLink}
@@ -1283,7 +1289,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 
                 {/* Live / Coming Soon Switch Card */}
-                <div style={{
+                <div className="quiz-live-toggle-card" style={{
                   padding: '1.25rem',
                   borderRadius: '0.75rem',
                   backgroundColor: isQuizLive ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
@@ -1427,7 +1433,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
         {/* TAB 2: QUESTION BUILDER (Single Edit / Create + Bank) */}
         {activeTab === 'builder' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'flex-start', maxWidth: '1050px', margin: '0 auto' }}>
+          <div className="quiz-admin-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.5rem', alignItems: 'flex-start', maxWidth: '1050px', margin: '0 auto' }}>
             
             {/* Form Column */}
             <div style={{
@@ -1928,7 +1934,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               {bulkText.trim() && (
                 <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   
-                  <div style={{
+                  <div className="quiz-bulk-status-bar" style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -2081,7 +2087,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 pointerEvents: 'none'
               }}></div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div className="quiz-ai-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <div style={{
                     width: '42px',
@@ -2148,7 +2154,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     </a>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <div className="quiz-ai-api-row" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <input
                       type="password"
                       value={aiApiKey}
@@ -2156,7 +2162,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       placeholder="AIzaSy... (Paste Gemini API key to use across all devices)"
                       style={{
                         flex: 1,
-                        minWidth: '220px',
+                        minWidth: '200px',
                         padding: '0.65rem 0.85rem',
                         backgroundColor: 'var(--surface)',
                         border: '1px solid var(--border-light)',
@@ -2404,7 +2410,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
               }}>
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div className="quiz-ai-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <div>
                     <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Check size={20} color="#10B981" /> Generated Questions ({aiGeneratedQuestions.length})
@@ -2414,7 +2420,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <div className="quiz-ai-review-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       disabled={aiSaving}
@@ -2597,7 +2603,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 <Trophy size={20} style={{ color: '#F59E0B' }} /> Submissions ({sortedResults.length})
               </h3>
 
-              <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+              <div className="quiz-leaderboard-filters" style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
                 
                 {/* Round Filter */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

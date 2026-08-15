@@ -252,29 +252,30 @@ function QuizPreviewContent() {
             fontSize: '0.75rem',
             fontWeight: '800',
             letterSpacing: '0.5px',
-            textTransform: 'uppercase'
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap'
           }}>
-            <Eye size={13} /> Admin Preview Mode
+            <Eye size={13} /> Admin Preview
           </span>
-          <span style={{ fontSize: '0.85rem', color: '#C7D2FE' }}>
+          <span className="hide-on-mobile" style={{ fontSize: '0.85rem', color: '#C7D2FE' }}>
             Testing as Participant • <strong>Zero scores saved to live database</strong>
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           {/* Round Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '0.8rem', color: '#A5B4FC', fontWeight: '600' }}>Round:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span style={{ fontSize: '0.78rem', color: '#A5B4FC', fontWeight: '600' }}>Round:</span>
             <select
               value={selectedRound}
               onChange={(e) => handleSwitchRound(e.target.value)}
               style={{
-                padding: '0.35rem 0.75rem',
+                padding: '0.3rem 0.65rem',
                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
                 border: '1px solid rgba(165, 180, 252, 0.3)',
                 borderRadius: '0.4rem',
                 color: '#fff',
-                fontSize: '0.85rem',
+                fontSize: '0.82rem',
                 fontWeight: '700',
                 outline: 'none',
                 cursor: 'pointer'
@@ -291,23 +292,24 @@ function QuizPreviewContent() {
           <a
             href="/admin/quiz"
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              padding: '0.35rem 0.85rem',
+              padding: '0.3rem 0.75rem',
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: '0.4rem',
               color: '#fff',
-              fontSize: '0.82rem',
+              fontSize: '0.8rem',
               fontWeight: '700',
               textDecoration: 'none',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap'
             }}
             onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; }}
             onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; }}
           >
-            <ArrowLeft size={14} /> Exit Preview
+            <ArrowLeft size={14} /> <span>Exit</span>
           </a>
         </div>
       </div>
@@ -645,19 +647,19 @@ function QuizPreviewContent() {
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
             transition: 'background-color 0.3s ease, border-color 0.3s ease'
           }}>
-            <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0.85rem 1rem' }}>
+            <div className="quiz-take-hud" style={{ maxWidth: '800px', margin: '0 auto', padding: '0.85rem 1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <div>
                   <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--accent-hover)' }}>
                     {selectedRound} • Team {participant.team}
                   </span>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0 }}>
+                  <h2 className="quiz-take-title" style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0 }}>
                     {participant.fullName}
                   </h2>
                 </div>
 
                 {/* Unstoppable Timer Badge */}
-                <div style={{
+                <div className="quiz-timer-badge" style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',

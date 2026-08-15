@@ -426,7 +426,7 @@ export default function QuizResultPage() {
           </div>
 
           {/* DOWNLOAD SCORECARD PNG & SHARE BUTTONS */}
-          <div style={{
+          <div className="quiz-share-buttons" style={{
             display: 'flex',
             justifyContent: 'center',
             gap: '0.75rem',
@@ -441,6 +441,7 @@ export default function QuizResultPage() {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '0.5rem',
                 padding: '0.85rem 1.5rem',
                 background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
@@ -451,7 +452,8 @@ export default function QuizResultPage() {
                 fontWeight: '700',
                 cursor: isGeneratingImg ? 'not-allowed' : 'pointer',
                 boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                flex: '1 1 220px'
               }}
               onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
@@ -466,6 +468,7 @@ export default function QuizResultPage() {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '0.5rem',
                 padding: '0.85rem 1.35rem',
                 backgroundColor: 'rgba(37, 99, 235, 0.15)',
@@ -475,7 +478,8 @@ export default function QuizResultPage() {
                 fontSize: '0.95rem',
                 fontWeight: '700',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                flex: '1 1 200px'
               }}
               onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.25)'; }}
               onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.15)'; }}

@@ -522,3 +522,166 @@ select option {
   background: transparent;
 }
 
+/* ==========================================================================
+   Quiz & Admin Mobile Responsive System
+   ========================================================================== */
+@media (max-width: 768px) {
+  .quiz-admin-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  /* Header & Navigation */
+  .quiz-header-wrap {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+
+  .quiz-header-actions {
+    display: flex !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+    gap: 0.4rem !important;
+  }
+
+  .quiz-header-actions > * {
+    flex: 1 1 0 !important;
+    justify-content: center !important;
+    padding: 0.45rem 0.5rem !important;
+    font-size: 0.78rem !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+  }
+
+  /* Shareable link card */
+  .quiz-share-box {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.6rem !important;
+    padding: 0.75rem !important;
+  }
+
+  .quiz-share-buttons {
+    width: 100% !important;
+    display: flex !important;
+    gap: 0.4rem !important;
+  }
+
+  .quiz-share-buttons > * {
+    flex: 1 1 0 !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Tab Navigation */
+  .quiz-tab-bar {
+    gap: 0.35rem !important;
+    padding: 0.35rem !important;
+  }
+
+  .quiz-tab-btn {
+    min-width: calc(50% - 0.35rem) !important;
+    padding: 0.55rem 0.65rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Control Center Live Toggle Card */
+  .quiz-live-toggle-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.85rem !important;
+  }
+
+  .quiz-live-toggle-card button {
+    width: 100% !important;
+  }
+
+  /* Bulk Parser Results Bar */
+  .quiz-bulk-status-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+
+  .quiz-bulk-status-bar button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* AI Generator Header & Results */
+  .quiz-ai-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+
+  .quiz-ai-header button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .quiz-ai-api-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .quiz-ai-api-row input {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .quiz-ai-api-row button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .quiz-ai-review-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+
+  .quiz-ai-review-actions button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Live Leaderboard Filter Row */
+  .quiz-leaderboard-filters {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+
+  .quiz-leaderboard-filters select {
+    width: 100% !important;
+  }
+
+  /* Scorecard & Taking Screen */
+  .quiz-take-hud {
+    padding: 0.65rem 0.75rem !important;
+  }
+
+  .quiz-take-title {
+    font-size: 0.95rem !important;
+    max-width: 170px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .quiz-timer-badge {
+    padding: 0.35rem 0.65rem !important;
+    font-size: 1.05rem !important;
+  }
+}
+
+

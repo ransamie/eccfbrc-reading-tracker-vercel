@@ -425,11 +425,11 @@ export default function QuizTakePage() {
         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
         transition: 'background-color 0.3s ease, border-color 0.3s ease'
       }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0.85rem 1rem' }}>
+        <div className="quiz-take-hud" style={{ maxWidth: '800px', margin: '0 auto', padding: '0.85rem 1rem' }}>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
                 <span style={{
                   fontSize: '0.75rem',
                   fontWeight: '700',
@@ -438,7 +438,8 @@ export default function QuizTakePage() {
                   background: isWarning ? 'rgba(255, 255, 255, 0.2)' : 'var(--accent-light)',
                   color: isWarning ? '#fff' : 'var(--accent-hover)',
                   padding: '0.15rem 0.55rem',
-                  borderRadius: '0.35rem'
+                  borderRadius: '0.35rem',
+                  whiteSpace: 'nowrap'
                 }}>
                   {participant.round || "Quiz Round"}
                 </span>
@@ -450,19 +451,20 @@ export default function QuizTakePage() {
                     background: isWarning ? 'rgba(0, 0, 0, 0.3)' : 'rgba(16, 185, 129, 0.15)',
                     color: isWarning ? '#FCA5A5' : 'var(--success)',
                     padding: '0.15rem 0.55rem',
-                    borderRadius: '0.35rem'
+                    borderRadius: '0.35rem',
+                    whiteSpace: 'nowrap'
                   }}>
                     Team {participant.team}
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#fff' }}>
+              <div className="quiz-take-title" style={{ fontSize: '1.1rem', fontWeight: '800', color: '#fff' }}>
                 {participant.fullName}
               </div>
             </div>
 
             {/* Live Digital Timer Display */}
-            <div style={{
+            <div className="quiz-timer-badge" style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
@@ -475,7 +477,8 @@ export default function QuizTakePage() {
               fontSize: '1.35rem',
               fontWeight: '800',
               letterSpacing: '2px',
-              boxShadow: isWarning ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none'
+              boxShadow: isWarning ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none',
+              flexShrink: 0
             }}>
               <Clock size={20} style={{ animation: isWarning ? 'spin 2s linear infinite' : 'none' }} />
               <span>{timeLeftStr}</span>
