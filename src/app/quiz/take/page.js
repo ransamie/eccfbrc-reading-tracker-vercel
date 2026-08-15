@@ -410,13 +410,15 @@ export default function QuizTakePage() {
       paddingBottom: '6rem'
     }}>
       
-      {/* Fixed / Sticky HUD Bar */}
+      {/* Fixed HUD Bar */}
       <header style={{
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
-        zIndex: 100,
+        left: 0,
+        right: 0,
         width: '100%',
-        backgroundColor: isWarning ? 'rgba(127, 29, 29, 0.98)' : 'rgba(17, 24, 39, 0.96)',
+        zIndex: 140,
+        backgroundColor: isWarning ? 'rgba(127, 29, 29, 0.98)' : 'rgba(17, 24, 39, 0.98)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         borderBottom: `1px solid ${isWarning ? '#EF4444' : 'var(--border)'}`,
@@ -511,7 +513,7 @@ export default function QuizTakePage() {
       </header>
 
       {/* Main Content Area */}
-      <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem' }}>
+      <main style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '135px', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '6rem' }}>
         
         {questions.length === 0 ? (
           <div style={{

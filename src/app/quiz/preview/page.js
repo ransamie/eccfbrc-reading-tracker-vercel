@@ -222,15 +222,18 @@ function QuizPreviewContent() {
       position: 'relative'
     }}>
       
-      {/* 1. TOP STICKY ADMIN PREVIEW BANNER */}
+      {/* 1. TOP FIXED ADMIN PREVIEW BANNER */}
       <div style={{
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
-        zIndex: 100,
+        left: 0,
+        right: 0,
+        width: '100%',
+        zIndex: 150,
         background: 'linear-gradient(90deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%)',
-        borderBottom: '1px solid rgba(129, 140, 248, 0.3)',
+        borderBottom: '1px solid rgba(129, 140, 248, 0.35)',
         padding: '0.65rem 1rem',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -312,11 +315,11 @@ function QuizPreviewContent() {
       {/* 2. PHASE 1: PARTICIPANT ENTRY SIMULATION */}
       {phase === "entry" && (
         <div style={{
-          minHeight: 'calc(100vh - 50px)',
+          minHeight: '100vh',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '2.5rem 1rem',
+          padding: '5.5rem 1rem 2.5rem 1rem',
           background: 'radial-gradient(ellipse at top, #1e293b 0%, #0f172a 100%)'
         }}>
           <div style={{
@@ -479,11 +482,11 @@ function QuizPreviewContent() {
       {/* 3. PHASE 2: CHRISTIAN INTEGRITY CHECK GATE */}
       {phase === "integrity" && (
         <div style={{
-          minHeight: 'calc(100vh - 50px)',
+          minHeight: '100vh',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '1.5rem 1rem',
+          padding: '5.5rem 1rem 2.5rem 1rem',
           background: 'radial-gradient(ellipse at top, #1e293b 0%, #0f172a 100%)'
         }}>
           <div style={{
@@ -627,16 +630,19 @@ function QuizPreviewContent() {
       {/* 4. PHASE 3: ACTIVE QUIZ WORKSPACE */}
       {phase === "quiz" && (
         <div style={{ paddingBottom: '6rem' }}>
-          {/* Sticky HUD Bar */}
+          {/* Fixed HUD Bar */}
           <header style={{
-            position: 'sticky',
-            top: '49px',
-            zIndex: 90,
-            backgroundColor: isWarning ? 'rgba(127, 29, 29, 0.95)' : 'rgba(17, 24, 39, 0.94)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
+            position: 'fixed',
+            top: '50px',
+            left: 0,
+            right: 0,
+            width: '100%',
+            zIndex: 140,
+            backgroundColor: isWarning ? 'rgba(127, 29, 29, 0.98)' : 'rgba(17, 24, 39, 0.98)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
             borderBottom: `1px solid ${isWarning ? '#EF4444' : 'var(--border)'}`,
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
             transition: 'background-color 0.3s ease, border-color 0.3s ease'
           }}>
             <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0.85rem 1rem' }}>
@@ -685,7 +691,7 @@ function QuizPreviewContent() {
           </header>
 
           {/* Questions Stream */}
-          <main style={{ maxWidth: '800px', margin: '2rem auto 0 auto', padding: '0 1rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <main style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '185px', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '6rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             
             {/* Quick Navigation Pills */}
             <div style={{
@@ -846,9 +852,9 @@ function QuizPreviewContent() {
         </div>
       )}
 
-      {/* 5. PHASE 4: INSTANT RESULT SCORECARD PREVIEW */}
+      {/* 5. PHASE 4: RESULTS BREAKDOWN */}
       {phase === "result" && previewResult && (
-        <div style={{ padding: '2.5rem 1rem 6rem 1rem' }}>
+        <div style={{ padding: '5.5rem 1rem 6rem 1rem' }}>
           <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             
             {/* Scorecard */}
