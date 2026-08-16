@@ -162,7 +162,7 @@ export default function QuizResultPage() {
       ctx.fillText(editionTag, 2030, 135);
       ctx.restore();
 
-      // --- 2. Round Tag in Dark Navy Pill (Center at x: 1418, y: 544, max width: 200px) ---
+      // --- 2. Round Tag in Dark Navy Pill (Center at x: 1418, y: 526, max width: 200px) ---
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -174,7 +174,7 @@ export default function QuizResultPage() {
         ctx.font = `800 ${cRoundSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
       }
       ctx.letterSpacing = "1px";
-      ctx.fillText(roundUpper, 1418, 544);
+      ctx.fillText(roundUpper, 1418, 526);
       ctx.restore();
 
       // --- 3. Team Name (Centered between golden lines at x: 1080, y: 658, max width: 460px) ---
@@ -220,24 +220,24 @@ export default function QuizResultPage() {
       const scoreStr = String(score);
       const denomStr = `/${totalQuestions}`;
 
-      ctx.font = "900 350px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.font = "900 290px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
       const scoreWidth = ctx.measureText(scoreStr).width;
 
-      ctx.font = "900 140px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.font = "900 110px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
       const denomWidth = ctx.measureText(denomStr).width;
 
-      const totalGroupWidth = scoreWidth + denomWidth + 20;
+      const totalGroupWidth = scoreWidth + denomWidth + 12;
       const startX = 1080 - (totalGroupWidth / 2);
 
       // Draw score number
       ctx.textAlign = "left";
       ctx.textBaseline = "alphabetic";
-      ctx.font = "900 350px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillText(scoreStr, startX, 1410);
+      ctx.font = "900 290px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(scoreStr, startX, 1395);
 
       // Draw denominator
-      ctx.font = "900 140px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillText(denomStr, startX + scoreWidth + 20, 1395);
+      ctx.font = "900 110px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(denomStr, startX + scoreWidth + 12, 1380);
       ctx.restore();
 
       // --- 6. Performance Rating below circle (Centered at x: 1080, y: 1754, max width: 820px) ---
@@ -356,7 +356,7 @@ export default function QuizResultPage() {
               {/* 2. Round Tag in Navy Pill (Safe Max Width 200px) */}
               <text 
                 x="1418" 
-                y="544" 
+                y="526" 
                 textAnchor="middle" 
                 dominantBaseline="central" 
                 fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
@@ -407,22 +407,22 @@ export default function QuizResultPage() {
               {/* 5. Big Score Digits inside Purple Circle */}
               <g filter="url(#scoreTextShadow)">
                 <text 
-                  x="1045" 
-                  y="1410" 
+                  x={score === 10 ? "1025" : (score === 0 ? "1000" : "1010")} 
+                  y="1395" 
                   textAnchor="end" 
                   fontFamily="'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif" 
-                  fontSize="350" 
+                  fontSize="290" 
                   fontWeight="900" 
                   fill="#FFFFFF"
                 >
                   {score}
                 </text>
                 <text 
-                  x="1065" 
-                  y="1395" 
+                  x={score === 10 ? "1035" : (score === 0 ? "1010" : "1020")} 
+                  y="1380" 
                   textAnchor="start" 
                   fontFamily="'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif" 
-                  fontSize="140" 
+                  fontSize="110" 
                   fontWeight="900" 
                   fill="#FFFFFF"
                 >
