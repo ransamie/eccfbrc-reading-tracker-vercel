@@ -75,216 +75,124 @@ export default function QuizResultPage() {
     setIsGeneratingImg(true);
     try {
       const canvas = document.createElement("canvas");
-      // High-resolution square for crystal clear mobile and social display
-      canvas.width = 1200;
-      canvas.height = 1200;
+      // Ultra-HD 2160x2160 to match exact Canva template resolution
+      canvas.width = 2160;
+      canvas.height = 2160;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // --- 1. Background Gradient ---
-      const bgGrad = ctx.createLinearGradient(0, 0, 1200, 1200);
-      bgGrad.addColorStop(0, "#080C16");
-      bgGrad.addColorStop(0.4, "#0F172A");
-      bgGrad.addColorStop(1, "#090D18");
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, 1200, 1200);
-
-      // Ambient Corner Glows
-      const glowTop = ctx.createRadialGradient(600, 100, 20, 600, 100, 500);
-      glowTop.addColorStop(0, "rgba(37, 99, 235, 0.18)");
-      glowTop.addColorStop(1, "transparent");
-      ctx.fillStyle = glowTop;
-      ctx.fillRect(0, 0, 1200, 1200);
-
-      const glowBottom = ctx.createRadialGradient(600, 950, 20, 600, 950, 450);
-      glowBottom.addColorStop(0, isHighPass ? "rgba(16, 185, 129, 0.18)" : "rgba(245, 158, 11, 0.15)");
-      glowBottom.addColorStop(1, "transparent");
-      ctx.fillStyle = glowBottom;
-      ctx.fillRect(0, 0, 1200, 1200);
-
-      // --- 2. Outer Luxury Card Frame ---
-      ctx.strokeStyle = "rgba(245, 158, 11, 0.3)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.roundRect(40, 40, 1120, 1120, 36);
-      ctx.stroke();
-
-      // Inner Card Glass Surface
-      ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
-      ctx.beginPath();
-      ctx.roundRect(55, 55, 1090, 1090, 28);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // --- 3. ECCF Logo ---
-      const logoImg = new window.Image();
-      logoImg.crossOrigin = "anonymous";
-      logoImg.src = "/eccfbrclogo.png";
-      await new Promise((resolve) => {
-        logoImg.onload = resolve;
-        logoImg.onerror = resolve;
+      // 1. Load Canva Clean Template Image
+      const templateImg = new window.Image();
+      templateImg.crossOrigin = "anonymous";
+      templateImg.src = "/score-card-template.png";
+      await new Promise((resolve, reject) => {
+        templateImg.onload = resolve;
+        templateImg.onerror = () => reject(new Error("Failed to load scorecard template"));
       });
 
-      if (logoImg.complete && logoImg.naturalWidth > 0) {
-        // Logo Background Circle
-        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
-        ctx.beginPath();
-        ctx.arc(600, 140, 52, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
+      // Draw background template
+      ctx.drawImage(templateImg, 0, 0, 2160, 2160);
 
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(600, 140, 46, 0, 2 * Math.PI);
-        ctx.clip();
-        ctx.drawImage(logoImg, 600 - 46, 140 - 46, 92, 92);
-        ctx.restore();
-      }
+      // --- 1. Top Right Edition Text ---
+      const editionText = (editionDisplay || "JUN – AUG NT EDITION").toUpperCase();
+      ctx.save();
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#000000";
+      ctx.font = "800 46px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif";
+      ctx.letterSpacing = "0.5px";
+      ctx.fillText(editionText, 2030, 152);
+      ctx.restore();
 
-      // --- 4. Header Branding ---
+      // --- 2. Round Tag in Dark Navy Pill (Center at x: 1418, y: 546) ---
+      const roundText = (roundDisplay || "ROUND 7").toUpperCase();
+      ctx.save();
       ctx.textAlign = "center";
-      ctx.fillStyle = "#F59E0B";
-      ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-      ctx.letterSpacing = "3px";
-      ctx.fillText("ECCF BIBLE READING CHALLENGE", 600, 225);
-
+      ctx.textBaseline = "middle";
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "800 36px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-      ctx.letterSpacing = "0px";
-      ctx.fillText("Official Assessment Scorecard", 600, 275);
+      ctx.font = "800 42px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.letterSpacing = "1px";
+      ctx.fillText(roundText, 1418, 552);
+      ctx.restore();
 
-      // --- 5. Symmetrical Round & Team Badges ---
-      ctx.fillStyle = "rgba(37, 99, 235, 0.18)";
-      ctx.beginPath();
-      ctx.roundRect(140, 305, 420, 42, 21);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(59, 130, 246, 0.5)";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = "#93C5FD";
-      ctx.font = "bold 17px sans-serif";
-      ctx.fillText(`📖 ${editionDisplay} • ${roundDisplay}`, 350, 332);
+      // --- 3. Team Name (Centered between golden lines at x: 1080, y: 662) ---
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#192852";
+      ctx.font = "800 58px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillText(teamDisplay, 1080, 665);
+      ctx.restore();
 
-      // Team Pill
-      ctx.fillStyle = "rgba(16, 185, 129, 0.18)";
-      ctx.beginPath();
-      ctx.roundRect(580, 305, 480, 42, 21);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(16, 185, 129, 0.5)";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = "#6EE7B7";
-      ctx.font = "bold 17px sans-serif";
-      ctx.fillText(`🛡️ ${teamDisplay}`, 820, 332);
-
-      // --- 6. Participant Nameplate Card ---
-      ctx.fillStyle = "rgba(30, 41, 59, 0.75)";
-      ctx.beginPath();
-      ctx.roundRect(160, 375, 880, 105, 20);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      ctx.fillStyle = "#94A3B8";
-      ctx.font = "bold 14px sans-serif";
-      ctx.letterSpacing = "2px";
-      ctx.fillText("CERTIFIED PARTICIPANT", 600, 410);
-
+      // --- 4. Participant's Full Name (Inside Purple Box at x: 1080, y: 835) ---
+      const nameUpper = (candidateName || "PARTICIPANT").toUpperCase();
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 34px sans-serif";
-      ctx.letterSpacing = "0px";
-      ctx.fillText(candidateName, 600, 455);
+      ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 4;
+      ctx.shadowOffsetY = 4;
 
-      // --- 7. Precision Gauge Score Ring ---
-      const centerX = 600;
-      const centerY = 650;
-      const radius = 115;
-
-      // Track ring background
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.lineWidth = 14;
-      ctx.stroke();
-
-      // Active progress arc
-      const progressEndAngle = -Math.PI / 2 + (percentage / 100) * 2 * Math.PI;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, -Math.PI / 2, progressEndAngle);
-      const ringGrad = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
-      if (isHighPass) {
-        ringGrad.addColorStop(0, "#10B981");
-        ringGrad.addColorStop(1, "#06B6D4");
-      } else {
-        ringGrad.addColorStop(0, "#3B82F6");
-        ringGrad.addColorStop(1, "#8B5CF6");
+      let nameFontSize = 96;
+      ctx.font = `800 ${nameFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif`;
+      let nameWidth = ctx.measureText(nameUpper).width;
+      const maxBoxWidth = 840; // Max allowed width inside purple box
+      if (nameWidth > maxBoxWidth) {
+        nameFontSize = Math.floor(nameFontSize * (maxBoxWidth / nameWidth));
+        ctx.font = `800 ${nameFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif`;
       }
-      ctx.strokeStyle = ringGrad;
-      ctx.lineWidth = 14;
-      ctx.lineCap = "round";
-      ctx.stroke();
+      ctx.fillText(nameUpper, 1080, 840);
+      ctx.restore();
 
-      // Score Center Digits
-      ctx.fillStyle = isHighPass ? "#34D399" : "#60A5FA";
-      ctx.font = "900 84px sans-serif";
-      ctx.fillText(`${score}`, 565, 665);
+      // --- 5. Big Score Digits in Purple Circle (Centered around x: 1080, y: 1320) ---
+      ctx.save();
+      ctx.fillStyle = "#FFFFFF";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.65)";
+      ctx.shadowBlur = 16;
+      ctx.shadowOffsetX = 6;
+      ctx.shadowOffsetY = 6;
 
-      ctx.fillStyle = "#94A3B8";
-      ctx.font = "bold 36px sans-serif";
-      ctx.fillText(`/${totalQuestions}`, 665, 660);
+      const scoreStr = String(score);
+      const denomStr = `/${totalQuestions}`;
 
-      // Percentage label below gauge
-      ctx.fillStyle = isHighPass ? "#6EE7B7" : "#93C5FD";
-      ctx.font = "800 24px sans-serif";
-      ctx.letterSpacing = "1.5px";
-      ctx.fillText(`${percentage}% OVERALL ACCURACY`, 600, 810);
+      // Measure font widths
+      ctx.font = "900 340px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      const scoreWidth = ctx.measureText(scoreStr).width;
 
-      // Performance Badge
-      const perfTitle = percentage >= 90 ? "🏆 EXCEPTIONAL EXCELLENCE" : percentage >= 70 ? "✨ COMMENDED HIGH PASS" : percentage >= 50 ? "🌟 SUCCESSFUL COMPLETION" : "📖 SINCERE EFFORT";
-      ctx.fillStyle = isHighPass ? "rgba(16, 185, 129, 0.15)" : "rgba(59, 130, 246, 0.15)";
-      ctx.beginPath();
-      ctx.roundRect(400, 835, 400, 36, 18);
-      ctx.fill();
-      ctx.strokeStyle = isHighPass ? "rgba(16, 185, 129, 0.4)" : "rgba(59, 130, 246, 0.4)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.fillStyle = isHighPass ? "#34D399" : "#93C5FD";
-      ctx.font = "bold 15px sans-serif";
-      ctx.fillText(perfTitle, 600, 859);
+      ctx.font = "900 160px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      const denomWidth = ctx.measureText(denomStr).width;
 
-      // --- 8. Christian Integrity Badge ---
-      ctx.fillStyle = "rgba(245, 158, 11, 0.12)";
-      ctx.beginPath();
-      ctx.roundRect(260, 900, 680, 52, 26);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(245, 158, 11, 0.35)";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = "#FCD34D";
-      ctx.font = "bold 18px sans-serif";
-      ctx.fillText("🛡️ Christian Integrity Certified Assessment", 600, 933);
+      const totalScoreGroupWidth = scoreWidth + denomWidth + 24;
+      const startX = 1080 - (totalScoreGroupWidth / 2);
 
-      // --- 9. Footer Scripture & Metadata ---
-      const nowStr = new Date().toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      // Draw score number
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.font = "900 340px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(scoreStr, startX, 1420);
 
-      ctx.fillStyle = "#64748B";
-      ctx.font = "italic 17px sans-serif";
-      ctx.fillText('"The Word of God is living and active." — Hebrews 4:12', 600, 1000);
+      // Draw denominator
+      ctx.font = "900 160px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(denomStr, startX + scoreWidth + 24, 1385);
+      ctx.restore();
 
-      ctx.fillStyle = "#94A3B8";
-      ctx.font = "600 15px sans-serif";
-      ctx.fillText(`Official Record Verified on ${nowStr} • ECCF Reading Tracker`, 600, 1040);
+      // --- 6. Performance Rating below circle (Centered at x: 1080, y: 1765) ---
+      let perfTitle = "SINCERE EFFORT";
+      if (percentage === 100) perfTitle = "PERFECT SCORE";
+      else if (percentage >= 90) perfTitle = "EXCEPTIONAL EXCELLENCE";
+      else if (percentage >= 70) perfTitle = "COMMENDED HIGH PASS";
+      else if (percentage >= 50) perfTitle = "SUCCESSFUL COMPLETION";
+
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#192852";
+      ctx.font = "900 80px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.letterSpacing = "2px";
+      ctx.fillText(perfTitle, 1080, 1765);
+      ctx.restore();
 
       // Trigger Instant Download
       const dataUrl = canvas.toDataURL("image/png");
@@ -306,141 +214,228 @@ export default function QuizResultPage() {
     window.open(shareUrl, "_blank");
   };
 
+  // Performance Rating Title for on-screen display
+  const perfTitle = percentage === 100 
+    ? "PERFECT SCORE" 
+    : percentage >= 90 
+    ? "EXCEPTIONAL EXCELLENCE" 
+    : percentage >= 70 
+    ? "COMMENDED HIGH PASS" 
+    : percentage >= 50 
+    ? "SUCCESSFUL COMPLETION" 
+    : "SINCERE EFFORT";
+
   return (
     <div style={{
       minHeight: '100vh',
       backgroundColor: 'var(--background)',
       color: 'var(--text-primary)',
       fontFamily: 'var(--font-sans)',
-      padding: '3rem 1rem 6rem 1rem'
+      padding: '2.5rem 1rem 6rem 1rem'
     }}>
       <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         
-        {/* Score Summary Card */}
+        {/* On-Screen Canva Scorecard Card */}
         <div style={{
-          backgroundColor: 'var(--surface)',
-          borderRadius: '1.25rem',
+          backgroundColor: '#FFFFFF',
+          borderRadius: '1.5rem',
           border: '1px solid var(--border)',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35)',
-          padding: '2.5rem 1.5rem',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)',
+          padding: '1.75rem 1.25rem 2rem 1.25rem',
           textAlign: 'center',
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          color: '#192852'
         }}>
           
-          {/* ECCF Challenge Logo */}
+          {/* Top Bar: Logo Branding (Left) & Edition (Right) */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', padding: '0 0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', textAlign: 'left' }}>
+              <div style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '0.6rem',
+                overflow: 'hidden',
+                backgroundColor: '#0F172A',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+                flexShrink: 0
+              }}>
+                <Image 
+                  src="/eccfbrclogo.png" 
+                  alt="ECCF Logo" 
+                  width={46} 
+                  height={46} 
+                  style={{ objectFit: 'contain' }}
+                  priority
+                />
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#000000', lineHeight: 1.15 }}>ECCF BIBLE</span>
+                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#000000', lineHeight: 1.15 }}>READING CLUB</span>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#000000', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                {editionDisplay || "JUN – AUG NT EDITION"}
+              </span>
+            </div>
+          </div>
+
+          {/* Section: BIBLE QUIZ SCORE + Navy Round Pill */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.65rem', marginBottom: '0.75rem' }}>
+            <h2 style={{
+              fontSize: '1.35rem',
+              fontWeight: 900,
+              color: '#192852',
+              margin: 0,
+              fontFamily: "'Arial Black', Impact, sans-serif",
+              letterSpacing: '0.5px'
+            }}>
+              BIBLE QUIZ SCORE
+            </h2>
+            <span style={{
+              backgroundColor: '#192852',
+              color: '#FFFFFF',
+              padding: '0.25rem 0.75rem',
+              borderRadius: '0.45rem',
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase'
+            }}>
+              {roundDisplay || "ROUND 7"}
+            </span>
+          </div>
+
+          {/* Golden Dividers with Team Name */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.85rem', marginBottom: '1.25rem' }}>
+            <div style={{ height: '3px', width: '70px', backgroundColor: '#D4AF37', borderRadius: '2px' }}></div>
+            <span style={{ fontSize: '0.98rem', fontWeight: 800, color: '#192852' }}>
+              {teamDisplay}
+            </span>
+            <div style={{ height: '3px', width: '70px', backgroundColor: '#D4AF37', borderRadius: '2px' }}></div>
+          </div>
+
+          {/* Purple Nameplate Box */}
           <div style={{
-            width: '88px',
-            height: '88px',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            border: '2px solid rgba(245, 158, 11, 0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 1.25rem auto',
-            padding: '6px',
-            boxShadow: '0 0 25px rgba(245, 158, 11, 0.2)'
+            maxWidth: '480px',
+            margin: '0 auto 1.5rem auto',
+            background: 'linear-gradient(135deg, #8C52FF 0%, #7C3AED 100%)',
+            border: '2px solid #FFFFFF',
+            borderRadius: '0.85rem',
+            padding: '0.75rem 1.5rem',
+            boxShadow: '0 8px 25px rgba(140, 82, 255, 0.4)'
           }}>
-            <Image 
-              src="/eccfbrclogo.png" 
-              alt="ECCF Logo" 
-              width={76} 
-              height={76} 
-              style={{ objectFit: 'contain', borderRadius: '50%' }}
-              priority
-            />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
             <span style={{
-              backgroundColor: 'rgba(59, 130, 246, 0.15)',
-              color: '#93C5FD',
-              padding: '0.25rem 0.75rem',
-              borderRadius: '9999px',
-              fontSize: '0.82rem',
-              fontWeight: '700',
-              border: '1px solid rgba(59, 130, 246, 0.3)'
-            }}>
-              📖 {roundDisplay}
-            </span>
-            <span style={{
-              backgroundColor: 'rgba(16, 185, 129, 0.15)',
-              color: '#6EE7B7',
-              padding: '0.25rem 0.75rem',
-              borderRadius: '9999px',
-              fontSize: '0.82rem',
-              fontWeight: '700',
-              border: '1px solid rgba(16, 185, 129, 0.3)'
-            }}>
-              🛡️ {teamDisplay}
-            </span>
-          </div>
-
-          <h1 style={{ fontSize: '1.85rem', fontWeight: '800', margin: '0 0 0.4rem 0' }}>
-            Quiz Completed!
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '1.05rem' }}>
-            Candidate: <strong style={{ color: '#FFFFFF', fontWeight: '800' }}>{candidateName}</strong>
-          </p>
-          <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.65rem', backgroundColor: 'var(--accent-light)', color: 'var(--accent-hover)', borderRadius: '9999px', fontWeight: 700 }}>
-              📖 {editionDisplay} • {roundDisplay}
-            </span>
-            <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.65rem', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34D399', borderRadius: '9999px', fontWeight: 700 }}>
-              🛡️ {teamDisplay}
-            </span>
-          </div>
-
-          {/* Big Score Display */}
-          <div style={{ margin: '2rem 0' }}>
-            <div style={{
-              fontSize: '4.25rem',
-              fontWeight: '900',
-              lineHeight: '1',
-              color: isHighPass ? '#34D399' : 'var(--accent-hover)',
-              letterSpacing: '-1px'
-            }}>
-              {score} <span style={{ fontSize: '1.85rem', fontWeight: '500', color: 'var(--text-secondary)' }}>/ {totalQuestions}</span>
-            </div>
-            <div style={{
-              fontSize: '0.95rem',
-              fontWeight: '700',
+              fontSize: '1.45rem',
+              fontWeight: 900,
+              color: '#FFFFFF',
+              letterSpacing: '1px',
               textTransform: 'uppercase',
-              letterSpacing: '1.5px',
-              color: 'var(--text-secondary)',
-              marginTop: '0.5rem'
+              textShadow: '0 2px 8px rgba(0,0,0,0.4)',
+              display: 'block',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
             }}>
-              Final Score ({percentage}%)
+              {candidateName}
+            </span>
+          </div>
+
+          {/* Big Purple Score Badge with Confetti / Glow */}
+          <div style={{ position: 'relative', width: '190px', height: '190px', margin: '0 auto 1.25rem auto' }}>
+            {/* Background Confetti Image if available */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #8C52FF 0%, #6D28D9 100%)',
+              border: '3px solid #FFFFFF',
+              boxShadow: '0 12px 35px rgba(140, 82, 255, 0.45)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div style={{ color: '#FFFFFF', display: 'flex', alignItems: 'baseline', textShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                <span style={{ fontSize: '4.75rem', fontWeight: 900, fontFamily: "'Arial Black', Impact, sans-serif", lineHeight: 1 }}>
+                  {score}
+                </span>
+                <span style={{ fontSize: '2.1rem', fontWeight: 900, fontFamily: "'Arial Black', Impact, sans-serif", opacity: 0.95, marginLeft: '3px' }}>
+                  /{totalQuestions}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Submission Recorded Banner */}
-          <div style={{ marginBottom: '1.75rem', display: 'flex', justifyContent: 'center' }}>
+          {/* Performance Title */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: 900,
+              color: '#192852',
+              margin: '0 0 0.25rem 0',
+              fontFamily: "'Arial Black', Impact, sans-serif",
+              letterSpacing: '1px'
+            }}>
+              {perfTitle}
+            </h3>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#6B7280' }}>
+              Overall Accuracy: {percentage}%
+            </span>
+          </div>
+
+          {/* Bottom Scripture Quote */}
+          <div style={{
+            maxWidth: '520px',
+            margin: '0 auto 1.5rem auto',
+            paddingTop: '1rem',
+            borderTop: '1px solid rgba(0, 0, 0, 0.08)'
+          }}>
+            <p style={{
+              fontSize: '0.88rem',
+              fontStyle: 'italic',
+              fontWeight: 500,
+              color: '#1F2937',
+              margin: '0 0 0.25rem 0',
+              lineHeight: 1.4
+            }}>
+              “Be diligent to present yourself approved to God, a worker who does not need to be ashamed.”
+            </p>
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#192852', fontStyle: 'italic' }}>
+              — 2 Timothy 2:15
+            </span>
+          </div>
+
+          {/* Submission Recorded Pill */}
+          <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.45rem',
               backgroundColor: 'rgba(16, 185, 129, 0.12)',
-              color: '#34D399',
+              color: '#059669',
               border: '1px solid rgba(16, 185, 129, 0.3)',
-              padding: '0.65rem 1.25rem',
-              borderRadius: '0.6rem',
-              fontSize: '0.92rem',
-              fontWeight: '600'
+              padding: '0.5rem 1rem',
+              borderRadius: '9999px',
+              fontSize: '0.85rem',
+              fontWeight: '700'
             }}>
-              <Check size={18} /> Submission Recorded Successfully
+              <Check size={16} /> Submission Verified & Recorded Live
             </div>
           </div>
 
-          {/* DOWNLOAD SCORECARD PNG & SHARE BUTTONS */}
+          {/* Action Buttons: Download Canva High-Res Scorecard + WhatsApp Share */}
           <div className="quiz-share-buttons" style={{
             display: 'flex',
             justifyContent: 'center',
             gap: '0.75rem',
             flexWrap: 'wrap',
             paddingTop: '1.25rem',
-            borderTop: '1px solid var(--border-light)'
+            borderTop: '1px solid rgba(0,0,0,0.08)'
           }}>
             <button
               type="button"
@@ -451,23 +446,23 @@ export default function QuizResultPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                padding: '0.85rem 1.5rem',
-                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                padding: '0.9rem 1.5rem',
+                background: 'linear-gradient(135deg, #8C52FF 0%, #7C3AED 100%)',
                 color: '#fff',
                 border: 'none',
-                borderRadius: '0.65rem',
+                borderRadius: '0.75rem',
                 fontSize: '0.95rem',
-                fontWeight: '700',
+                fontWeight: '800',
                 cursor: isGeneratingImg ? 'not-allowed' : 'pointer',
-                boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)',
+                boxShadow: '0 6px 20px rgba(140, 82, 255, 0.35)',
                 transition: 'all 0.2s ease',
-                flex: '1 1 220px'
+                flex: '1 1 230px'
               }}
               onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
               <Download size={18} />
-              <span>{isGeneratingImg ? "Generating PNG..." : "Download Score Card (PNG)"}</span>
+              <span>{isGeneratingImg ? "Generating Ultra-HD PNG..." : "Download Official Scorecard (PNG)"}</span>
             </button>
 
             <button
@@ -478,19 +473,19 @@ export default function QuizResultPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                padding: '0.85rem 1.35rem',
-                backgroundColor: 'rgba(37, 99, 235, 0.15)',
-                color: 'var(--accent-hover)',
+                padding: '0.9rem 1.35rem',
+                backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                color: '#2563EB',
                 border: '1px solid rgba(37, 99, 235, 0.3)',
-                borderRadius: '0.65rem',
+                borderRadius: '0.75rem',
                 fontSize: '0.95rem',
-                fontWeight: '700',
+                fontWeight: '800',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 flex: '1 1 200px'
               }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.25)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.15)'; }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.2)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.12)'; }}
             >
               <Share2 size={18} />
               <span>Share to Team Chat</span>
@@ -498,6 +493,7 @@ export default function QuizResultPage() {
           </div>
 
         </div>
+
 
         {/* Answers Review */}
         <div style={{
