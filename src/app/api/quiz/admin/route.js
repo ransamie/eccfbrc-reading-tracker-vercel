@@ -160,11 +160,15 @@ export async function POST(request) {
     }
 
     if (action === "deleteSubmission") {
-      const { whatsApp, round, timestamp } = body;
-      if (!whatsApp || !round) {
-        return NextResponse.json({ error: "Missing required parameters (whatsApp, round) to delete submission" }, { status: 400 });
+      const whatsApp = body.whatsApp || body.whatsapp || body.phone;
+      const round = body.round;
+      const timestamp = body.timestamp;
+      const fullName = body.fullName || body.name;
+
+      if ((!whatsApp && !fullName) || !round) {
+        return NextResponse.json({ error: "Missing required parameters (phone or name, round) to delete submission" }, { status: 400 });
       }
-      await deleteQuizSubmission(whatsApp, round, timestamp);
+      await deleteQuizSubmission(whatsApp, round, timestamp, fullName);
       return NextResponse.json({ success: true, message: "Submission and session deleted successfully. Candidate can now retake the quiz." });
     }
 

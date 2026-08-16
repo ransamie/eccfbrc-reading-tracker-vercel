@@ -33,7 +33,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Info,
-  Eye
+  Eye,
+  Layers
 } from "lucide-react";
 import { parseQuizQuestions } from "@/lib/quizParser";
 
@@ -455,6 +456,7 @@ export default function AdminQuizPage() {
   const handleDeleteSubmission = (sub) => {
     const candidateName = sub.fullName || "this candidate";
     const subRound = sub.round || "this round";
+    const targetPhone = sub.whatsApp || sub.whatsapp || "";
 
     showConfirm({
       title: "Reset Submission & Allow Retake?",
@@ -471,7 +473,8 @@ export default function AdminQuizPage() {
             },
             body: JSON.stringify({
               action: "deleteSubmission",
-              whatsApp: sub.whatsapp,
+              whatsApp: targetPhone,
+              fullName: sub.fullName,
               round: sub.round,
               timestamp: sub.timestamp
             })
@@ -480,14 +483,14 @@ export default function AdminQuizPage() {
           if (res.ok) {
             showToast(`Submission reset! ${candidateName} can now retake ${subRound}.`);
             setResults(prev => prev.filter(r => !(
-              r.whatsapp === sub.whatsapp && 
-              r.round === sub.round && 
-              (sub.timestamp ? r.timestamp === sub.timestamp : true)
-            )));
+              (targetPhone && (r.whatsApp === targetPhone || r.whatsapp === targetPhone)) ||
+              (sub.fullName && r.fullName === sub.fullName)
+            ) || r.round !== sub.round || (sub.timestamp && r.timestamp !== sub.timestamp)));
           } else {
+            const errData = await res.json().catch(() => ({}));
             showAlert({
               title: "Delete Failed",
-              message: "Failed to delete submission from database.",
+              message: errData.error || "Failed to delete submission from database.",
               type: "danger"
             });
           }

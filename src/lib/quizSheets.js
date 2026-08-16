@@ -364,10 +364,11 @@ export async function deleteQuizQuestion(id) {
   return false;
 }
 
-export async function deleteQuizSubmission(whatsAppNumber, round, timestamp) {
+export async function deleteQuizSubmission(whatsAppNumber, round, timestamp, fullName) {
   try {
     const normTargetPhone = String(whatsAppNumber || "").replace(/\D/g, "").replace(/^0+/, "");
     const targetRound = String(round || "").trim().toLowerCase();
+    const targetName = String(fullName || "").trim().toLowerCase();
 
     // 1. Delete from Quiz_Results
     const resultsSheet = await getSheetByTitle("Quiz_Results", [
@@ -386,12 +387,14 @@ export async function deleteQuizSubmission(whatsAppNumber, round, timestamp) {
       const rowPhone = String(row.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
       const rowRound = String(row.get("Round") || "").trim().toLowerCase();
       const rowTimestamp = String(row.get("Timestamp") || "").trim();
+      const rowName = String(row.get("Full_Name") || "").trim().toLowerCase();
 
-      const phoneMatch = normTargetPhone && rowPhone === normTargetPhone;
-      const roundMatch = targetRound && rowRound === targetRound;
+      const phoneMatch = normTargetPhone && rowPhone && (rowPhone === normTargetPhone || rowPhone.endsWith(normTargetPhone) || normTargetPhone.endsWith(rowPhone));
+      const nameMatch = targetName && rowName && targetName === rowName;
+      const roundMatch = !targetRound || rowRound === targetRound;
       const timestampMatch = timestamp ? rowTimestamp === String(timestamp).trim() : true;
 
-      if (phoneMatch && roundMatch && timestampMatch) {
+      if ((phoneMatch || nameMatch) && roundMatch && timestampMatch) {
         await row.delete();
         break;
       }
@@ -410,7 +413,10 @@ export async function deleteQuizSubmission(whatsAppNumber, round, timestamp) {
       const sPhone = String(sRow.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
       const sRound = String(sRow.get("Round") || "").trim().toLowerCase();
 
-      if (normTargetPhone && sPhone === normTargetPhone && targetRound && sRound === targetRound) {
+      const sPhoneMatch = normTargetPhone && sPhone && (sPhone === normTargetPhone || sPhone.endsWith(normTargetPhone) || normTargetPhone.endsWith(sPhone));
+      const sRoundMatch = !targetRound || sRound === targetRound;
+
+      if (sPhoneMatch && sRoundMatch) {
         await sRow.delete();
         break;
       }
