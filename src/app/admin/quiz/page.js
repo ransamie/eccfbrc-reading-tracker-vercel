@@ -1832,293 +1832,36 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
         })()}
 
         {/* TAB 2: QUESTION BUILDER (Single Edit / Create + Persistent Round Question Bank) */}
-        {activeTab === 'builder' && (
-          <div className="quiz-admin-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1.5rem', alignItems: 'flex-start', maxWidth: '1050px', margin: '0 auto' }}>
-            
-            {/* Form Column */}
-            <div style={{
-              backgroundColor: 'var(--surface)',
-              borderRadius: '1rem',
-              border: `1.5px solid ${editingQuestionId ? 'var(--accent)' : 'var(--border)'}`,
-              padding: '1.5rem',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
-            }}>
+        {activeTab === 'builder' && (() => {
+          const activeTargetRound = editingQuestionId 
+            ? questionForm.round 
+            : (selectedBankRound !== "All" ? selectedBankRound : (settings.Active_Round || (uniqueRoundsInEdition[0] || "Round 1")));
+          
+          const isCurrentlyActiveLive = (settings.Active_Round === activeTargetRound && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition);
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '1050px', margin: '0 auto' }}>
               
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {editingQuestionId ? (
-                    <>
-                      <Pencil size={18} style={{ color: 'var(--accent-hover)' }} /> Edit Question
-                    </>
-                  ) : (
-                    <>
-                      <PlusCircle size={18} style={{ color: 'var(--accent)' }} /> Add Single Question
-                    </>
-                  )}
-                </h3>
-
-                {editingQuestionId && (
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                      border: 'none',
-                      color: 'var(--text-secondary)',
-                      padding: '0.35rem 0.65rem',
-                      borderRadius: '0.4rem',
-                      fontSize: '0.78rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <X size={14} /> Cancel
-                  </button>
-                )}
-              </div>
-
-              <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {/* Target Reading Schedule / Edition */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                    Reading Schedule Track
-                  </label>
-                  <select
-                    value={questionForm.edition || selectedEdition}
-                    onChange={(e) => setQuestionForm(prev => ({ ...prev, edition: e.target.value }))}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem 0.9rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.5rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.88rem',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {availableEditions.map(ed => (
-                      <option key={ed} value={ed}>{ed}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Target Round Tag */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                    Round Tag
-                  </label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
-                      type="text"
-                      value={questionForm.round}
-                      onChange={(e) => setQuestionForm(prev => ({ ...prev, round: e.target.value }))}
-                      placeholder="e.g. Round 8"
-                      required
-                      style={{
-                        flex: 1,
-                        padding: '0.75rem 0.9rem',
-                        backgroundColor: 'var(--surface-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.5rem',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.9rem',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                    {uniqueRoundsInEdition.length > 0 && (
-                      <select
-                        onChange={(e) => {
-                          if (e.target.value) setQuestionForm(prev => ({ ...prev, round: e.target.value }));
-                        }}
-                        value={questionForm.round}
-                        style={{
-                          padding: '0.75rem 0.8rem',
-                          backgroundColor: 'var(--surface-secondary)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '0.5rem',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.85rem',
-                          outline: 'none',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <option value="" disabled>Saved...</option>
-                        {uniqueRoundsInEdition.map(r => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                    Question Prompt
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={questionForm.question}
-                    onChange={(e) => setQuestionForm(prev => ({ ...prev, question: e.target.value }))}
-                    placeholder="Enter the question text..."
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem 0.9rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.5rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.9rem',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                      resize: 'vertical'
-                    }}
-                  />
-                </div>
-
-                {/* 4 Options with Radio Select */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                    Options & Correct Answer (Click radio dot):
-                  </label>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {[1, 2, 3, 4].map(num => {
-                      const isCorrect = questionForm.correctAnswer === questionForm[`option${num}`] && questionForm[`option${num}`] !== "";
-
-                      return (
-                        <div 
-                          key={num} 
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.65rem',
-                            backgroundColor: isCorrect ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-secondary)',
-                            border: `1px solid ${isCorrect ? 'var(--success)' : 'var(--border)'}`,
-                            borderRadius: '0.5rem',
-                            padding: '0.35rem 0.65rem',
-                            transition: 'all 0.2s ease'
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            name="correctAnswerOption"
-                            checked={isCorrect}
-                            onChange={() => {
-                              if (questionForm[`option${num}`]) {
-                                setQuestionForm(prev => ({ ...prev, correctAnswer: prev[`option${num}`] }));
-                              }
-                            }}
-                            style={{ cursor: 'pointer', transform: 'scale(1.15)' }}
-                          />
-                          <input
-                            type="text"
-                            placeholder={`Option ${num}`}
-                            value={questionForm[`option${num}`]}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setQuestionForm(prev => {
-                                const updated = { ...prev, [`option${num}`]: val };
-                                if (prev.correctAnswer === prev[`option${num}`]) {
-                                  updated.correctAnswer = val;
-                                }
-                                return updated;
-                              });
-                            }}
-                            required
-                            style={{
-                              flex: 1,
-                              backgroundColor: 'transparent',
-                              border: 'none',
-                              color: 'var(--text-primary)',
-                              fontSize: '0.88rem',
-                              outline: 'none'
-                            }}
-                          />
-                          {isCorrect && (
-                            <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700 }}>
-                              ✓ Correct
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                      flex: 1,
-                      padding: '0.85rem',
-                      background: editingQuestionId ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '0.6rem',
-                      fontSize: '0.95rem',
-                      fontWeight: '700',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    {editingQuestionId ? <Save size={16} /> : <PlusCircle size={16} />}
-                    <span>{editingQuestionId ? "Update Question" : "Add Question"}</span>
-                  </button>
-
-                  {editingQuestionId && (
-                    <button
-                      type="button"
-                      onClick={handleCancelEdit}
-                      style={{
-                        padding: '0.85rem 1rem',
-                        backgroundColor: 'var(--surface-secondary)',
-                        color: 'var(--text-secondary)',
-                        border: '1px solid var(--border-light)',
-                        borderRadius: '0.6rem',
-                        fontSize: '0.9rem',
-                        fontWeight: '600',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
-
-            {/* Persistent Round Question Bank Column */}
-            <div style={{
-              backgroundColor: 'var(--surface)',
-              borderRadius: '1rem',
-              border: '1px solid var(--border)',
-              padding: '1.5rem',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
-            }}>
-              
-              <div style={{ marginBottom: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>
-                      Question Bank
-                    </h3>
+              {/* TOP ROUND SWITCHER BAR */}
+              <div style={{
+                backgroundColor: 'var(--surface)',
+                borderRadius: '1rem',
+                border: '1px solid var(--border)',
+                padding: '1.25rem 1.5rem',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.18)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Layers size={18} style={{ color: 'var(--accent)' }} />
+                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      Select Round to Manage & Build:
+                    </span>
                     <span style={{ fontSize: '0.8rem', color: 'var(--accent-hover)', fontWeight: 600 }}>
-                      {selectedEdition} ({editionQuestions.length} Questions)
+                      ({selectedEdition})
                     </span>
                   </div>
 
-                  {/* Active Round Indicator / Fast Switch Button */}
+                  {/* Quick Action: Set as Live Round */}
                   {selectedBankRound !== "All" && (
                     <button
                       type="button"
@@ -2126,88 +1869,97 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                         setSettings(prev => ({
                           ...prev,
                           Active_Edition: selectedEdition,
-                          Active_Round: selectedBankRound
+                          Active_Round: activeTargetRound
                         }));
-                        showToast(`Set active live round to: ${selectedBankRound} (${selectedEdition})! Click "Save Settings" in Control Center to commit.`);
+                        showToast(`Set active live round to: ${activeTargetRound} (${selectedEdition})! Click "Save Settings" in Control Center to commit.`);
                       }}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '0.35rem',
-                        padding: '0.35rem 0.75rem',
-                        backgroundColor: (settings.Active_Round === selectedBankRound && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition) ? 'rgba(16, 185, 129, 0.2)' : 'rgba(37, 99, 235, 0.15)',
-                        border: `1px solid ${(settings.Active_Round === selectedBankRound && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition) ? 'rgba(16, 185, 129, 0.4)' : 'rgba(37, 99, 235, 0.4)'}`,
-                        borderRadius: '0.45rem',
-                        color: (settings.Active_Round === selectedBankRound && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition) ? '#34D399' : '#60A5FA',
-                        fontSize: '0.78rem',
+                        padding: '0.4rem 0.85rem',
+                        backgroundColor: isCurrentlyActiveLive ? 'rgba(16, 185, 129, 0.18)' : 'rgba(37, 99, 235, 0.15)',
+                        border: `1px solid ${isCurrentlyActiveLive ? 'rgba(16, 185, 129, 0.4)' : 'rgba(37, 99, 235, 0.4)'}`,
+                        borderRadius: '0.5rem',
+                        color: isCurrentlyActiveLive ? '#34D399' : '#60A5FA',
+                        fontSize: '0.82rem',
                         fontWeight: 700,
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
                       }}
                     >
-                      <span>{(settings.Active_Round === selectedBankRound && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition) ? "✓ Currently Active" : "🚀 Set as Active Round"}</span>
+                      <span>{isCurrentlyActiveLive ? "✓ Active Live for Participants" : `🚀 Set ${activeTargetRound} as Live for Participants`}</span>
                     </button>
                   )}
                 </div>
 
-                {/* ROUND FILTER PILLS */}
+                {/* ROUND PILLS */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.4rem',
+                  gap: '0.45rem',
                   flexWrap: 'wrap',
-                  padding: '0.4rem',
+                  padding: '0.45rem',
                   backgroundColor: 'var(--surface-secondary)',
-                  borderRadius: '0.65rem',
+                  borderRadius: '0.75rem',
                   border: '1px solid var(--border-light)'
                 }}>
+                  {/* All Rounds Pill */}
                   <button
                     type="button"
                     onClick={() => setSelectedBankRound("All")}
                     style={{
-                      padding: '0.35rem 0.75rem',
-                      borderRadius: '0.45rem',
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '0.5rem',
                       backgroundColor: selectedBankRound === "All" ? 'var(--accent)' : 'transparent',
                       border: 'none',
                       color: selectedBankRound === "All" ? '#fff' : 'var(--text-secondary)',
-                      fontSize: '0.8rem',
+                      fontSize: '0.84rem',
                       fontWeight: selectedBankRound === "All" ? 700 : 500,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
                     }}
                   >
                     All Rounds ({editionQuestions.length})
                   </button>
 
+                  {/* Individual Round Pills */}
                   {uniqueRoundsInEdition.map(r => {
                     const count = editionQuestions.filter(q => q.round === r).length;
-                    const isSelected = selectedBankRound === r;
+                    const isSelected = selectedBankRound === r || (selectedBankRound === "All" && activeTargetRound === r);
                     const isActiveLive = settings.Active_Round === r && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition;
 
                     return (
                       <button
                         key={r}
                         type="button"
-                        onClick={() => setSelectedBankRound(r)}
+                        onClick={() => {
+                          setSelectedBankRound(r);
+                          if (editingQuestionId) handleCancelEdit();
+                        }}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '0.3rem',
-                          padding: '0.35rem 0.75rem',
-                          borderRadius: '0.45rem',
+                          gap: '0.35rem',
+                          padding: '0.4rem 0.85rem',
+                          borderRadius: '0.5rem',
                           backgroundColor: isSelected ? 'var(--accent)' : (isActiveLive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)'),
                           border: `1px solid ${isSelected ? 'var(--accent)' : (isActiveLive ? 'rgba(16, 185, 129, 0.35)' : 'transparent')}`,
                           color: isSelected ? '#fff' : (isActiveLive ? '#34D399' : 'var(--text-primary)'),
-                          fontSize: '0.8rem',
+                          fontSize: '0.84rem',
                           fontWeight: isSelected || isActiveLive ? 700 : 500,
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
                         }}
                       >
                         <span>{r}</span>
                         <span style={{
-                          fontSize: '0.7rem',
-                          opacity: 0.85,
-                          backgroundColor: 'rgba(0,0,0,0.2)',
-                          padding: '0.05rem 0.35rem',
-                          borderRadius: '999px'
+                          fontSize: '0.72rem',
+                          opacity: 0.9,
+                          backgroundColor: 'rgba(0,0,0,0.25)',
+                          padding: '0.05rem 0.4rem',
+                          borderRadius: '999px',
+                          fontWeight: 700
                         }}>
                           {count}
                         </span>
@@ -2218,149 +1970,394 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     );
                   })}
 
+                  {/* + New Round Button */}
                   <button
                     type="button"
                     onClick={() => {
                       const nextRoundNum = uniqueRoundsInEdition.length + 1;
                       const newRoundName = `Round ${nextRoundNum}`;
-                      setQuestionForm(prev => ({ ...prev, round: newRoundName, edition: selectedEdition }));
                       setSelectedBankRound(newRoundName);
-                      showToast(`Prepared new round: ${newRoundName} for ${selectedEdition}`);
+                      if (editingQuestionId) handleCancelEdit();
+                      showToast(`Switched to ${newRoundName} (${selectedEdition}). Add your questions below!`);
                     }}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '0.25rem',
-                      padding: '0.35rem 0.65rem',
-                      borderRadius: '0.45rem',
+                      gap: '0.3rem',
+                      padding: '0.4rem 0.8rem',
+                      borderRadius: '0.5rem',
                       backgroundColor: 'transparent',
                       border: '1px dashed var(--border)',
                       color: 'var(--text-secondary)',
-                      fontSize: '0.78rem',
-                      cursor: 'pointer'
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
                     }}
+                    onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent-hover)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
                   >
-                    <PlusCircle size={13} /> New Round
+                    <PlusCircle size={14} /> New Round
                   </button>
                 </div>
               </div>
 
-              {/* Questions Scroll Area */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', maxHeight: '550px', overflowY: 'auto', paddingRight: '0.35rem' }}>
-                {editionQuestions.filter(q => selectedBankRound === "All" || q.round === selectedBankRound).length === 0 ? (
-                  <div style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600 }}>No questions saved in {selectedBankRound === "All" ? selectedEdition : `${selectedBankRound} (${selectedEdition})`}.</p>
-                    <span style={{ fontSize: '0.85rem' }}>Use the form on the left or the Bulk Importer / AI Generator tabs to add questions.</span>
-                  </div>
-                ) : (
-                  editionQuestions
-                    .filter(q => selectedBankRound === "All" || q.round === selectedBankRound)
-                    .map((q) => {
-                      const isBeingEdited = editingQuestionId === q.id;
+              {/* 2-COLUMN LAYOUT: QUESTION BUILDER + QUESTION BANK */}
+              <div className="quiz-admin-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1.5rem', alignItems: 'flex-start' }}>
+                
+                {/* Form Column (Question Builder) */}
+                <div style={{
+                  backgroundColor: 'var(--surface)',
+                  borderRadius: '1rem',
+                  border: `1.5px solid ${editingQuestionId ? 'var(--accent)' : 'var(--border)'}`,
+                  padding: '1.5rem',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
+                }}>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {editingQuestionId ? (
+                        <>
+                          <Pencil size={18} style={{ color: 'var(--accent-hover)' }} /> Edit Question
+                        </>
+                      ) : (
+                        <>
+                          <PlusCircle size={18} style={{ color: 'var(--accent)' }} /> Add Question
+                        </>
+                      )}
+                    </h3>
 
-                      return (
-                        <div
-                          key={q.id}
-                          style={{
-                            backgroundColor: isBeingEdited ? 'rgba(37, 99, 235, 0.12)' : 'var(--surface-secondary)',
-                            border: `1px solid ${isBeingEdited ? 'var(--accent)' : 'var(--border-light)'}`,
-                            borderRadius: '0.75rem',
-                            padding: '1rem',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            gap: '0.75rem',
-                            alignItems: 'flex-start',
-                            transition: 'all 0.2s ease'
-                          }}
-                        >
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, backgroundColor: 'var(--accent-light)', color: 'var(--accent-hover)', padding: '0.15rem 0.5rem', borderRadius: '0.3rem' }}>
-                                {q.round}
-                              </span>
-                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>ID: {q.id}</span>
-                              {isBeingEdited && (
-                                <span style={{ fontSize: '0.7rem', color: 'var(--accent-hover)', fontWeight: 700 }}>
-                                  [Editing]
+                    {editingQuestionId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          border: 'none',
+                          color: 'var(--text-secondary)',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: '0.4rem',
+                          fontSize: '0.78rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <X size={14} /> Cancel Edit
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Target Round Badge */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    padding: '0.5rem 0.75rem',
+                    backgroundColor: 'var(--surface-secondary)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '0.55rem',
+                    marginBottom: '1rem',
+                    fontSize: '0.82rem'
+                  }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Target:</span>
+                    <strong style={{ color: '#60A5FA' }}>{activeTargetRound}</strong>
+                    <span style={{ color: 'var(--text-secondary)' }}>•</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{selectedEdition}</span>
+                  </div>
+
+                  <form onSubmit={(e) => {
+                    // Inject activeTargetRound and selectedEdition into form before submit
+                    questionForm.round = activeTargetRound;
+                    questionForm.edition = selectedEdition;
+                    handleFormSubmit(e);
+                  }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                        Question Prompt
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={questionForm.question}
+                        onChange={(e) => setQuestionForm(prev => ({ ...prev, question: e.target.value }))}
+                        placeholder="Enter the question text..."
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 0.9rem',
+                          backgroundColor: 'var(--surface-secondary)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '0.5rem',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.9rem',
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                          resize: 'vertical'
+                        }}
+                      />
+                    </div>
+
+                    {/* 4 Options with Radio Select */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                        Options & Correct Answer (Click radio dot):
+                      </label>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {[1, 2, 3, 4].map(num => {
+                          const isCorrect = questionForm.correctAnswer === questionForm[`option${num}`] && questionForm[`option${num}`] !== "";
+
+                          return (
+                            <div 
+                              key={num} 
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.65rem',
+                                backgroundColor: isCorrect ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-secondary)',
+                                border: `1px solid ${isCorrect ? 'var(--success)' : 'var(--border)'}`,
+                                borderRadius: '0.5rem',
+                                padding: '0.35rem 0.65rem',
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name="correctAnswerOption"
+                                checked={isCorrect}
+                                onChange={() => {
+                                  if (questionForm[`option${num}`]) {
+                                    setQuestionForm(prev => ({ ...prev, correctAnswer: prev[`option${num}`] }));
+                                  }
+                                }}
+                                style={{ cursor: 'pointer', transform: 'scale(1.15)' }}
+                              />
+                              <input
+                                type="text"
+                                placeholder={`Option ${num}`}
+                                value={questionForm[`option${num}`]}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setQuestionForm(prev => {
+                                    const updated = { ...prev, [`option${num}`]: val };
+                                    if (prev.correctAnswer === prev[`option${num}`]) {
+                                      updated.correctAnswer = val;
+                                    }
+                                    return updated;
+                                  });
+                                }}
+                                required
+                                style={{
+                                  flex: 1,
+                                  backgroundColor: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text-primary)',
+                                  fontSize: '0.88rem',
+                                  outline: 'none'
+                                }}
+                              />
+                              {isCorrect && (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700 }}>
+                                  ✓ Correct
                                 </span>
                               )}
                             </div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                            <p style={{ margin: '0 0 0.75rem 0', fontWeight: '600', fontSize: '0.92rem', color: 'var(--text-primary)', lineHeight: '1.4' }}>
-                              {q.question}
-                            </p>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        style={{
+                          flex: 1,
+                          padding: '0.85rem',
+                          background: editingQuestionId ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '0.6rem',
+                          fontSize: '0.95rem',
+                          fontWeight: '700',
+                          cursor: loading ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        {editingQuestionId ? <Save size={16} /> : <PlusCircle size={16} />}
+                        <span>{editingQuestionId ? "Update Question" : `Add Question to ${activeTargetRound}`}</span>
+                      </button>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem' }}>
-                              {[q.option1, q.option2, q.option3, q.option4].filter(Boolean).map((opt, i) => {
-                                const isAnswer = opt === q.correctAnswer;
-                                return (
-                                  <div
-                                    key={i}
-                                    style={{
-                                      fontSize: '0.78rem',
-                                      padding: '0.35rem 0.6rem',
-                                      borderRadius: '0.4rem',
-                                      backgroundColor: isAnswer ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.04)',
-                                      color: isAnswer ? '#34D399' : 'var(--text-secondary)',
-                                      border: `1px solid ${isAnswer ? 'var(--success)' : 'transparent'}`,
-                                      fontWeight: isAnswer ? '700' : '400'
-                                    }}
-                                  >
-                                    {isAnswer ? '✓ ' : ''}{opt}
-                                  </div>
-                                );
-                              })}
+                      {editingQuestionId && (
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          style={{
+                            padding: '0.85rem 1rem',
+                            backgroundColor: 'var(--surface-secondary)',
+                            color: 'var(--text-secondary)',
+                            border: '1px solid var(--border-light)',
+                            borderRadius: '0.6rem',
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                {/* Persistent Round Question Bank Column */}
+                <div style={{
+                  backgroundColor: 'var(--surface)',
+                  borderRadius: '1rem',
+                  border: '1px solid var(--border)',
+                  padding: '1.5rem',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
+                }}>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>
+                        {selectedBankRound === "All" ? `All Questions (${editionQuestions.length})` : `${selectedBankRound} Questions (${editionQuestions.filter(q => q.round === selectedBankRound).length})`}
+                      </h3>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        {selectedEdition}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Questions Scroll Area */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', maxHeight: '550px', overflowY: 'auto', paddingRight: '0.35rem' }}>
+                    {editionQuestions.filter(q => selectedBankRound === "All" || q.round === selectedBankRound).length === 0 ? (
+                      <div style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        <p style={{ margin: '0 0 0.5rem 0', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          No questions saved in {selectedBankRound === "All" ? selectedEdition : `${selectedBankRound} (${selectedEdition})`}.
+                        </p>
+                        <span style={{ fontSize: '0.85rem' }}>
+                          Type your question on the left and click <strong>"Add Question to {activeTargetRound}"</strong> to begin!
+                        </span>
+                      </div>
+                    ) : (
+                      editionQuestions
+                        .filter(q => selectedBankRound === "All" || q.round === selectedBankRound)
+                        .map((q) => {
+                          const isBeingEdited = editingQuestionId === q.id;
+
+                          return (
+                            <div
+                              key={q.id}
+                              style={{
+                                backgroundColor: isBeingEdited ? 'rgba(37, 99, 235, 0.12)' : 'var(--surface-secondary)',
+                                border: `1px solid ${isBeingEdited ? 'var(--accent)' : 'var(--border-light)'}`,
+                                borderRadius: '0.75rem',
+                                padding: '1rem',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                gap: '0.75rem',
+                                alignItems: 'flex-start',
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 700, backgroundColor: 'var(--accent-light)', color: 'var(--accent-hover)', padding: '0.15rem 0.5rem', borderRadius: '0.3rem' }}>
+                                    {q.round}
+                                  </span>
+                                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>ID: {q.id}</span>
+                                  {isBeingEdited && (
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--accent-hover)', fontWeight: 700 }}>
+                                      [Editing]
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p style={{ margin: '0 0 0.75rem 0', fontWeight: '600', fontSize: '0.92rem', color: 'var(--text-primary)', lineHeight: '1.4' }}>
+                                  {q.question}
+                                </p>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem' }}>
+                                  {[q.option1, q.option2, q.option3, q.option4].filter(Boolean).map((opt, i) => {
+                                    const isAnswer = opt === q.correctAnswer;
+                                    return (
+                                      <div
+                                        key={i}
+                                        style={{
+                                          fontSize: '0.78rem',
+                                          padding: '0.35rem 0.6rem',
+                                          borderRadius: '0.4rem',
+                                          backgroundColor: isAnswer ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+                                          color: isAnswer ? '#34D399' : 'var(--text-secondary)',
+                                          border: `1px solid ${isAnswer ? 'var(--success)' : 'transparent'}`,
+                                          fontWeight: isAnswer ? '700' : '400'
+                                        }}
+                                      >
+                                        {isAnswer ? '✓ ' : ''}{opt}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* Action Buttons: Edit and Delete */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flexShrink: 0 }}>
+                                <button
+                                  onClick={() => handleStartEdit(q)}
+                                  title="Edit question"
+                                  style={{
+                                    backgroundColor: isBeingEdited ? 'var(--accent)' : 'rgba(37, 99, 235, 0.12)',
+                                    border: '1px solid rgba(37, 99, 235, 0.3)',
+                                    color: isBeingEdited ? '#fff' : 'var(--accent-hover)',
+                                    padding: '0.45rem',
+                                    borderRadius: '0.45rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}
+                                >
+                                  <Pencil size={15} />
+                                </button>
+
+                                <button
+                                  onClick={() => handleDeleteQuestion(q.id)}
+                                  title="Delete question"
+                                  style={{
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                                    color: '#F87171',
+                                    padding: '0.45rem',
+                                    borderRadius: '0.45rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
                             </div>
-                          </div>
+                          );
+                        })
+                    )}
+                  </div>
 
-                          {/* Action Buttons: Edit and Delete */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flexShrink: 0 }}>
-                            <button
-                              onClick={() => handleStartEdit(q)}
-                              title="Edit question"
-                              style={{
-                                backgroundColor: isBeingEdited ? 'var(--accent)' : 'rgba(37, 99, 235, 0.12)',
-                                border: '1px solid rgba(37, 99, 235, 0.3)',
-                                color: isBeingEdited ? '#fff' : 'var(--accent-hover)',
-                                padding: '0.45rem',
-                                borderRadius: '0.45rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                            >
-                              <Pencil size={15} />
-                            </button>
+                </div>
 
-                            <button
-                              onClick={() => handleDeleteQuestion(q.id)}
-                              title="Delete question"
-                              style={{
-                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                border: '1px solid rgba(239, 68, 68, 0.25)',
-                                color: '#F87171',
-                                padding: '0.45rem',
-                                borderRadius: '0.45rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                )}
               </div>
-
             </div>
+          );
+        })()}
 
-          </div>
-        )}
 
         {/* TAB 3: BULK IMPORTER */}
         {activeTab === 'bulk' && (
