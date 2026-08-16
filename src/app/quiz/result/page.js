@@ -68,6 +68,7 @@ export default function QuizResultPage() {
     }
   }
   const teamDisplay = rawTeam && rawTeam.toLowerCase().startsWith("team ") ? rawTeam : (rawTeam && rawTeam.toLowerCase() === "unassigned" ? "Team Unassigned" : `Team ${rawTeam || 'Divine'}`);
+  const editionDisplay = participant?.edition || result.edition || "New Testament (3 chapters daily)";
   const roundDisplay = participant?.round || result.round || "Round 7";
 
   const handleDownloadScoreCard = async () => {
@@ -157,29 +158,28 @@ export default function QuizResultPage() {
       ctx.fillText("Official Assessment Scorecard", 600, 275);
 
       // --- 5. Symmetrical Round & Team Badges ---
-      // Round Pill
       ctx.fillStyle = "rgba(37, 99, 235, 0.18)";
       ctx.beginPath();
-      ctx.roundRect(320, 305, 240, 42, 21);
+      ctx.roundRect(140, 305, 420, 42, 21);
       ctx.fill();
       ctx.strokeStyle = "rgba(59, 130, 246, 0.5)";
       ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.fillStyle = "#93C5FD";
-      ctx.font = "bold 18px sans-serif";
-      ctx.fillText(`📖 ${roundDisplay}`, 440, 332);
+      ctx.font = "bold 17px sans-serif";
+      ctx.fillText(`📖 ${editionDisplay} • ${roundDisplay}`, 350, 332);
 
       // Team Pill
       ctx.fillStyle = "rgba(16, 185, 129, 0.18)";
       ctx.beginPath();
-      ctx.roundRect(580, 305, 300, 42, 21);
+      ctx.roundRect(580, 305, 480, 42, 21);
       ctx.fill();
       ctx.strokeStyle = "rgba(16, 185, 129, 0.5)";
       ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.fillStyle = "#6EE7B7";
-      ctx.font = "bold 18px sans-serif";
-      ctx.fillText(`🛡️ ${teamDisplay}`, 730, 332);
+      ctx.font = "bold 17px sans-serif";
+      ctx.fillText(`🛡️ ${teamDisplay}`, 820, 332);
 
       // --- 6. Participant Nameplate Card ---
       ctx.fillStyle = "rgba(30, 41, 59, 0.75)";
@@ -383,6 +383,14 @@ export default function QuizResultPage() {
           <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '1.05rem' }}>
             Candidate: <strong style={{ color: '#FFFFFF', fontWeight: '800' }}>{candidateName}</strong>
           </p>
+          <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.65rem', backgroundColor: 'var(--accent-light)', color: 'var(--accent-hover)', borderRadius: '9999px', fontWeight: 700 }}>
+              📖 {editionDisplay} • {roundDisplay}
+            </span>
+            <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.65rem', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34D399', borderRadius: '9999px', fontWeight: 700 }}>
+              🛡️ {teamDisplay}
+            </span>
+          </div>
 
           {/* Big Score Display */}
           <div style={{ margin: '2rem 0' }}>

@@ -24,12 +24,14 @@ function QuizPreviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialRoundParam = searchParams.get("round") || "Round 1";
+  const initialEditionParam = searchParams.get("edition") || "New Testament (3 chapters daily)";
 
   // Navigation / Phase states: 'entry' | 'integrity' | 'quiz' | 'result'
   const [phase, setPhase] = useState("entry");
 
   // Settings & Available Rounds
   const [availableRounds, setAvailableRounds] = useState(["Round 1", "Round 2", "Round 3", "Round 4", "Round 5", "Round 6", "Round 7", "Round 8", "Round 9", "Round 10"]);
+  const [selectedEdition, setSelectedEdition] = useState(initialEditionParam);
   const [selectedRound, setSelectedRound] = useState(initialRoundParam);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(15);
   const [teams, setTeams] = useState([]);
@@ -40,6 +42,7 @@ function QuizPreviewContent() {
     fullName: "Admin Previewer",
     whatsapp: "08012345678",
     team: "1",
+    edition: initialEditionParam,
     round: initialRoundParam
   });
 
@@ -56,11 +59,11 @@ function QuizPreviewContent() {
   const timerRef = useRef(null);
 
   // Load questions and settings for preview
-  const loadRoundData = useCallback(async (targetRound) => {
+  const loadRoundData = useCallback(async (targetRound, targetEdition = "New Testament (3 chapters daily)") => {
     setLoading(true);
     try {
-      // 1. Fetch questions for selected round
-      const res = await fetch(`/api/quiz/init?round=${encodeURIComponent(targetRound)}&preview=true&t=${Date.now()}`);
+      // 1. Fetch questions for selected round & edition
+      const res = await fetch(`/api/quiz/init?round=${encodeURIComponent(targetRound)}&edition=${encodeURIComponent(targetEdition)}&preview=true&t=${Date.now()}`);
       const data = await res.json();
 
       if (data.questions && data.questions.length > 0) {
@@ -116,17 +119,18 @@ function QuizPreviewContent() {
       })
       .catch(console.error);
 
-    loadRoundData(selectedRound);
-  }, [loadRoundData, selectedRound]);
+    loadRoundData(selectedRound, selectedEdition);
+  }, [loadRoundData, selectedRound, selectedEdition]);
 
   // Handle Round Switcher in Preview Banner
-  const handleSwitchRound = (newRound) => {
+  const handleSwitchRound = (newRound, newEdition = selectedEdition) => {
     setSelectedRound(newRound);
-    setParticipant(p => ({ ...p, round: newRound }));
+    setSelectedEdition(newEdition);
+    setParticipant(p => ({ ...p, round: newRound, edition: newEdition }));
     setAnswers({});
     setPreviewResult(null);
     setPhase("entry");
-    loadRoundData(newRound);
+    loadRoundData(newRound, newEdition);
   };
 
   // Timer Calculation

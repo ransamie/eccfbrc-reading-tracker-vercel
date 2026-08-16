@@ -61,6 +61,7 @@ export default function QuizTakePage() {
             fullName: info.fullName || "",
             whatsapp: info.whatsapp || "",
             team: info.team || "",
+            edition: info.edition || "New Testament (3 chapters daily)",
             round: info.round || "Round 1"
           });
         }
@@ -128,13 +129,17 @@ export default function QuizTakePage() {
   const startQuiz = async () => {
     setIsSubmitting(true);
     try {
+      const resolvedName = participant.fullName || (typeof window !== "undefined" ? localStorage.getItem("quiz_saved_participant_name") : "") || "";
+      const resolvedWhatsApp = participant.whatsapp || (typeof window !== "undefined" ? localStorage.getItem("quiz_saved_whatsapp") : "") || "";
+      const resolvedTeam = participant.team || (typeof window !== "undefined" ? localStorage.getItem("quiz_saved_participant_team") : "") || "";
+
       const res = await fetch("/api/quiz/init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          whatsapp: participant.whatsapp, 
-          fullName: participant.fullName,
-          team: participant.team
+          whatsapp: resolvedWhatsApp, 
+          fullName: resolvedName,
+          team: resolvedTeam
         })
       });
       
@@ -146,7 +151,14 @@ export default function QuizTakePage() {
       const data = await res.json();
       
       setQuestions(data.questions || []);
-      setParticipant(p => ({ ...p, round: data.round }));
+      setParticipant(p => ({ 
+        ...p, 
+        fullName: resolvedName,
+        whatsapp: resolvedWhatsApp,
+        team: resolvedTeam,
+        round: data.round || p.round,
+        edition: data.edition || p.edition || "New Testament (3 chapters daily)"
+      }));
       setDeadline(data.deadlineTimestamp);
       setHasStarted(true);
       
@@ -170,8 +182,17 @@ export default function QuizTakePage() {
     setIsSubmitting(true);
     if (timerRef.current) clearInterval(timerRef.current);
     
+    const resolvedName = participant.fullName || (typeof window !== "undefined" ? localStorage.getItem("quiz_saved_participant_name") : "") || "";
+    const resolvedWhatsApp = participant.whatsapp || (typeof window !== "undefined" ? localStorage.getItem("quiz_saved_whatsapp") : "") || "";
+    const resolvedTeam = participant.team || (typeof window !== "undefined" ? localStorage.getItem("quiz_saved_participant_team") : "") || "";
+
     const payload = {
-      participant,
+      participant: {
+        ...participant,
+        fullName: resolvedName,
+        whatsapp: resolvedWhatsApp,
+        team: resolvedTeam
+      },
       answers,
       submittedAt: Date.now() 
     };
@@ -441,7 +462,7 @@ export default function QuizTakePage() {
                   borderRadius: '0.35rem',
                   whiteSpace: 'nowrap'
                 }}>
-                  {participant.round || "Quiz Round"}
+                  {participant.edition ? `${participant.edition} • ` : ''}{participant.round || "Quiz Round"}
                 </span>
 
                 {participant.team && (

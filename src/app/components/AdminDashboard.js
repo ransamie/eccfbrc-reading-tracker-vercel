@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
@@ -502,101 +502,99 @@ export default function AdminDashboard({ onLogout }) {
           </div>
         </div>
       )}
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
-        <div style={{ fontSize: '1.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src="/eccfbrclogo.png" alt="Logo" style={{ width: '48px', height: '48px', backgroundColor: '#000', padding: '6px', borderRadius: '10%', objectFit: 'contain' }} />
-          Admin Command Center
+      <div className="tracker-header-wrap">
+        <div className="tracker-header-title">
+          <img src="/eccfbrclogo.png" alt="Logo" />
+          <span>Admin Command Center</span>
         </div>
-        <div className="header-actions">
+        <div className="tracker-header-actions">
           <a
             href="/admin/quiz"
             title="Open Quiz Control Center"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              background: 'linear-gradient(135deg, #2563EB 0%, #4F46E5 100%)',
-              color: '#FFFFFF',
-              padding: '0 0.9rem',
-              height: '2.5rem',
-              borderRadius: '0.5rem',
-              fontWeight: '600',
-              textDecoration: 'none',
-              fontSize: '0.875rem',
-              boxShadow: '0 4px 12px rgba(37,99,235,0.25)',
-              transition: 'all 0.2s ease',
-              whiteSpace: 'nowrap'
-            }}
+            className="tracker-btn-quiz"
           >
-            <Trophy size={16} /> Quiz Hub
+            <Trophy size={16} /> <span>Quiz Hub</span>
           </a>
           <InstallPwaButton />
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
             title="Refresh Data"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '2.5rem', height: '2.5rem', background: 'var(--surface-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-light)', borderRadius: '0.5rem', transition: 'all 0.2s ease', opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
+            className="tracker-btn-icon"
+            style={{ opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
           >
-            <RefreshCw size={18} />
+            <RefreshCw size={17} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </button>
           <button 
             onClick={onLogout} 
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)', padding: '0 1rem', height: '2.5rem', borderRadius: '0.5rem', fontWeight: '600', transition: 'all 0.2s ease' }} 
-            onMouseOver={(e) => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff'; }} 
-            onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--accent)'; }}
+            className="tracker-btn-logout"
+            title="Logout"
           >
-            <LogOut size={16} /> Logout
+            <LogOut size={16} /> <span>Logout</span>
           </button>
         </div>
       </div>
 
-      <div className="st-tabs">
-        <button className={`st-tab ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>Overview</button>
-        <button className={`st-tab ${activeTab === 'leaders' ? 'active' : ''}`} onClick={() => setActiveTab('leaders')}>Reports</button>
-        <button className={`st-tab ${activeTab === 'roster' ? 'active' : ''}`} onClick={() => setActiveTab('roster')}>Roster</button>
-        <button className={`st-tab ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>Settings</button>
+      <div className="tracker-tabs-bar">
+        <button className={`tracker-tab-pill ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
+          <BarChart3 size={15} /> <span>Overview</span>
+        </button>
+        <button className={`tracker-tab-pill ${activeTab === 'leaders' ? 'active' : ''}`} onClick={() => setActiveTab('leaders')}>
+          <FileText size={15} /> <span>Reports</span>
+        </button>
+        <button className={`tracker-tab-pill ${activeTab === 'roster' ? 'active' : ''}`} onClick={() => setActiveTab('roster')}>
+          <Users size={15} /> <span>Roster</span>
+        </button>
+        <button className={`tracker-tab-pill ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+          <Settings size={15} /> <span>Settings</span>
+        </button>
       </div>
 
       {activeTab === 'leaders' && (
         <div className="card">
 
-
-          <h3 className="mb-2">Mark Daily Updates for Team Leaders</h3>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <h3 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+              Mark Daily Updates for Team Leaders
+            </h3>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
+              Tap on each leader's card to record reading progress for the day.
+            </p>
+          </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', marginTop: '1rem', background: 'var(--surface-secondary)', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-light)' }}>
+          {/* Modern Date Stepper Card */}
+          <div className="tracker-date-card">
             <button 
               onClick={() => {
                 const currentNum = parseInt(adminSelectedDay.split('_')[1]);
                 if (currentNum > 1) setAdminSelectedDay(`Day_${currentNum - 1}`);
               }}
               disabled={parseInt(adminSelectedDay.split('_')[1] || "1") <= 1}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border-light)', borderRadius: '0.4rem', padding: '0.5rem', cursor: parseInt(adminSelectedDay.split('_')[1] || "1") <= 1 ? 'not-allowed' : 'pointer', color: parseInt(adminSelectedDay.split('_')[1] || "1") <= 1 ? 'var(--text-secondary)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', opacity: parseInt(adminSelectedDay.split('_')[1] || "1") <= 1 ? 0.5 : 1 }}
+              className="tracker-stepper-btn"
+              title="Previous Day"
             >
               <ChevronLeft size={20} />
             </button>
             
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 'bold' }}>Updating</span>
-              <span style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: '1' }}>{adminSelectedDay.replace('_', ' ')}</span>
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: '800' }}>
+                Updating
+              </span>
+              <span style={{ fontSize: '1.5rem', fontWeight: '900', lineHeight: '1.1', color: '#F9FAFB', letterSpacing: '0.5px' }}>
+                {adminSelectedDay.replace('_', ' ')}
+              </span>
               <button 
                 onClick={() => adminSelectedDay !== currentDayStr && setAdminSelectedDay(currentDayStr)} 
                 title={adminSelectedDay === currentDayStr ? "Already viewing today" : "Jump to Today"} 
+                className="tracker-today-btn"
                 style={{ 
-                  background: adminSelectedDay === currentDayStr ? 'rgba(255,255,255,0.05)' : 'var(--accent-light)', 
+                  background: adminSelectedDay === currentDayStr ? 'rgba(255,255,255,0.06)' : 'var(--accent-light)', 
                   border: `1px solid ${adminSelectedDay === currentDayStr ? 'var(--border-light)' : 'var(--accent)'}`, 
-                  color: adminSelectedDay === currentDayStr ? 'var(--text-secondary)' : 'var(--accent)', 
-                  cursor: adminSelectedDay === currentDayStr ? 'default' : 'pointer', 
-                  display: 'flex',
-                  alignItems: 'center', 
-                  padding: '0.3rem 0.8rem',
-                  fontSize: '0.8rem',
-                  borderRadius: '1rem',
-                  fontWeight: '600',
-                  marginTop: '0.2rem',
-                  transition: 'all 0.2s ease'
+                  color: adminSelectedDay === currentDayStr ? 'var(--text-secondary)' : 'var(--accent-hover)', 
+                  cursor: adminSelectedDay === currentDayStr ? 'default' : 'pointer'
                 }}
               >
-                <CalendarDays size={14} style={{ marginRight: '6px' }} /> {adminSelectedDay === currentDayStr ? "Today" : "Jump to Today"}
+                <CalendarDays size={13} /> {adminSelectedDay === currentDayStr ? "Today" : "Jump to Today"}
               </button>
             </div>
 
@@ -606,94 +604,170 @@ export default function AdminDashboard({ onLogout }) {
                 if (currentNum < currentDayNum) setAdminSelectedDay(`Day_${currentNum + 1}`);
               }}
               disabled={adminSelectedDay === currentDayStr}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border-light)', borderRadius: '0.4rem', padding: '0.5rem', cursor: adminSelectedDay === currentDayStr ? 'not-allowed' : 'pointer', color: adminSelectedDay === currentDayStr ? 'var(--text-secondary)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', opacity: adminSelectedDay === currentDayStr ? 0.5 : 1 }}
+              className="tracker-stepper-btn"
+              title="Next Day"
             >
               <ChevronRight size={20} />
             </button>
           </div>
 
-          <div style={{ marginTop: '1.5rem' }}>
-            <input 
-              type="text" 
-              placeholder="Search leaders by name or team..." 
-              value={leaderSearchQuery} 
-              onChange={e => setLeaderSearchQuery(e.target.value)}
-              className="input-field"
-              style={{ marginBottom: '1rem' }}
-            />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '0.5rem', marginBottom: '1.5rem' }}>
-              {(() => {
-                const filteredLeaders = activeLeaders.filter(m => {
-                  const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
-                  const team = String(m.Team || m.Team_Name || '').trim();
-                  const q = leaderSearchQuery.toLowerCase();
-                  return name.toLowerCase().includes(q) || team.toLowerCase().includes(q);
-                });
-                if (filteredLeaders.length === 0) return <p>No leaders found.</p>;
-                return filteredLeaders.map(m => {
-                  const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
-                  return (
-                    <label key={name} className="checkbox-label">
-                      <input type="checkbox" checked={adminUpdates[name] || false} onChange={() => handleAdminCheckbox(name)} />
-                      {name} ({m.Team || m.Team_Name || "Unknown"})
-                    </label>
-                  );
-                });
-              })()}
+          <div>
+            {/* Search Input Bar */}
+            <div className="tracker-search-wrap">
+              <Search className="search-icon" size={16} />
+              <input 
+                type="text" 
+                placeholder="Search leaders by name or team..." 
+                value={leaderSearchQuery} 
+                onChange={e => setLeaderSearchQuery(e.target.value)}
+                className="tracker-search-input"
+              />
+              {leaderSearchQuery && (
+                <button
+                  onClick={() => setLeaderSearchQuery("")}
+                  style={{
+                    position: 'absolute',
+                    right: '0.85rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: 0
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '1rem' }}>
-              {(() => {
-                const filteredLeaders = activeLeaders.filter(m => {
-                  const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
-                  const team = String(m.Team || m.Team_Name || '').trim();
-                  const q = leaderSearchQuery.toLowerCase();
-                  return name.toLowerCase().includes(q) || team.toLowerCase().includes(q);
-                });
-                const allSelected = filteredLeaders.length > 0 && filteredLeaders.every(m => adminUpdates[String(m['Team Leader'] || m.Name || m.Member_Name || '').trim()]);
-                return (
+            {/* Quick Stats Toolbar & Select All */}
+            {(() => {
+              const filteredLeaders = activeLeaders.filter(m => {
+                const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+                const team = String(m.Team || m.Team_Name || '').trim();
+                const q = leaderSearchQuery.toLowerCase();
+                return name.toLowerCase().includes(q) || team.toLowerCase().includes(q);
+              });
+              const checkedCount = filteredLeaders.filter(m => adminUpdates[String(m['Team Leader'] || m.Name || m.Member_Name || '').trim()]).length;
+              const allSelected = filteredLeaders.length > 0 && checkedCount === filteredLeaders.length;
+              const percent = filteredLeaders.length > 0 ? Math.round((checkedCount / filteredLeaders.length) * 100) : 0;
+
+              return (
+                <div className="tracker-toolbar">
+                  <span className="tracker-counter-badge">
+                    <CheckCheck size={14} color="#38BDF8" />
+                    <span><strong>{checkedCount}</strong> of <strong>{filteredLeaders.length}</strong> Completed ({percent}%)</span>
+                  </span>
+
                   <button 
                     onClick={() => handleAdminSelectAll(!allSelected)} 
-                    style={{ background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', padding: '0.25rem 0.75rem', borderRadius: '0.4rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
+                    className="tracker-select-all-btn"
                   >
                     {allSelected ? '✕ Deselect All' : '✓ Select All'}
                   </button>
+                </div>
+              );
+            })()}
+
+            {/* Responsive Touch Tiles Grid */}
+            {(() => {
+              const filteredLeaders = activeLeaders.filter(m => {
+                const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+                const team = String(m.Team || m.Team_Name || '').trim();
+                const q = leaderSearchQuery.toLowerCase();
+                return name.toLowerCase().includes(q) || team.toLowerCase().includes(q);
+              });
+
+              if (filteredLeaders.length === 0) {
+                return (
+                  <div style={{ textAlign: 'center', padding: '2rem 1rem', background: 'var(--surface-secondary)', borderRadius: '0.65rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                    <p style={{ margin: 0, fontWeight: '600' }}>No leaders found matching "{leaderSearchQuery}"</p>
+                  </div>
                 );
-              })()}
-            </div>
+              }
 
-            <hr style={{ borderColor: 'var(--border-light)', opacity: 0.5, margin: '1.5rem 0' }} />
+              return (
+                <div className="tracker-check-grid">
+                  {filteredLeaders.map(m => {
+                    const name = String(m['Team Leader'] || m.Name || m.Member_Name || '').trim();
+                    const isChecked = !!adminUpdates[name];
+                    const teamName = m.Team || m.Team_Name || "Team Leader";
 
+                    return (
+                      <div 
+                        key={name}
+                        onClick={() => handleAdminCheckbox(name)}
+                        className={`tracker-check-tile ${isChecked ? 'active' : ''}`}
+                      >
+                        <div className="tracker-tile-checkbox">
+                          {isChecked && <Check size={14} strokeWidth={3} />}
+                        </div>
+                        <div className="tracker-tile-info">
+                          <span className="tracker-tile-name">{name}</span>
+                          <span className="tracker-tile-badge">
+                            {teamName}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* Daily Reflection Scripture Box */}
             {adminSelectedDay === currentDayStr && (
-              <div className="mb-3" style={{ background: 'var(--surface)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <label className="label">Daily Reflection Scripture (Auto-saved for this session):</label>
-                <textarea className="input-field" rows="3" value={reflection} onChange={e => setReflection(e.target.value)} placeholder="e.g., 'But he that shall endure...' Matt. 24:13"></textarea>
+              <div className="tracker-scripture-box">
+                <div className="tracker-scripture-header">
+                  <BookOpen size={16} color="#818CF8" />
+                  <span>Daily Reflection Scripture (Auto-saved for this session):</span>
+                </div>
+                <textarea 
+                  className="tracker-scripture-textarea" 
+                  rows="3" 
+                  value={reflection} 
+                  onChange={e => setReflection(e.target.value)} 
+                  placeholder="e.g., 'For the word of God is living and powerful, and sharper than any two-edged sword...' Heb. 4:12"
+                />
               </div>
             )}
 
+            {/* Action Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
               <button 
                 onClick={() => handleSaveAdminReport(false)} 
                 disabled={saving} 
-                style={{ backgroundColor: 'var(--accent)', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, transition: 'all 0.2s ease' }}
+                className="tracker-btn-save"
               >
-                {saving ? 'Saving...' : `💾 Save ${adminSelectedDay.replace('_', ' ')} Updates`}
+                <span>{saving ? 'Saving...' : `💾 Save ${adminSelectedDay.replace('_', ' ')} Updates`}</span>
               </button>
               
               {adminSelectedDay === currentDayStr && (
-                 <button onClick={() => handleSaveAdminReport(true)} disabled={saving} style={{ backgroundColor: '#047857', color: '#ffffff', border: 'none', fontWeight: 'bold', padding: '0.75rem', borderRadius: '0.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, transition: 'all 0.2s ease' }}>
-                   📋 Generate Daily Report
-                 </button>
+                <button 
+                  onClick={() => handleSaveAdminReport(true)} 
+                  disabled={saving} 
+                  className="tracker-btn-report"
+                >
+                  <span>📋 Generate Daily Report</span>
+                </button>
               )}
             </div>
           </div>
 
           {reportText && (
-            <div ref={reportRef} className="card mt-4">
+            <div ref={reportRef} className="card mt-4" style={{ border: '1px solid var(--accent)' }}>
               <div style={{ padding: '0.5rem' }}>
-                <h3 className="mb-2">📱 Copy Your Daily Report</h3>
-                <pre style={{ background: 'var(--surface-secondary)', padding: '1rem', borderRadius: '0.5rem', overflowX: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>{reportText}</pre>
-                <button className="btn-primary mt-2" onClick={() => { navigator.clipboard.writeText(reportText); showToast("Copied to clipboard!"); }}>Copy to Clipboard</button>
+                <h3 className="mb-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  📱 <span>Copy Your Daily Report</span>
+                </h3>
+                <pre style={{ background: 'var(--surface-secondary)', padding: '1rem', borderRadius: '0.5rem', overflowX: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.9rem', lineHeight: '1.5' }}>{reportText}</pre>
+                <button className="tracker-btn-report mt-2" onClick={() => { navigator.clipboard.writeText(reportText); showToast("Copied to clipboard!"); }}>
+                  <Check size={16} /> <span>Copy to Clipboard</span>
+                </button>
               </div>
             </div>
           )}

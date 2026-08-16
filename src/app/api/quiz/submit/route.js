@@ -32,10 +32,11 @@ export async function POST(req) {
     }
 
     // 2. Fetch Correct Answers and Compute Score
-    const questions = await getQuestionsForRound(participant.round);
+    const edition = participant.edition || "New Testament (3 chapters daily)";
+    const questions = await getQuestionsForRound(participant.round, edition);
 
     if (!questions || questions.length === 0) {
-      return NextResponse.json({ error: "No questions found for this round." }, { status: 404 });
+      return NextResponse.json({ error: `No questions found for ${participant.round} (${edition}).` }, { status: 404 });
     }
 
     let score = 0;
@@ -75,6 +76,7 @@ export async function POST(req) {
       fullName: participant.fullName,
       whatsApp: normalizedWhatsApp,
       team: resolvedTeam || "Unassigned",
+      edition,
       round: participant.round,
       score,
       totalQuestions: questions.length,
@@ -94,6 +96,7 @@ export async function POST(req) {
         fullName: participant.fullName,
         whatsapp: normalizedWhatsApp,
         team: resolvedTeam || "Unassigned",
+        edition,
         round: participant.round
       },
       timestamp: finalResult.timestamp

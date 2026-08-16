@@ -37,6 +37,11 @@ import {
 } from "lucide-react";
 import { parseQuizQuestions } from "@/lib/quizParser";
 
+const DEFAULT_EDITIONS = [
+  "New Testament (3 chapters daily)",
+  "Entire Bible Reading (4 chapters daily)"
+];
+
 export default function AdminQuizPage() {
   const [pin, setPin] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -47,12 +52,25 @@ export default function AdminQuizPage() {
   const [activeTab, setActiveTab] = useState("control");
   
   // Data States
-  const [settings, setSettings] = useState({ Active_Round: "Round 1", Time_Limit_Minutes: "15", Is_Quiz_Live: "FALSE" });
+  const [settings, setSettings] = useState({ 
+    Active_Edition: "New Testament (3 chapters daily)",
+    Active_Round: "Round 1", 
+    Time_Limit_Minutes: "15", 
+    Is_Quiz_Live: "FALSE" 
+  });
   const [isQuizLive, setIsQuizLive] = useState(false);
   const [questions, setQuestions] = useState([]);
   const [results, setResults] = useState([]);
+  
+  // Reading Schedule & Round UI filters
+  const [selectedEdition, setSelectedEdition] = useState("New Testament (3 chapters daily)");
+  const [selectedBankRound, setSelectedBankRound] = useState("All");
+  const [selectedLeaderboardEdition, setSelectedLeaderboardEdition] = useState("All");
   const [selectedRoundFilter, setSelectedRoundFilter] = useState("All");
   const [selectedTeamFilter, setSelectedTeamFilter] = useState("All");
+  const [showCustomEditionInput, setShowCustomEditionInput] = useState(false);
+  const [newEditionName, setNewEditionName] = useState("");
+  
   const [copiedLink, setCopiedLink] = useState(false);
   const [quizUrl, setQuizUrl] = useState("");
 
@@ -105,6 +123,7 @@ export default function AdminQuizPage() {
   // Edit / Create Single Form States
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [questionForm, setQuestionForm] = useState({
+    edition: "New Testament (3 chapters daily)",
     round: "Round 1",
     question: "",
     option1: "",
@@ -116,12 +135,14 @@ export default function AdminQuizPage() {
   const [saveStatus, setSaveStatus] = useState("");
 
   // Bulk Importer States
+  const [bulkEdition, setBulkEdition] = useState("New Testament (3 chapters daily)");
   const [bulkText, setBulkText] = useState("");
   const [bulkRound, setBulkRound] = useState("Round 1");
   const [parsedBulk, setParsedBulk] = useState({ questions: [], errors: [], totalDetected: 0 });
   const [bulkImporting, setBulkImporting] = useState(false);
 
   // AI Generator States
+  const [aiEdition, setAiEdition] = useState("New Testament (3 chapters daily)");
   const [aiRound, setAiRound] = useState("Round 7");
   const [aiScripture, setAiScripture] = useState("Colossians 3 - Hebrews 6");
   const [aiCount, setAiCount] = useState(10);
@@ -157,15 +178,29 @@ export default function AdminQuizPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        const loadedSettings = data.settings || { Active_Round: "Round 1", Time_Limit_Minutes: "15", Is_Quiz_Live: "FALSE" };
+        const loadedSettings = data.settings || { 
+          Active_Edition: "New Testament (3 chapters daily)",
+          Active_Round: "Round 1", 
+          Time_Limit_Minutes: "15", 
+          Is_Quiz_Live: "FALSE" 
+        };
         setSettings(loadedSettings);
         setIsQuizLive(String(loadedSettings.Is_Quiz_Live).toUpperCase() === "TRUE");
+        if (loadedSettings.Active_Edition) {
+          setSelectedEdition(loadedSettings.Active_Edition);
+          setBulkEdition(loadedSettings.Active_Edition);
+          setAiEdition(loadedSettings.Active_Edition);
+        }
         if (loadedSettings.GEMINI_API_KEY) {
           setAiApiKey(loadedSettings.GEMINI_API_KEY);
         }
         setQuestions(data.questions || []);
         setResults(data.results || []);
-        setQuestionForm(prev => ({ ...prev, round: loadedSettings.Active_Round || "Round 1" }));
+        setQuestionForm(prev => ({ 
+          ...prev, 
+          edition: loadedSettings.Active_Edition || "New Testament (3 chapters daily)",
+          round: loadedSettings.Active_Round || "Round 1" 
+        }));
         setBulkRound(loadedSettings.Active_Round || "Round 1");
         setAiRound(loadedSettings.Active_Round || "Round 7");
         sessionStorage.setItem("admin_quiz_pin", inputPin);
@@ -190,7 +225,12 @@ export default function AdminQuizPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        const loadedSettings = data.settings || { Active_Round: "Round 1", Time_Limit_Minutes: "15", Is_Quiz_Live: "FALSE" };
+        const loadedSettings = data.settings || { 
+          Active_Edition: "New Testament (3 chapters daily)",
+          Active_Round: "Round 1", 
+          Time_Limit_Minutes: "15", 
+          Is_Quiz_Live: "FALSE" 
+        };
         setSettings(loadedSettings);
         setIsQuizLive(String(loadedSettings.Is_Quiz_Live).toUpperCase() === "TRUE");
         setQuestions(data.questions || []);
@@ -212,13 +252,14 @@ export default function AdminQuizPage() {
     setPin("");
   };
 
-  // 2. Settings Updates (Active Round, Time Limit, Live Switch)
+  // 2. Settings Updates (Active Edition, Active Round, Time Limit, Live Switch)
   const handleSaveSettings = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
     setSaveStatus("");
 
     try {
+      const activeEd = settings.Active_Edition || "New Testament (3 chapters daily)";
       const res = await fetch("/api/quiz/admin", {
         method: "POST",
         headers: {
@@ -227,6 +268,7 @@ export default function AdminQuizPage() {
         },
         body: JSON.stringify({
           action: "updateSettings",
+          activeEdition: activeEd,
           activeRound: settings.Active_Round,
           timeLimitMinutes: settings.Time_Limit_Minutes,
           isQuizLive: isQuizLive
@@ -234,8 +276,12 @@ export default function AdminQuizPage() {
       });
 
       if (res.ok) {
-        setSaveStatus("Settings saved successfully!");
-        showToast("Settings updated successfully!");
+        setSettings(prev => ({
+          ...prev,
+          Is_Quiz_Live: isQuizLive ? "TRUE" : "FALSE"
+        }));
+        setSaveStatus(isQuizLive ? `LIVE! ${settings.Active_Round} (${activeEd}) is active.` : "Maintenance saved to database.");
+        showToast(isQuizLive ? `🚀 Quiz is LIVE for ${settings.Active_Round} • ${activeEd}!` : "🔒 Quiz is in Maintenance mode.");
       } else {
         setSaveStatus("Failed to save settings.");
       }
@@ -303,7 +349,7 @@ export default function AdminQuizPage() {
 
         if (res.ok) {
           const data = await res.json();
-          showToast("Question added successfully!");
+          showToast(`Question added to ${questionForm.round} (${questionForm.edition})!`);
           setQuestions(prev => [{ ...questionForm, id: data.id }, ...prev]);
           setQuestionForm(prev => ({
             ...prev,
@@ -336,6 +382,7 @@ export default function AdminQuizPage() {
   const handleStartEdit = (q) => {
     setEditingQuestionId(q.id);
     setQuestionForm({
+      edition: q.edition || selectedEdition || "New Testament (3 chapters daily)",
       round: q.round || "Round 1",
       question: q.question || "",
       option1: q.option1 || "",
@@ -344,6 +391,7 @@ export default function AdminQuizPage() {
       option4: q.option4 || "",
       correctAnswer: q.correctAnswer || ""
     });
+    setActiveTab("builder");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -351,6 +399,7 @@ export default function AdminQuizPage() {
     setEditingQuestionId(null);
     setQuestionForm(prev => ({
       ...prev,
+      edition: selectedEdition || "New Testament (3 chapters daily)",
       round: settings.Active_Round || "Round 1",
       question: "",
       option1: "",
@@ -461,14 +510,35 @@ export default function AdminQuizPage() {
       return;
     }
     const result = parseQuizQuestions(text, bulkRound);
-    setParsedBulk(result);
+    // Attach edition to parsed questions
+    const questionsWithEdition = (result.questions || []).map(q => ({
+      ...q,
+      edition: bulkEdition
+    }));
+    setParsedBulk({ ...result, questions: questionsWithEdition });
   };
 
   const handleBulkRoundChange = (r) => {
     setBulkRound(r);
     if (bulkText.trim()) {
       const result = parseQuizQuestions(bulkText, r);
-      setParsedBulk(result);
+      const questionsWithEdition = (result.questions || []).map(q => ({
+        ...q,
+        edition: bulkEdition
+      }));
+      setParsedBulk({ ...result, questions: questionsWithEdition });
+    }
+  };
+
+  const handleBulkEditionChange = (ed) => {
+    setBulkEdition(ed);
+    if (bulkText.trim()) {
+      const result = parseQuizQuestions(bulkText, bulkRound);
+      const questionsWithEdition = (result.questions || []).map(q => ({
+        ...q,
+        edition: ed
+      }));
+      setParsedBulk({ ...result, questions: questionsWithEdition });
     }
   };
 
@@ -476,6 +546,11 @@ export default function AdminQuizPage() {
     if (parsedBulk.questions.length === 0) return;
     setBulkImporting(true);
     try {
+      const formattedQuestions = parsedBulk.questions.map(q => ({
+        ...q,
+        edition: q.edition || bulkEdition
+      }));
+
       const res = await fetch("/api/quiz/admin", {
         method: "POST",
         headers: {
@@ -484,16 +559,18 @@ export default function AdminQuizPage() {
         },
         body: JSON.stringify({
           action: "bulkAddQuestions",
-          questions: parsedBulk.questions
+          questions: formattedQuestions
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to bulk import questions");
       
-      showToast(`Successfully imported ${data.count} questions to ${bulkRound}!`);
+      showToast(`Successfully imported ${data.count} questions to ${bulkRound} (${bulkEdition})!`);
       setBulkText("");
       setParsedBulk({ questions: [], errors: [], totalDetected: 0 });
       fetchWorkspaceData();
+      setSelectedEdition(bulkEdition);
+      setSelectedBankRound(bulkRound);
       setActiveTab("builder");
     } catch (e) {
       showAlert({
@@ -543,8 +620,15 @@ export default function AdminQuizPage() {
         throw new Error(data.error || "Failed to generate questions with AI.");
       }
 
-      setAiGeneratedQuestions(data.questions || []);
-      showToast(`Generated ${data.questions.length} questions from ${aiScripture}!`);
+      // Tag all generated questions with target AI edition
+      const taggedQuestions = (data.questions || []).map(q => ({
+        ...q,
+        edition: aiEdition,
+        round: aiRound
+      }));
+
+      setAiGeneratedQuestions(taggedQuestions);
+      showToast(`Generated ${taggedQuestions.length} questions for ${aiRound} (${aiEdition}) from ${aiScripture}!`);
       
       if (aiApiKey) {
         setSettings(prev => ({ ...prev, GEMINI_API_KEY: aiApiKey }));
@@ -633,6 +717,12 @@ export default function AdminQuizPage() {
     if (aiGeneratedQuestions.length === 0) return;
     setAiSaving(true);
     try {
+      const taggedQuestions = aiGeneratedQuestions.map(q => ({
+        ...q,
+        edition: q.edition || aiEdition,
+        round: q.round || aiRound
+      }));
+
       const res = await fetch("/api/quiz/admin", {
         method: "POST",
         headers: {
@@ -641,21 +731,23 @@ export default function AdminQuizPage() {
         },
         body: JSON.stringify({
           action: "bulkAddQuestions",
-          questions: aiGeneratedQuestions
+          questions: taggedQuestions
         })
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save AI questions to bank.");
 
-      showToast(`Saved ${data.count} AI generated questions to ${aiRound}!`);
+      showToast(`Saved ${data.count} AI generated questions to ${aiRound} (${aiEdition})!`);
       setAiGeneratedQuestions([]);
       fetchWorkspaceData();
+      setSelectedEdition(aiEdition);
+      setSelectedBankRound(aiRound);
       setActiveTab("builder");
     } catch (e) {
       showAlert({
         title: "Save Failed",
-        message: e.message || "Failed to save questions to database.",
+        message: e.message || "Failed to save AI questions to database.",
         type: "danger"
       });
     } finally {
@@ -696,8 +788,39 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     }
   };
 
-  // Filtered Questions and Leaderboard
-  const uniqueRounds = Array.from(new Set(questions.map(q => q.round).filter(Boolean)));
+  // Filtered Questions and Leaderboard calculations
+  const availableEditions = Array.from(new Set([
+    ...DEFAULT_EDITIONS,
+    settings.Active_Edition || "New Testament (3 chapters daily)",
+    ...questions.map(q => q.edition).filter(Boolean)
+  ]));
+
+  // Questions filtered for the currently selected Reading Schedule / Edition
+  const editionQuestions = questions.filter(q => {
+    const qEd = q.edition || "New Testament (3 chapters daily)";
+    return qEd.trim().toLowerCase() === selectedEdition.trim().toLowerCase();
+  });
+
+  // Unique rounds inside currently selected edition
+  const uniqueRoundsInEdition = Array.from(new Set(
+    editionQuestions.map(q => q.round).filter(Boolean)
+  )).sort((a, b) => {
+    const numA = parseInt(a.replace(/\D/g, "") || "0", 10);
+    const numB = parseInt(b.replace(/\D/g, "") || "0", 10);
+    if (numA !== numB) return numA - numB;
+    return a.localeCompare(b);
+  });
+
+  // Unique rounds across the entire system
+  const allUniqueRounds = Array.from(new Set(
+    questions.map(q => q.round).filter(Boolean)
+  )).sort((a, b) => {
+    const numA = parseInt(a.replace(/\D/g, "") || "0", 10);
+    const numB = parseInt(b.replace(/\D/g, "") || "0", 10);
+    if (numA !== numB) return numA - numB;
+    return a.localeCompare(b);
+  });
+
   const uniqueTeams = Array.from(new Set(results.map(r => r.team).filter(Boolean))).sort((a, b) => {
     const numA = parseInt(a, 10);
     const numB = parseInt(b, 10);
@@ -706,6 +829,11 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
   });
 
   const sortedResults = results
+    .filter(r => {
+      if (selectedLeaderboardEdition === "All") return true;
+      const rEd = r.edition || "New Testament (3 chapters daily)";
+      return rEd.trim().toLowerCase() === selectedLeaderboardEdition.trim().toLowerCase();
+    })
     .filter(r => selectedRoundFilter === "All" || r.round === selectedRoundFilter)
     .filter(r => selectedTeamFilter === "All" || r.team === selectedTeamFilter)
     .sort((a, b) => {
@@ -1119,8 +1247,170 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       </header>
 
       {/* Main Container */}
+      {/* Main Container */}
       <main style={{ maxWidth: '1050px', margin: '1.5rem auto 0 auto', padding: '0 1rem' }}>
         
+        {/* TOP READING SCHEDULE / EDITION SELECTOR BANNER */}
+        <div style={{
+          backgroundColor: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '0.85rem',
+          padding: '0.85rem 1.15rem',
+          marginBottom: '1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <BookOpen size={14} style={{ color: 'var(--accent)' }} /> Reading Schedule:
+            </span>
+
+            {availableEditions.map(ed => {
+              const isSelected = selectedEdition.trim().toLowerCase() === ed.trim().toLowerCase();
+              const isLiveEdition = (settings.Active_Edition || "New Testament (3 chapters daily)").trim().toLowerCase() === ed.trim().toLowerCase();
+              const questionCount = questions.filter(q => (q.edition || "New Testament (3 chapters daily)").trim().toLowerCase() === ed.trim().toLowerCase()).length;
+
+              return (
+                <button
+                  key={ed}
+                  type="button"
+                  onClick={() => {
+                    setSelectedEdition(ed);
+                    setSelectedBankRound("All");
+                    setQuestionForm(prev => ({ ...prev, edition: ed }));
+                    setBulkEdition(ed);
+                    setAiEdition(ed);
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    padding: '0.45rem 0.85rem',
+                    borderRadius: '0.55rem',
+                    backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.22)' : 'var(--surface-secondary)',
+                    border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border-light)'}`,
+                    color: isSelected ? '#fff' : 'var(--text-secondary)',
+                    fontSize: '0.84rem',
+                    fontWeight: isSelected ? '700' : '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span>{ed.includes("New Testament") ? "📖" : (ed.includes("Entire") ? "📜" : "📚")}</span>
+                  <span>{ed}</span>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    padding: '0.1rem 0.45rem',
+                    borderRadius: '9999px',
+                    backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                    color: isSelected ? '#fff' : 'var(--text-secondary)'
+                  }}>
+                    {questionCount} Qs
+                  </span>
+                  {isLiveEdition && (
+                    <span style={{
+                      fontSize: '0.68rem',
+                      padding: '0.1rem 0.4rem',
+                      borderRadius: '9999px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.25)',
+                      color: '#34D399',
+                      fontWeight: 800,
+                      border: '1px solid rgba(16, 185, 129, 0.4)'
+                    }}>
+                      Live on Server
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => setShowCustomEditionInput(!showCustomEditionInput)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '0.5rem',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px dashed var(--border)',
+                color: 'var(--text-secondary)',
+                fontSize: '0.8rem',
+                cursor: 'pointer'
+              }}
+            >
+              <PlusCircle size={13} /> Add Track
+            </button>
+          </div>
+
+          {showCustomEditionInput && (
+            <div style={{ width: '100%', display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="Enter custom reading schedule name (e.g. Proverbs Deep Dive)..."
+                value={newEditionName}
+                onChange={(e) => setNewEditionName(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: 'var(--surface-secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '0.4rem',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.85rem',
+                  outline: 'none'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!newEditionName.trim()) return;
+                  const name = newEditionName.trim();
+                  setSelectedEdition(name);
+                  setSelectedBankRound("All");
+                  setQuestionForm(prev => ({ ...prev, edition: name }));
+                  setBulkEdition(name);
+                  setAiEdition(name);
+                  setNewEditionName("");
+                  setShowCustomEditionInput(false);
+                  showToast(`Switched to new reading track: "${name}"!`);
+                }}
+                style={{
+                  padding: '0.5rem 0.85rem',
+                  backgroundColor: 'var(--accent)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '0.4rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Create
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCustomEditionInput(false)}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-secondary)',
+                  border: 'none',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Tab Buttons (Responsive, No Horizontal Scrollbar) */}
         <div className="quiz-tab-bar" style={{
           display: 'flex',
@@ -1175,33 +1465,37 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
         </div>
 
         {/* TAB 1: CONTROL CENTER */}
-        {activeTab === 'control' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '750px', margin: '0 auto' }}>
+        {activeTab === 'control' && (() => {
+          const serverIsLive = String(settings.Is_Quiz_Live).toUpperCase() === "TRUE";
+          const hasLiveStatusChanged = isQuizLive !== serverIsLive;
+
+          return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '750px', margin: '0 auto' }}>
             
-            {/* Shareable Link Card */}
+            {/* Compact Shareable Link Card */}
             <div style={{
               backgroundColor: 'var(--surface)',
-              borderRadius: '1rem',
+              borderRadius: '0.85rem',
               border: '1px solid var(--border)',
-              padding: '1.5rem',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
+              padding: '1rem 1.25rem',
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                <Share2 size={18} style={{ color: 'var(--accent)' }} />
-                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', margin: 0 }}>Participant Quiz Link</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Share2 size={16} style={{ color: 'var(--accent)' }} />
+                  <h3 style={{ fontSize: '0.98rem', fontWeight: '700', margin: 0 }}>Participant Quiz Link</h3>
+                </div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Direct candidate access link</span>
               </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 1rem 0' }}>
-                Copy and share this direct link with your reading team members when the quiz is ready.
-              </p>
 
               <div className="quiz-share-box" style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
                 backgroundColor: 'var(--surface-secondary)',
-                border: '1px solid var(--border)',
-                borderRadius: '0.65rem',
-                padding: '0.4rem 0.5rem 0.4rem 0.9rem',
+                border: '1px solid var(--border-light)',
+                borderRadius: '0.55rem',
+                padding: '0.35rem 0.45rem 0.35rem 0.75rem',
                 flexWrap: 'wrap'
               }}>
                 <input
@@ -1209,37 +1503,37 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   readOnly
                   value={quizUrl}
                   style={{
-                    flex: '1 1 200px',
+                    flex: '1 1 180px',
                     minWidth: 0,
-                    width: '100%',
                     backgroundColor: 'transparent',
                     border: 'none',
                     color: 'var(--text-primary)',
-                    fontSize: '0.88rem',
+                    fontSize: '0.85rem',
                     outline: 'none',
-                    fontFamily: 'monospace'
+                    fontFamily: 'monospace',
+                    padding: '0.2rem 0'
                   }}
                 />
-                <div className="quiz-share-buttons" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <div className="quiz-share-buttons" style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     onClick={handleCopyLink}
                     style={{
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '0.4rem',
-                      padding: '0.55rem 1rem',
+                      gap: '0.35rem',
+                      padding: '0.45rem 0.85rem',
                       backgroundColor: copiedLink ? 'var(--success)' : 'var(--accent)',
                       color: '#fff',
                       border: 'none',
-                      borderRadius: '0.5rem',
-                      fontSize: '0.85rem',
+                      borderRadius: '0.45rem',
+                      fontSize: '0.82rem',
                       fontWeight: '700',
                       cursor: 'pointer',
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    {copiedLink ? <CheckCheck size={16} /> : <Copy size={16} />}
+                    {copiedLink ? <CheckCheck size={14} /> : <Copy size={14} />}
                     <span>{copiedLink ? "Copied!" : "Copy Link"}</span>
                   </button>
 
@@ -1248,25 +1542,25 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '0.4rem',
-                      padding: '0.55rem 1rem',
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      gap: '0.35rem',
+                      padding: '0.45rem 0.85rem',
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#fff',
-                      borderRadius: '0.5rem',
-                      fontSize: '0.85rem',
+                      borderRadius: '0.45rem',
+                      fontSize: '0.82rem',
                       fontWeight: '700',
                       textDecoration: 'none',
                       whiteSpace: 'nowrap',
                       transition: 'all 0.2s ease'
                     }}
-                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; }}
-                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; }}
+                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
                   >
-                    <Eye size={15} />
-                    <span>Preview User View</span>
+                    <Eye size={14} />
+                    <span>Preview View</span>
                   </a>
                 </div>
               </div>
@@ -1281,9 +1575,27 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
             }}>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <Settings size={20} style={{ color: 'var(--accent)' }} />
-                <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: 0 }}>Quiz Configuration</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Settings size={20} style={{ color: 'var(--accent)' }} />
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: 0 }}>Quiz Configuration</h3>
+                </div>
+
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.25rem 0.65rem',
+                  borderRadius: '9999px',
+                  backgroundColor: serverIsLive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                  border: `1px solid ${serverIsLive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  color: serverIsLive ? '#34D399' : '#FCD34D'
+                }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: serverIsLive ? '#10B981' : '#F59E0B' }}></span>
+                  <span>Live on Server: {serverIsLive ? "LIVE" : "MAINTENANCE"}</span>
+                </div>
               </div>
 
               <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -1293,25 +1605,43 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   padding: '1.25rem',
                   borderRadius: '0.75rem',
                   backgroundColor: isQuizLive ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                  border: `1.5px solid ${isQuizLive ? 'var(--success)' : '#F59E0B'}`,
+                  border: `1.5px solid ${hasLiveStatusChanged ? '#F59E0B' : (isQuizLive ? 'var(--success)' : '#F59E0B')}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '1rem',
                   flexWrap: 'wrap'
                 }}>
-                  <div>
+                  <div style={{ flex: '1 1 240px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                       <Power size={18} color={isQuizLive ? "#10B981" : "#F59E0B"} />
                       <span style={{ fontSize: '1rem', fontWeight: '800', color: isQuizLive ? '#34D399' : '#FCD34D' }}>
-                        {isQuizLive ? "Quiz is LIVE & Active" : "Quiz is in Maintenance (Coming Soon)"}
+                        Target: {isQuizLive ? "Quiz LIVE & Active" : "Quiz in Maintenance (Coming Soon)"}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
                       {isQuizLive 
-                        ? "Participants can currently access, start, and submit their quiz."
+                        ? "Participants will be able to access, start, and submit their quiz."
                         : "Access is blocked. Visitors will see the Coming Soon holding screen."}
                     </p>
+                    
+                    {hasLiveStatusChanged && (
+                      <div style={{
+                        marginTop: '0.6rem',
+                        padding: '0.4rem 0.65rem',
+                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                        border: '1px solid rgba(245, 158, 11, 0.35)',
+                        borderRadius: '0.4rem',
+                        color: '#FCD34D',
+                        fontSize: '0.78rem',
+                        fontWeight: '700',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem'
+                      }}>
+                        <span>⚠️ Status changed locally. Click "Save Settings" below to apply!</span>
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -1331,20 +1661,18 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    {isQuizLive ? "Close Quiz" : "Go Live Now"}
+                    {isQuizLive ? "Switch to Maintenance" : "Switch to Live"}
                   </button>
                 </div>
 
+                {/* Reading Schedule / Edition Selector */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                    Active Round Tag
+                    Active Reading Schedule / Edition
                   </label>
-                  <input
-                    type="text"
-                    value={settings.Active_Round}
-                    onChange={(e) => setSettings(prev => ({ ...prev, Active_Round: e.target.value }))}
-                    placeholder="e.g. Round 8"
-                    required
+                  <select
+                    value={settings.Active_Edition || "New Testament (3 chapters daily)"}
+                    onChange={(e) => setSettings(prev => ({ ...prev, Active_Edition: e.target.value }))}
                     style={{
                       width: '100%',
                       padding: '0.8rem 1rem',
@@ -1354,9 +1682,72 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       color: 'var(--text-primary)',
                       fontSize: '0.95rem',
                       outline: 'none',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      cursor: 'pointer'
                     }}
-                  />
+                  >
+                    {availableEditions.map(ed => (
+                      <option key={ed} value={ed}>{ed}</option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
+                    Participants taking the live quiz will receive questions assigned to this reading schedule.
+                  </span>
+                </div>
+
+                {/* Active Round Selector & Input */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                    Active Round Tag
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      value={settings.Active_Round}
+                      onChange={(e) => setSettings(prev => ({ ...prev, Active_Round: e.target.value }))}
+                      placeholder="e.g. Round 8"
+                      required
+                      style={{
+                        flex: '1 1 200px',
+                        padding: '0.8rem 1rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.6rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.95rem',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+
+                    {uniqueRoundsInEdition.length > 0 && (
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) setSettings(prev => ({ ...prev, Active_Round: e.target.value }));
+                        }}
+                        value={settings.Active_Round}
+                        style={{
+                          padding: '0.8rem 1rem',
+                          backgroundColor: 'var(--surface-secondary)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '0.6rem',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.88rem',
+                          outline: 'none',
+                          cursor: 'pointer',
+                          minWidth: '150px'
+                        }}
+                      >
+                        <option value="" disabled>Select Saved Round...</option>
+                        {uniqueRoundsInEdition.map(r => {
+                          const count = editionQuestions.filter(q => q.round === r).length;
+                          return (
+                            <option key={r} value={r}>{r} ({count} Qs)</option>
+                          );
+                        })}
+                      </select>
+                    )}
+                  </div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
                     Participants will take questions assigned to this exact round tag.
                   </span>
@@ -1394,8 +1785,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   <div style={{
                     padding: '0.75rem',
                     borderRadius: '0.5rem',
-                    backgroundColor: saveStatus.includes('success') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: saveStatus.includes('success') ? '#34D399' : '#F87171',
+                    backgroundColor: saveStatus.includes('Live') || saveStatus.includes('saved') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    color: saveStatus.includes('Live') || saveStatus.includes('saved') ? '#34D399' : '#F87171',
                     fontSize: '0.88rem',
                     fontWeight: '600'
                   }}>
@@ -1408,7 +1799,9 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   disabled={loading}
                   style={{
                     padding: '0.85rem',
-                    background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                    background: hasLiveStatusChanged 
+                      ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' 
+                      : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '0.6rem',
@@ -1419,21 +1812,28 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.5rem',
-                    boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)',
-                    marginTop: '0.5rem'
+                    boxShadow: hasLiveStatusChanged 
+                      ? '0 4px 18px rgba(16, 185, 129, 0.45)' 
+                      : '0 4px 15px rgba(37, 99, 235, 0.35)',
+                    transition: 'all 0.2s ease',
+                    opacity: loading ? 0.7 : 1
                   }}
+                  onMouseOver={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseOut={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   <Save size={18} />
-                  <span>{loading ? "Saving..." : "Save Settings"}</span>
+                  <span>{loading ? "Saving to Database..." : (hasLiveStatusChanged ? `Save Settings (Apply ${isQuizLive ? 'LIVE' : 'Maintenance'})` : "Save Settings")}</span>
                 </button>
               </form>
             </div>
-          </div>
-        )}
 
-        {/* TAB 2: QUESTION BUILDER (Single Edit / Create + Bank) */}
+          </div>
+          );
+        })()}
+
+        {/* TAB 2: QUESTION BUILDER (Single Edit / Create + Persistent Round Question Bank) */}
         {activeTab === 'builder' && (
-          <div className="quiz-admin-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.5rem', alignItems: 'flex-start', maxWidth: '1050px', margin: '0 auto' }}>
+          <div className="quiz-admin-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1.5rem', alignItems: 'flex-start', maxWidth: '1050px', margin: '0 auto' }}>
             
             {/* Form Column */}
             <div style={{
@@ -1480,16 +1880,14 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               </div>
 
               <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* Target Reading Schedule / Edition */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                    Round Tag
+                    Reading Schedule Track
                   </label>
-                  <input
-                    type="text"
-                    value={questionForm.round}
-                    onChange={(e) => setQuestionForm(prev => ({ ...prev, round: e.target.value }))}
-                    placeholder="e.g. Round 8"
-                    required
+                  <select
+                    value={questionForm.edition || selectedEdition}
+                    onChange={(e) => setQuestionForm(prev => ({ ...prev, edition: e.target.value }))}
                     style={{
                       width: '100%',
                       padding: '0.75rem 0.9rem',
@@ -1497,11 +1895,66 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       border: '1px solid var(--border)',
                       borderRadius: '0.5rem',
                       color: 'var(--text-primary)',
-                      fontSize: '0.9rem',
+                      fontSize: '0.88rem',
                       outline: 'none',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      cursor: 'pointer'
                     }}
-                  />
+                  >
+                    {availableEditions.map(ed => (
+                      <option key={ed} value={ed}>{ed}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Target Round Tag */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                    Round Tag
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type="text"
+                      value={questionForm.round}
+                      onChange={(e) => setQuestionForm(prev => ({ ...prev, round: e.target.value }))}
+                      placeholder="e.g. Round 8"
+                      required
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem 0.9rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.9rem',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    {uniqueRoundsInEdition.length > 0 && (
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) setQuestionForm(prev => ({ ...prev, round: e.target.value }));
+                        }}
+                        value={questionForm.round}
+                        style={{
+                          padding: '0.75rem 0.8rem',
+                          backgroundColor: 'var(--surface-secondary)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '0.5rem',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.85rem',
+                          outline: 'none',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="" disabled>Saved...</option>
+                        {uniqueRoundsInEdition.map(r => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -1532,7 +1985,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 {/* 4 Options with Radio Select */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                    Options & Correct Answer (Select the radio dot):
+                    Options & Correct Answer (Click radio dot):
                   </label>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -1645,7 +2098,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               </form>
             </div>
 
-            {/* Questions Bank List */}
+            {/* Persistent Round Question Bank Column */}
             <div style={{
               backgroundColor: 'var(--surface)',
               borderRadius: '1rem',
@@ -1654,46 +2107,154 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
             }}>
               
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>Questions ({questions.length})</h3>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Filter size={15} style={{ color: 'var(--text-secondary)' }} />
-                  
-                  {/* Native Clean Dropdown with Proper Spacing */}
-                  <select
-                    value={selectedRoundFilter}
-                    onChange={(e) => setSelectedRoundFilter(e.target.value)}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>
+                      Question Bank
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--accent-hover)', fontWeight: 600 }}>
+                      {selectedEdition} ({editionQuestions.length} Questions)
+                    </span>
+                  </div>
+
+                  {/* Active Round Indicator / Fast Switch Button */}
+                  {selectedBankRound !== "All" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettings(prev => ({
+                          ...prev,
+                          Active_Edition: selectedEdition,
+                          Active_Round: selectedBankRound
+                        }));
+                        showToast(`Set active live round to: ${selectedBankRound} (${selectedEdition})! Click "Save Settings" in Control Center to commit.`);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        padding: '0.35rem 0.75rem',
+                        backgroundColor: (settings.Active_Round === selectedBankRound && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition) ? 'rgba(16, 185, 129, 0.2)' : 'rgba(37, 99, 235, 0.15)',
+                        border: `1px solid ${(settings.Active_Round === selectedBankRound && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition) ? 'rgba(16, 185, 129, 0.4)' : 'rgba(37, 99, 235, 0.4)'}`,
+                        borderRadius: '0.45rem',
+                        color: (settings.Active_Round === selectedBankRound && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition) ? '#34D399' : '#60A5FA',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <span>{(settings.Active_Round === selectedBankRound && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition) ? "✓ Currently Active" : "🚀 Set as Active Round"}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* ROUND FILTER PILLS */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  flexWrap: 'wrap',
+                  padding: '0.4rem',
+                  backgroundColor: 'var(--surface-secondary)',
+                  borderRadius: '0.65rem',
+                  border: '1px solid var(--border-light)'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBankRound("All")}
                     style={{
-                      padding: '0.45rem 0.85rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.5rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.85rem',
-                      fontWeight: '600',
-                      outline: 'none',
-                      cursor: 'pointer',
-                      minWidth: '120px'
+                      padding: '0.35rem 0.75rem',
+                      borderRadius: '0.45rem',
+                      backgroundColor: selectedBankRound === "All" ? 'var(--accent)' : 'transparent',
+                      border: 'none',
+                      color: selectedBankRound === "All" ? '#fff' : 'var(--text-secondary)',
+                      fontSize: '0.8rem',
+                      fontWeight: selectedBankRound === "All" ? 700 : 500,
+                      cursor: 'pointer'
                     }}
                   >
-                    <option value="All">All Rounds</option>
-                    {uniqueRounds.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
+                    All Rounds ({editionQuestions.length})
+                  </button>
+
+                  {uniqueRoundsInEdition.map(r => {
+                    const count = editionQuestions.filter(q => q.round === r).length;
+                    const isSelected = selectedBankRound === r;
+                    const isActiveLive = settings.Active_Round === r && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition;
+
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setSelectedBankRound(r)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          padding: '0.35rem 0.75rem',
+                          borderRadius: '0.45rem',
+                          backgroundColor: isSelected ? 'var(--accent)' : (isActiveLive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)'),
+                          border: `1px solid ${isSelected ? 'var(--accent)' : (isActiveLive ? 'rgba(16, 185, 129, 0.35)' : 'transparent')}`,
+                          color: isSelected ? '#fff' : (isActiveLive ? '#34D399' : 'var(--text-primary)'),
+                          fontSize: '0.8rem',
+                          fontWeight: isSelected || isActiveLive ? 700 : 500,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <span>{r}</span>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          opacity: 0.85,
+                          backgroundColor: 'rgba(0,0,0,0.2)',
+                          padding: '0.05rem 0.35rem',
+                          borderRadius: '999px'
+                        }}>
+                          {count}
+                        </span>
+                        {isActiveLive && !isSelected && (
+                          <span style={{ fontSize: '0.65rem', color: '#34D399' }}>●</span>
+                        )}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextRoundNum = uniqueRoundsInEdition.length + 1;
+                      const newRoundName = `Round ${nextRoundNum}`;
+                      setQuestionForm(prev => ({ ...prev, round: newRoundName, edition: selectedEdition }));
+                      setSelectedBankRound(newRoundName);
+                      showToast(`Prepared new round: ${newRoundName} for ${selectedEdition}`);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      padding: '0.35rem 0.65rem',
+                      borderRadius: '0.45rem',
+                      backgroundColor: 'transparent',
+                      border: '1px dashed var(--border)',
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.78rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <PlusCircle size={13} /> New Round
+                  </button>
                 </div>
               </div>
 
               {/* Questions Scroll Area */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', maxHeight: '550px', overflowY: 'auto', paddingRight: '0.35rem' }}>
-                {questions.filter(q => selectedRoundFilter === "All" || q.round === selectedRoundFilter).length === 0 ? (
-                  <div style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    No questions found for this round.
+                {editionQuestions.filter(q => selectedBankRound === "All" || q.round === selectedBankRound).length === 0 ? (
+                  <div style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600 }}>No questions saved in {selectedBankRound === "All" ? selectedEdition : `${selectedBankRound} (${selectedEdition})`}.</p>
+                    <span style={{ fontSize: '0.85rem' }}>Use the form on the left or the Bulk Importer / AI Generator tabs to add questions.</span>
                   </div>
                 ) : (
-                  questions
-                    .filter(q => selectedRoundFilter === "All" || q.round === selectedRoundFilter)
+                  editionQuestions
+                    .filter(q => selectedBankRound === "All" || q.round === selectedBankRound)
                     .map((q) => {
                       const isBeingEdited = editingQuestionId === q.id;
 
@@ -1713,7 +2274,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                           }}
                         >
                           <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                               <span style={{ fontSize: '0.75rem', fontWeight: 700, backgroundColor: 'var(--accent-light)', color: 'var(--accent-hover)', padding: '0.15rem 0.5rem', borderRadius: '0.3rem' }}>
                                 {q.round}
                               </span>
@@ -1824,26 +2385,52 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   </div>
                 </div>
 
-                {/* Target Round Selector */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Target Round:</span>
-                  <input
-                    type="text"
-                    value={bulkRound}
-                    onChange={(e) => handleBulkRoundChange(e.target.value)}
-                    placeholder="e.g. Round 8"
-                    style={{
-                      width: '110px',
-                      padding: '0.45rem 0.75rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.5rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.88rem',
-                      fontWeight: '700',
-                      outline: 'none'
-                    }}
-                  />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                  {/* Target Edition Selector */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Track:</span>
+                    <select
+                      value={bulkEdition}
+                      onChange={(e) => handleBulkEditionChange(e.target.value)}
+                      style={{
+                        padding: '0.45rem 0.65rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.82rem',
+                        fontWeight: '600',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {availableEditions.map(ed => (
+                        <option key={ed} value={ed}>{ed}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Target Round Selector */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Round:</span>
+                    <input
+                      type="text"
+                      value={bulkRound}
+                      onChange={(e) => handleBulkRoundChange(e.target.value)}
+                      placeholder="e.g. Round 8"
+                      style={{
+                        width: '100px',
+                        padding: '0.45rem 0.65rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.85rem',
+                        fontWeight: '700',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -2092,6 +2679,10 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   <div style={{
                     width: '42px',
                     height: '42px',
+                    minWidth: '42px',
+                    minHeight: '42px',
+                    aspectRatio: '1 / 1',
+                    flexShrink: 0,
                     borderRadius: '10px',
                     background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
                     display: 'flex',
@@ -2100,7 +2691,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     color: '#fff',
                     boxShadow: '0 4px 15px rgba(245, 158, 11, 0.35)'
                   }}>
-                    <Sparkles size={22} />
+                    <Sparkles size={22} style={{ flexShrink: 0 }} />
                   </div>
                   <div>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: '800', margin: 0 }}>AI Scripture Question Generator</h3>
@@ -2215,6 +2806,32 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
                   
+                  {/* Track / Edition */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+                      Reading Schedule Track
+                    </label>
+                    <select
+                      value={aiEdition}
+                      onChange={(e) => setAiEdition(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 0.9rem',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.88rem',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {availableEditions.map(ed => (
+                        <option key={ed} value={ed}>{ed}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Round Tag */}
                   <div>
                     <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
@@ -2233,8 +2850,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                         border: '1px solid var(--border)',
                         borderRadius: '0.5rem',
                         color: 'var(--text-primary)',
-                        fontSize: '0.92rem',
-                        fontWeight: '600',
+                        fontSize: '0.9rem',
                         outline: 'none',
                         boxSizing: 'border-box'
                       }}
@@ -2605,6 +3221,32 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
               <div className="quiz-leaderboard-filters" style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
                 
+                {/* Edition Filter */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <BookOpen size={14} style={{ color: 'var(--text-secondary)' }} />
+                  <select
+                    value={selectedLeaderboardEdition}
+                    onChange={(e) => setSelectedLeaderboardEdition(e.target.value)}
+                    style={{
+                      padding: '0.45rem 0.85rem',
+                      backgroundColor: 'var(--surface-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.5rem',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.85rem',
+                      fontWeight: '600',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      minWidth: '130px'
+                    }}
+                  >
+                    <option value="All">All Schedules</option>
+                    {availableEditions.map(ed => (
+                      <option key={ed} value={ed}>{ed}</option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Round Filter */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Filter size={14} style={{ color: 'var(--text-secondary)' }} />
@@ -2625,7 +3267,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     }}
                   >
                     <option value="All">All Rounds</option>
-                    {uniqueRounds.map(r => (
+                    {allUniqueRounds.map(r => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
@@ -2669,7 +3311,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     <th style={{ padding: '0.65rem 0.75rem' }}>Candidate</th>
                     <th style={{ padding: '0.65rem 0.75rem' }}>WhatsApp</th>
                     <th style={{ padding: '0.65rem 0.75rem' }}>Team</th>
-                    <th style={{ padding: '0.65rem 0.75rem' }}>Round</th>
+                    <th style={{ padding: '0.65rem 0.75rem' }}>Track & Round</th>
                     <th style={{ padding: '0.65rem 0.75rem', textAlign: 'center' }}>Score</th>
                     <th style={{ padding: '0.65rem 0.75rem' }}>Submitted</th>
                     <th style={{ padding: '0.65rem 0.75rem', textAlign: 'center' }}>Actions</th>
@@ -2721,8 +3363,15 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                             );
                           })()}
                         </td>
-                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>
-                          {r.round}
+                        <td style={{ padding: '0.75rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                              {r.round}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                              {r.edition || "New Testament (3 chapters daily)"}
+                            </span>
+                          </div>
                         </td>
                         <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                           <span style={{ 

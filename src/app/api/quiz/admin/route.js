@@ -35,11 +35,38 @@ export async function GET(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [settings, questions, results] = await Promise.all([
+    const [settings, questions, rawResults, globalData] = await Promise.all([
       getQuizSettings(),
       getAllQuestions(),
-      getAllQuizResults()
+      getAllQuizResults(),
+      fetchGlobalData().catch(() => ({ members: [] }))
     ]);
+
+    const members = globalData.members || [];
+
+    // Auto-resolve any missing or unassigned teams from member directory
+    const results = rawResults.map(r => {
+      let team = r.team;
+      if (!team || team.trim() === "" || team.toLowerCase() === "unassigned") {
+        const normPhone = r.whatsApp ? String(r.whatsApp).replace(/\D/g, "").replace(/^0+/, "") : "";
+        const normName = r.fullName ? String(r.fullName).trim().toLowerCase() : "";
+        
+        const matchedMember = members.find(m => {
+          const mPhone = m.whatsapp ? String(m.whatsapp).replace(/\D/g, "").replace(/^0+/, "") : "";
+          const mName = m.name ? String(m.name).trim().toLowerCase() : "";
+          return (normPhone && mPhone && (normPhone === mPhone || mPhone.endsWith(normPhone) || normPhone.endsWith(mPhone))) ||
+                 (normName && mName && normName === mName);
+        });
+
+        if (matchedMember && matchedMember.team) {
+          team = matchedMember.team;
+        }
+      }
+      return {
+        ...r,
+        team: team || "Unassigned"
+      };
+    });
 
     return NextResponse.json({
       settings,
@@ -63,7 +90,10 @@ export async function POST(request) {
     const { action } = body;
 
     if (action === "updateSettings") {
-      const { activeRound, timeLimitMinutes, isQuizLive, geminiApiKey } = body;
+      const { activeEdition, activeRound, timeLimitMinutes, isQuizLive, geminiApiKey } = body;
+      if (activeEdition !== undefined) {
+        await updateQuizSettings("Active_Edition", activeEdition);
+      }
       if (activeRound !== undefined) {
         await updateQuizSettings("Active_Round", activeRound);
       }
@@ -95,11 +125,11 @@ export async function POST(request) {
     }
 
     if (action === "bulkAddQuestions") {
-      const { questions } = body;
+      const { questions, edition } = body;
       if (!Array.isArray(questions) || questions.length === 0) {
         return NextResponse.json({ error: "No valid questions provided for bulk import" }, { status: 400 });
       }
-      const count = await bulkAddQuizQuestions(questions);
+      const count = await bulkAddQuizQuestions(questions, edition);
       return NextResponse.json({ success: true, count, message: `Successfully imported ${count} questions` });
     }
 

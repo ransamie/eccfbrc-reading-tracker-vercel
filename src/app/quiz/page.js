@@ -8,6 +8,7 @@ export default function QuizLandingPage() {
   const router = useRouter();
   
   const [isLive, setIsLive] = useState(null); // null = loading, true = active, false = coming soon
+  const [activeEdition, setActiveEdition] = useState("New Testament (3 chapters daily)");
   const [activeRound, setActiveRound] = useState("Round 1");
   const [fullName, setFullName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -17,12 +18,13 @@ export default function QuizLandingPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // 1. Fetch Quiz Status (isLive & active round) from server
+    // 1. Fetch Quiz Status (isLive, active edition & active round) from server
     fetch(`/api/quiz/init?t=${Date.now()}`, { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
         const live = !!data.isLive;
         setIsLive(live);
+        if (data.activeEdition) setActiveEdition(data.activeEdition);
         if (data.activeRound) setActiveRound(data.activeRound);
 
         if (!live) {
@@ -83,6 +85,7 @@ export default function QuizLandingPage() {
       fullName: fullName.trim(),
       whatsapp: whatsapp.replace(/\D/g, "").replace(/^0+/, ""),
       team: selectedTeam,
+      edition: activeEdition,
       round: activeRound
     };
 
@@ -335,6 +338,28 @@ export default function QuizLandingPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Active Round & Edition Badge */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.35rem 0.85rem',
+            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            borderRadius: '9999px',
+            marginBottom: '1rem',
+            color: '#60A5FA',
+            fontSize: '0.82rem',
+            fontWeight: '700',
+            maxWidth: '100%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            <Sparkles size={14} style={{ flexShrink: 0 }} />
+            <span>{activeEdition} • {activeRound}</span>
           </div>
 
           {error && (

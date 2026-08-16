@@ -13,20 +13,23 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const targetRound = searchParams.get("round");
+    const targetEdition = searchParams.get("edition");
     const isPreview = searchParams.get("preview") === "true";
 
     const settings = await getQuizSettings();
     const isLive = String(settings.Is_Quiz_Live).toUpperCase() === "TRUE";
+    const activeEdition = targetEdition || settings.Active_Edition || "New Testament (3 chapters daily)";
     const activeRound = targetRound || settings.Active_Round || "Round 1";
     const timeLimitMinutes = settings.Time_Limit_Minutes || "15";
 
     let questions = [];
     if (isPreview || targetRound) {
-      questions = await getQuestionsForRound(activeRound);
+      questions = await getQuestionsForRound(activeRound, activeEdition);
     }
 
     return NextResponse.json({
       isLive,
+      activeEdition,
       activeRound,
       timeLimitMinutes,
       questions
@@ -58,14 +61,15 @@ export async function POST(req) {
 
     // 2. Normalize WhatsApp number: strip non-numeric characters and leading zeros
     const normalizedWhatsApp = whatsapp.replace(/\D/g, "").replace(/^0+/, "");
+    const activeEdition = settings.Active_Edition || "New Testament (3 chapters daily)";
     const activeRound = settings.Active_Round || "Round 1";
     const timeLimitMinutes = parseInt(settings.Time_Limit_Minutes || "15", 10);
 
-    // 3. Check if user already submitted a response for this round
-    const hasAlreadySubmitted = await checkExistingResult(normalizedWhatsApp, activeRound);
+    // 3. Check if user already submitted a response for this round & edition
+    const hasAlreadySubmitted = await checkExistingResult(normalizedWhatsApp, activeRound, activeEdition);
     if (hasAlreadySubmitted) {
       return NextResponse.json(
-        { error: "You have already submitted a response for this round." },
+        { error: `You have already submitted a response for ${activeRound} (${activeEdition}).` },
         { status: 400 }
       );
     }
@@ -74,13 +78,14 @@ export async function POST(req) {
     const session = await getOrCreateSession(normalizedWhatsApp, activeRound, timeLimitMinutes);
 
     // 5. Fetch questions and strip answers to prevent client payload inspection
-    const rawQuestions = await getQuestionsForRound(activeRound);
+    const rawQuestions = await getQuestionsForRound(activeRound, activeEdition);
     const securedQuestions = rawQuestions.map((q) => {
       const { correctAnswer, ...clientQuestion } = q;
       return clientQuestion;
     });
 
     return NextResponse.json({
+      edition: activeEdition,
       round: activeRound,
       questions: securedQuestions,
       deadlineTimestamp: session.absoluteDeadline

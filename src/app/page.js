@@ -208,17 +208,20 @@ export default function Home() {
                   disabled={loading} 
                   style={{ 
                     width: '100%', 
-                    padding: '0.6rem', 
-                    backgroundColor: 'transparent', 
-                    color: 'var(--text-primary)', 
-                    border: '1px solid var(--border-light)', 
-                    borderRadius: '0.4rem',
+                    padding: '0.85rem', 
+                    background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', 
+                    color: '#FFFFFF', 
+                    border: 'none', 
+                    borderRadius: '0.65rem',
                     fontSize: '1rem',
-                    transition: 'border 0.2s, color 0.2s',
-                    cursor: 'pointer'
+                    fontWeight: '700',
+                    transition: 'all 0.2s ease',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 4px 16px rgba(37, 99, 235, 0.35)',
+                    opacity: loading ? 0.6 : 1
                   }}
-                  onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
-                  onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                  onMouseOver={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseOut={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   {loading ? "Verifying..." : "Login"}
                 </button>

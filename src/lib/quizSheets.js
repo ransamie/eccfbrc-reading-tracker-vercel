@@ -1,12 +1,24 @@
 import { getDatabase } from "./googleSheets";
 
-// Helper to get or create a worksheet if it doesn't exist
+// Helper to get or create a worksheet if it doesn't exist, ensuring header columns match
 async function getSheetByTitle(title, headers = []) {
   const db = await getDatabase();
   let sheet = db.sheetsByTitle[title];
   if (!sheet) {
     // Attempt to create sheet programmatically if missing
     sheet = await db.addSheet({ title, headerValues: headers });
+  } else if (headers.length > 0) {
+    try {
+      await sheet.loadHeaderRow();
+      const existingHeaders = Array.isArray(sheet.headerValues) ? sheet.headerValues : [];
+      const missingHeaders = headers.filter(h => !existingHeaders.includes(h));
+      if (missingHeaders.length > 0) {
+        const mergedHeaders = [...existingHeaders, ...missingHeaders];
+        await sheet.setHeaderRow(mergedHeaders);
+      }
+    } catch (headerErr) {
+      console.warn(`Could not sync headers for ${title}:`, headerErr.message || headerErr);
+    }
   }
   return sheet;
 }
@@ -15,6 +27,7 @@ export async function getQuizSettings() {
   const sheet = await getSheetByTitle("Quiz_Settings", ["Setting_Key", "Setting_Value"]);
   const rows = await sheet.getRows();
   const settings = {
+    Active_Edition: "New Testament (3 chapters daily)",
     Active_Round: "Round 1",
     Time_Limit_Minutes: "15",
     Is_Quiz_Live: "FALSE"
@@ -42,9 +55,10 @@ export async function updateQuizSettings(key, value) {
   }
 }
 
-export async function getQuestionsForRound(round) {
+export async function getQuestionsForRound(round, edition) {
   const sheet = await getSheetByTitle("Quiz_Questions", [
     "ID",
+    "Edition",
     "Round",
     "Question",
     "Option_1",
@@ -54,10 +68,25 @@ export async function getQuestionsForRound(round) {
     "Correct_Answer"
   ]);
   const rows = await sheet.getRows();
+  const targetEdition = edition ? String(edition).trim() : "";
+
   return rows
-    .filter((row) => String(row.get("Round")).trim() === String(round).trim())
+    .filter((row) => {
+      const rowRound = String(row.get("Round") || "").trim();
+      const roundMatches = rowRound.toLowerCase() === String(round).trim().toLowerCase();
+      if (!roundMatches) return false;
+
+      if (!targetEdition) return true;
+      const rowEdition = String(row.get("Edition") || "").trim();
+      if (!rowEdition) {
+        // Backwards compatibility: rows with empty edition default to New Testament
+        return targetEdition.toLowerCase().includes("new testament");
+      }
+      return rowEdition.toLowerCase() === targetEdition.toLowerCase();
+    })
     .map((row, index) => ({
-      id: row.get("ID") || `q_${index}`, // Allow fallback to index if ID column isn't there
+      id: row.get("ID") || `q_${index}`,
+      edition: row.get("Edition") || "New Testament (3 chapters daily)",
       round: row.get("Round"),
       question: row.get("Question"),
       options: [
@@ -70,10 +99,12 @@ export async function getQuestionsForRound(round) {
     }));
 }
 
-export async function checkExistingResult(whatsAppNumber, round) {
+export async function checkExistingResult(whatsAppNumber, round, edition) {
   const sheet = await getSheetByTitle("Quiz_Results", [
     "Full_Name",
     "WhatsApp_Number",
+    "Team_Name",
+    "Edition",
     "Round",
     "Score",
     "Total_Questions",
@@ -81,11 +112,18 @@ export async function checkExistingResult(whatsAppNumber, round) {
     "Details"
   ]);
   const rows = await sheet.getRows();
-  const match = rows.find(
-    (row) =>
-      String(row.get("WhatsApp_Number")).trim() === String(whatsAppNumber).trim() &&
-      String(row.get("Round")).trim() === String(round).trim()
-  );
+  const targetEdition = edition ? String(edition).trim().toLowerCase() : "";
+
+  const match = rows.find((row) => {
+    const phoneMatches = String(row.get("WhatsApp_Number") || "").trim() === String(whatsAppNumber).trim();
+    const roundMatches = String(row.get("Round") || "").trim().toLowerCase() === String(round).trim().toLowerCase();
+    if (!phoneMatches || !roundMatches) return false;
+
+    if (!targetEdition) return true;
+    const rowEdition = String(row.get("Edition") || "").trim().toLowerCase();
+    if (!rowEdition) return targetEdition.includes("new testament");
+    return rowEdition === targetEdition;
+  });
   return !!match;
 }
 
@@ -148,6 +186,7 @@ export async function saveQuizResult(result) {
     "Full_Name",
     "WhatsApp_Number",
     "Team_Name",
+    "Edition",
     "Round",
     "Score",
     "Total_Questions",
@@ -158,6 +197,7 @@ export async function saveQuizResult(result) {
     Full_Name: result.fullName,
     WhatsApp_Number: result.whatsApp,
     Team_Name: result.teamName || result.team || "Unassigned",
+    Edition: result.edition || "New Testament (3 chapters daily)",
     Round: result.round,
     Score: String(result.score),
     Total_Questions: String(result.totalQuestions),
@@ -169,6 +209,7 @@ export async function saveQuizResult(result) {
 export async function getAllQuestions() {
   const sheet = await getSheetByTitle("Quiz_Questions", [
     "ID",
+    "Edition",
     "Round",
     "Question",
     "Option_1",
@@ -180,6 +221,7 @@ export async function getAllQuestions() {
   const rows = await sheet.getRows();
   return rows.map((row, index) => ({
     id: row.get("ID") || `q_${index}`,
+    edition: row.get("Edition") || "New Testament (3 chapters daily)",
     round: row.get("Round"),
     question: row.get("Question"),
     option1: row.get("Option_1"),
@@ -195,6 +237,7 @@ export async function getAllQuizResults() {
     "Full_Name",
     "WhatsApp_Number",
     "Team_Name",
+    "Edition",
     "Round",
     "Score",
     "Total_Questions",
@@ -206,6 +249,7 @@ export async function getAllQuizResults() {
     fullName: row.get("Full_Name"),
     whatsApp: row.get("WhatsApp_Number"),
     team: row.get("Team_Name") || row.get("Team") || "Unassigned",
+    edition: row.get("Edition") || "New Testament (3 chapters daily)",
     round: row.get("Round"),
     score: Number(row.get("Score")),
     totalQuestions: Number(row.get("Total_Questions")),
@@ -217,6 +261,7 @@ export async function getAllQuizResults() {
 export async function addQuizQuestion(q) {
   const sheet = await getSheetByTitle("Quiz_Questions", [
     "ID",
+    "Edition",
     "Round",
     "Question",
     "Option_1",
@@ -228,6 +273,7 @@ export async function addQuizQuestion(q) {
   const id = q.id || `q_${Date.now()}`;
   await sheet.addRow({
     ID: id,
+    Edition: q.edition || "New Testament (3 chapters daily)",
     Round: q.round,
     Question: q.question,
     Option_1: q.option1,
@@ -239,9 +285,10 @@ export async function addQuizQuestion(q) {
   return id;
 }
 
-export async function bulkAddQuizQuestions(questionsList) {
+export async function bulkAddQuizQuestions(questionsList, defaultEdition) {
   const sheet = await getSheetByTitle("Quiz_Questions", [
     "ID",
+    "Edition",
     "Round",
     "Question",
     "Option_1",
@@ -253,6 +300,7 @@ export async function bulkAddQuizQuestions(questionsList) {
   const now = Date.now();
   const rowsToAdd = questionsList.map((q, idx) => ({
     ID: q.id || `q_${now}_${idx + 1}`,
+    Edition: q.edition || defaultEdition || "New Testament (3 chapters daily)",
     Round: q.round,
     Question: q.question,
     Option_1: q.option1,
@@ -270,6 +318,7 @@ export async function bulkAddQuizQuestions(questionsList) {
 export async function updateQuizQuestion(id, q) {
   const sheet = await getSheetByTitle("Quiz_Questions", [
     "ID",
+    "Edition",
     "Round",
     "Question",
     "Option_1",
@@ -281,6 +330,7 @@ export async function updateQuizQuestion(id, q) {
   const rows = await sheet.getRows();
   const targetRow = rows.find((row) => String(row.get("ID")).trim() === String(id).trim());
   if (targetRow) {
+    if (q.edition !== undefined) targetRow.set("Edition", q.edition);
     if (q.round !== undefined) targetRow.set("Round", q.round);
     if (q.question !== undefined) targetRow.set("Question", q.question);
     if (q.option1 !== undefined) targetRow.set("Option_1", q.option1);
