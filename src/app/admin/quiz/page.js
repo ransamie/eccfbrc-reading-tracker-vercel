@@ -3303,8 +3303,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
             </div>
 
             {/* Table */}
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
+              <table style={{ width: '100%', minWidth: '820px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
                     <th style={{ padding: '0.65rem 0.75rem' }}>Rank</th>
@@ -3335,13 +3335,13 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                         <td style={{ padding: '0.75rem', fontWeight: '800', color: i < 3 ? '#F59E0B' : 'var(--text-secondary)' }}>
                           #{i + 1}
                         </td>
-                        <td style={{ padding: '0.75rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                        <td style={{ padding: '0.75rem', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                           {r.fullName}
                         </td>
-                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
-                          {r.whatsapp}
+                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                          {r.whatsApp || r.whatsapp || "—"}
                         </td>
-                        <td style={{ padding: '0.75rem' }}>
+                        <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}>
                           {(() => {
                             const raw = String(r.team || '').trim();
                             const displayTeam = !raw || raw.toLowerCase() === 'unassigned'
@@ -3353,10 +3353,14 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                               <span style={{
                                 backgroundColor: isUnassigned ? 'rgba(255, 255, 255, 0.08)' : 'var(--accent-light)',
                                 color: isUnassigned ? 'var(--text-secondary)' : 'var(--accent-hover)',
-                                padding: '0.2rem 0.55rem',
+                                padding: '0.25rem 0.65rem',
                                 borderRadius: '0.35rem',
                                 fontSize: '0.8rem',
-                                fontWeight: '700'
+                                fontWeight: '700',
+                                whiteSpace: 'nowrap',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.3rem'
                               }}>
                                 {displayTeam}
                               </span>

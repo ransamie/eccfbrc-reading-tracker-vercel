@@ -67,6 +67,8 @@ export default function QuizResultPage() {
       rawTeam = localStorage.getItem("quiz_saved_participant_team") || "Divine";
     }
   }
+  const teamDisplay = rawTeam && rawTeam.toLowerCase().startsWith("team ") ? rawTeam : (rawTeam && rawTeam.toLowerCase() === "unassigned" ? "Team Unassigned" : `Team ${rawTeam || 'Divine'}`);
+
   // Helper: map full schedule title to concise edition tag from Canva sample
   const getEditionTag = (rawEdition) => {
     if (!rawEdition) return "JUN – AUG NT EDITION";

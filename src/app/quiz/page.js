@@ -68,8 +68,9 @@ export default function QuizLandingPage() {
       return;
     }
 
-    if (!whatsapp.trim()) {
-      setError("Please enter your WhatsApp number");
+    const cleanPhone = whatsapp.replace(/\D/g, "");
+    if (!cleanPhone || cleanPhone.length < 8) {
+      setError("Please enter a valid WhatsApp phone number (minimum 8 digits, numbers only).");
       setLoading(false);
       return;
     }
@@ -83,7 +84,7 @@ export default function QuizLandingPage() {
     // Save to pending start and navigate to taking screen
     const pendingInfo = {
       fullName: fullName.trim(),
-      whatsapp: whatsapp.replace(/\D/g, "").replace(/^0+/, ""),
+      whatsapp: cleanPhone,
       team: selectedTeam,
       edition: activeEdition,
       round: activeRound
@@ -92,7 +93,7 @@ export default function QuizLandingPage() {
     localStorage.setItem("quiz_pending_start", JSON.stringify(pendingInfo));
     localStorage.setItem("quiz_saved_participant_name", fullName.trim());
     localStorage.setItem("quiz_saved_participant_team", selectedTeam);
-    localStorage.setItem("quiz_saved_whatsapp", whatsapp.trim());
+    localStorage.setItem("quiz_saved_whatsapp", cleanPhone);
     sessionStorage.setItem("quiz_current_participant", JSON.stringify(pendingInfo));
     router.push("/quiz/take");
   };
@@ -283,13 +284,15 @@ export default function QuizLandingPage() {
           <div>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
               <Phone size={16} style={{ color: 'var(--accent)' }} />
-              WhatsApp Number
+              WhatsApp Number (Digits Only)
             </label>
             <input
               type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               placeholder="e.g. 2348012345678"
               value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
+              onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ""))}
               required
               style={{
                 width: '100%',
@@ -304,7 +307,7 @@ export default function QuizLandingPage() {
               }}
             />
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
-              Used to record your round submission once.
+              Enter numbers only (no letters or special characters).
             </span>
           </div>
 
