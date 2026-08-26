@@ -69,6 +69,8 @@ export default function AdminQuizPage() {
   const [selectedLeaderboardEdition, setSelectedLeaderboardEdition] = useState("All");
   const [selectedRoundFilter, setSelectedRoundFilter] = useState("All");
   const [selectedTeamFilter, setSelectedTeamFilter] = useState("All");
+  const [resultSortBy, setResultSortBy] = useState("score");   // "score" | "date"
+  const [resultSortOrder, setResultSortOrder] = useState("desc"); // "asc" | "desc"
   const [showCustomEditionInput, setShowCustomEditionInput] = useState(false);
   const [newEditionName, setNewEditionName] = useState("");
   
@@ -840,9 +842,23 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     .filter(r => selectedRoundFilter === "All" || r.round === selectedRoundFilter)
     .filter(r => selectedTeamFilter === "All" || r.team === selectedTeamFilter)
     .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
+      const dir = resultSortOrder === "desc" ? -1 : 1;
+      if (resultSortBy === "date") {
+        return dir * (new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+      }
+      // Default: sort by score; tie-break by date ascending
+      if (b.score !== a.score) return dir * (b.score - a.score);
       return new Date(a.timestamp || 0) - new Date(b.timestamp || 0);
     });
+
+  const toggleSort = (col) => {
+    if (resultSortBy === col) {
+      setResultSortOrder(o => o === "desc" ? "asc" : "desc");
+    } else {
+      setResultSortBy(col);
+      setResultSortOrder("desc");
+    }
+  };
 
   // --- SCREEN 1: ADMIN LOGIN ---
   if (!isAuthenticated) {
@@ -3347,8 +3363,20 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     <th style={{ padding: '0.65rem 0.75rem' }}>WhatsApp</th>
                     <th style={{ padding: '0.65rem 0.75rem' }}>Team</th>
                     <th style={{ padding: '0.65rem 0.75rem' }}>Track & Round</th>
-                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'center' }}>Score</th>
-                    <th style={{ padding: '0.65rem 0.75rem' }}>Submitted</th>
+                    <th
+                      style={{ padding: '0.65rem 0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                      onClick={() => toggleSort("score")}
+                      title="Sort by score"
+                    >
+                      Score {resultSortBy === "score" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
+                    </th>
+                    <th
+                      style={{ padding: '0.65rem 0.75rem', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "date" ? 'var(--accent)' : undefined }}
+                      onClick={() => toggleSort("date")}
+                      title="Sort by submission date"
+                    >
+                      Submitted {resultSortBy === "date" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
+                    </th>
                     <th style={{ padding: '0.65rem 0.75rem', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
