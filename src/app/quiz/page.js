@@ -246,24 +246,13 @@ export default function QuizLandingPage() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '2rem 1rem',
+      padding: '2rem 1.25rem',
       background: 'radial-gradient(ellipse at top, #1e293b 0%, #0f172a 100%)',
       color: 'var(--text-primary)',
       fontFamily: 'var(--font-sans)'
     }}>
-      <div style={{
-        maxWidth: '480px',
-        width: '100%',
-        backgroundColor: 'rgba(17, 24, 39, 0.75)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderRadius: '1.25rem',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        boxShadow: '0 25px 60px rgba(0, 0, 0, 0.5)',
-        padding: '2.5rem 2rem',
-        position: 'relative'
-      }}>
-        
+      <div style={{ maxWidth: '440px', width: '100%' }}>
+
         {/* Logo & Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{
@@ -336,10 +325,8 @@ export default function QuizLandingPage() {
         {/* Lookup Panel — expands inline */}
         {showLookup && (
           <div style={{
-            backgroundColor: 'rgba(17, 24, 39, 0.6)',
-            border: '1px solid rgba(245, 158, 11, 0.2)',
-            borderRadius: '0.85rem',
-            padding: '1.25rem',
+            borderTop: '1px solid rgba(245, 158, 11, 0.15)',
+            paddingTop: '1rem',
             marginBottom: '1.5rem'
           }}>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 0.85rem 0', lineHeight: '1.5' }}>
