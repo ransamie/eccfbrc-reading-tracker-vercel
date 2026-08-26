@@ -297,6 +297,115 @@ export default function QuizLandingPage() {
           </p>
         </div>
 
+        {/* ── Already Submitted? Lookup Strip ── */}
+        <div style={{
+          backgroundColor: 'rgba(245, 158, 11, 0.08)',
+          border: '1px solid rgba(245, 158, 11, 0.25)',
+          borderRadius: '0.75rem',
+          padding: '0.7rem 1rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          flexWrap: 'wrap'
+        }}>
+          <span style={{ fontSize: '0.85rem', color: '#FCD34D', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            🔍 Already submitted?
+          </span>
+          <button
+            type="button"
+            onClick={() => { setShowLookup(v => !v); setLookupError(""); }}
+            style={{
+              padding: '0.35rem 0.85rem',
+              backgroundColor: showLookup ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              borderRadius: '0.5rem',
+              color: '#FCD34D',
+              fontSize: '0.82rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {showLookup ? '✕ Close' : 'Look Up My Score →'}
+          </button>
+        </div>
+
+        {/* Lookup Panel — expands inline */}
+        {showLookup && (
+          <div style={{
+            backgroundColor: 'rgba(17, 24, 39, 0.6)',
+            border: '1px solid rgba(245, 158, 11, 0.2)',
+            borderRadius: '0.85rem',
+            padding: '1.25rem',
+            marginBottom: '1.5rem'
+          }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 0.85rem 0', lineHeight: '1.5' }}>
+              Enter the WhatsApp number you used during the quiz to retrieve your <strong style={{ color: '#fff' }}>{activeRound}</strong> result.
+            </p>
+            <form onSubmit={handleLookup} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <input
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="Your WhatsApp number..."
+                value={lookupPhone}
+                onChange={(e) => setLookupPhone(e.target.value.replace(/\D/g, ""))}
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  backgroundColor: 'var(--surface-secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '0.6rem',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.95rem',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+              {lookupError && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  borderRadius: '0.5rem',
+                  padding: '0.6rem 0.85rem',
+                  color: '#F87171',
+                  fontSize: '0.83rem'
+                }}>
+                  <ShieldAlert size={14} style={{ flexShrink: 0 }} />
+                  <span>{lookupError}</span>
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={lookupLoading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '0.6rem',
+                  fontSize: '0.95rem',
+                  fontWeight: '700',
+                  cursor: lookupLoading ? 'not-allowed' : 'pointer',
+                  opacity: lookupLoading ? 0.7 : 1,
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 14px rgba(217, 119, 6, 0.35)'
+                }}
+              >
+                {lookupLoading ? "Looking up..." : "View My Result →"}
+              </button>
+            </form>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           
           {/* Full Name */}
@@ -455,106 +564,6 @@ export default function QuizLandingPage() {
           </button>
 
         </form>
-      </div>
-
-      {/* ── Look Up Previous Result ── */}
-      <div style={{ maxWidth: '480px', width: '100%', marginTop: '1rem' }}>
-        <button
-          type="button"
-          onClick={() => { setShowLookup(v => !v); setLookupError(""); }}
-          style={{
-            width: '100%',
-            padding: '0.75rem 1rem',
-            backgroundColor: 'rgba(255, 255, 255, 0.04)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '0.75rem',
-            color: 'var(--text-secondary)',
-            fontSize: '0.9rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          🔍 {showLookup ? "Hide Result Lookup" : "Already submitted? Look Up My Score"}
-        </button>
-
-        {showLookup && (
-          <div style={{
-            marginTop: '0.75rem',
-            backgroundColor: 'rgba(17, 24, 39, 0.75)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            borderRadius: '1rem',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            padding: '1.5rem',
-          }}>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0 0 1rem 0', lineHeight: '1.5' }}>
-              If you already submitted and missed your result page, enter the WhatsApp number you used to take the quiz and we'll retrieve your scorecard for <strong style={{ color: '#fff' }}>{activeRound}</strong>.
-            </p>
-            <form onSubmit={handleLookup} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="Enter your WhatsApp number..."
-                value={lookupPhone}
-                onChange={(e) => setLookupPhone(e.target.value.replace(/\D/g, ""))}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.8rem 1rem',
-                  backgroundColor: 'var(--surface-secondary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '0.6rem',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.98rem',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-              {lookupError && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                  border: '1px solid rgba(239, 68, 68, 0.4)',
-                  borderRadius: '0.5rem',
-                  padding: '0.65rem 0.9rem',
-                  color: '#F87171',
-                  fontSize: '0.85rem'
-                }}>
-                  <ShieldAlert size={15} style={{ flexShrink: 0 }} />
-                  <span>{lookupError}</span>
-                </div>
-              )}
-              <button
-                type="submit"
-                disabled={lookupLoading}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem',
-                  background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '0.6rem',
-                  fontSize: '0.98rem',
-                  fontWeight: '700',
-                  cursor: lookupLoading ? 'not-allowed' : 'pointer',
-                  opacity: lookupLoading ? 0.7 : 1,
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 6px 18px rgba(124, 58, 237, 0.35)'
-                }}
-              >
-                {lookupLoading ? "Looking up..." : "View My Result →"}
-              </button>
-            </form>
-          </div>
-        )}
       </div>
 
     </div>
