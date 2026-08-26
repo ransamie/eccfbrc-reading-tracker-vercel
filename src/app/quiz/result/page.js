@@ -125,6 +125,20 @@ export default function QuizResultPage() {
   const perfLen = Math.max(perfTitle.length, 1);
   const perfFontSize = Math.min(76, Math.max(30, Math.floor(820 / (perfLen * 0.68))));
 
+  // Score font size — auto-scale so score+denom always fits in the circle (safe width: 538px in 2160 space).
+  // Impact/Arial Black average char width ≈ 0.58 × fontSize for digits, 0.45 × fontSize for '/'.
+  const SCORE_SAFE_W = 538;
+  const SCORE_RATIO = 110 / 290;
+  let svgScoreFontSize = 260;
+  while (svgScoreFontSize > 60) {
+    const svgDenomFontSize = Math.round(svgScoreFontSize * SCORE_RATIO);
+    const estScoreW = String(score).length * svgScoreFontSize * 0.60;
+    const estDenomW = (`/${totalQuestions}`).length * svgDenomFontSize * 0.52;
+    if (estScoreW + 8 + estDenomW <= SCORE_SAFE_W) break;
+    svgScoreFontSize -= 4;
+  }
+  const svgDenomFontSize = Math.round(svgScoreFontSize * SCORE_RATIO);
+
   const handleDownloadScoreCard = async () => {
     setIsGeneratingImg(true);
     try {
@@ -210,10 +224,10 @@ export default function QuizResultPage() {
       ctx.restore();
 
       // --- 5. Big Score Digits in Purple Circle ---
-      // Circle visual center is at (1080, 1300). We use textBaseline="middle" and
-      // measureText metrics to get the TRUE visual height of each glyph so the
-      // combined score+denominator group is pixel-perfectly centered regardless of
-      // whether the score is a single digit (5) or double digit (12).
+      // Circle center: (1084, 1270). Pixel-measured diameter: 673px.
+      // Safe text width = 80% of diameter = ~538px.
+      // We start at the max font size and scale BOTH pieces down proportionally
+      // until the full group fits, so it always works for any score/total.
       ctx.save();
       ctx.fillStyle = "#FFFFFF";
       ctx.shadowColor = "rgba(0, 0, 0, 0.65)";
@@ -223,42 +237,50 @@ export default function QuizResultPage() {
       ctx.textBaseline = "middle";
       ctx.textAlign = "left";
 
-      const CIRCLE_CX = 1080; // horizontal center of purple circle
-      const CIRCLE_CY = 1300; // vertical center of purple circle
+      const CIRCLE_CX = 1084;
+      const CIRCLE_CY = 1270;
+      const MAX_TEXT_WIDTH = 538; // 80% of measured circle diameter
+      const GAP = 8;
 
       const scoreStr = String(score);
       const denomStr = `/${totalQuestions}`;
 
-      // Measure score width
-      ctx.font = "900 290px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
-      const scoreMetrics = ctx.measureText(scoreStr);
-      const scoreWidth = scoreMetrics.width;
-      // True visual half-height of the score glyph
-      const scoreHalfH = (scoreMetrics.actualBoundingBoxAscent + scoreMetrics.actualBoundingBoxDescent) / 2;
+      // Start at desired max sizes; ratio keeps denom proportional to score
+      let scoreFontSize = 260;
+      const RATIO = 110 / 290; // denom is always ~38% the size of score
 
-      // Measure denom width
-      ctx.font = "900 110px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
-      const denomMetrics = ctx.measureText(denomStr);
-      const denomWidth = denomMetrics.width;
-      // True visual half-height of the denom glyph
-      const denomHalfH = (denomMetrics.actualBoundingBoxAscent + denomMetrics.actualBoundingBoxDescent) / 2;
+      // Shrink until the combined group fits within MAX_TEXT_WIDTH
+      let scoreWidth, denomWidth, totalGroupWidth;
+      while (scoreFontSize > 60) {
+        const denomFontSize = Math.round(scoreFontSize * RATIO);
+        ctx.font = `900 ${scoreFontSize}px 'Arial Black', Impact, sans-serif`;
+        scoreWidth = ctx.measureText(scoreStr).width;
+        ctx.font = `900 ${denomFontSize}px 'Arial Black', Impact, sans-serif`;
+        denomWidth = ctx.measureText(denomStr).width;
+        totalGroupWidth = scoreWidth + GAP + denomWidth;
+        if (totalGroupWidth <= MAX_TEXT_WIDTH) break;
+        scoreFontSize -= 4;
+      }
 
-      // Gap between score and denom
-      const GAP = 10;
-      const totalGroupWidth = scoreWidth + GAP + denomWidth;
-
-      // Left edge so the whole group is horizontally centered on CIRCLE_CX
+      const denomFontSize = Math.round(scoreFontSize * RATIO);
       const startX = CIRCLE_CX - totalGroupWidth / 2;
 
-      // Draw score — its vertical midpoint sits at CIRCLE_CY
-      ctx.font = "900 290px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      // Measure half-heights for baseline alignment
+      ctx.font = `900 ${scoreFontSize}px 'Arial Black', Impact, sans-serif`;
+      const scoreMetrics = ctx.measureText(scoreStr);
+      const scoreHalfH = (scoreMetrics.actualBoundingBoxAscent + scoreMetrics.actualBoundingBoxDescent) / 2;
+
+      ctx.font = `900 ${denomFontSize}px 'Arial Black', Impact, sans-serif`;
+      const denomMetrics = ctx.measureText(denomStr);
+      const denomHalfH = (denomMetrics.actualBoundingBoxAscent + denomMetrics.actualBoundingBoxDescent) / 2;
+
+      // Draw score centered vertically on CIRCLE_CY
+      ctx.font = `900 ${scoreFontSize}px 'Arial Black', Impact, sans-serif`;
       ctx.fillText(scoreStr, startX, CIRCLE_CY);
 
-      // Draw denom — align its baseline to the score's baseline for a natural look.
-      // Score baseline = CIRCLE_CY + scoreHalfH (since textBaseline=middle).
-      // Denom middle = baseline - denomHalfH.
+      // Draw denom — baseline aligned with score baseline
       const denomMidY = CIRCLE_CY + scoreHalfH - denomHalfH;
-      ctx.font = "900 110px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.font = `900 ${denomFontSize}px 'Arial Black', Impact, sans-serif`;
       ctx.fillText(denomStr, startX + scoreWidth + GAP, denomMidY);
 
       ctx.restore();
@@ -427,12 +449,13 @@ export default function QuizResultPage() {
                 {nameUpper}
               </text>
 
-              {/* 5. Big Score Digits inside Purple Circle — pixel-perfect centered for any score */}
-              {/* Single text with textAnchor=middle + dominantBaseline=central so SVG auto-centers
-                  the full "score/total" unit around the circle's exact center (1080, 1300). */}
+              {/* 5. Big Score Digits inside Purple Circle — auto-scaled to always fit */}
+              {/* textAnchor=middle + dominantBaseline=central centers the group on the
+                  pixel-measured circle center (1084, 1270). Font sizes shrink proportionally
+                  until the combined text fits within the 538px safe circle width. */}
               <text
-                x="1080"
-                y="1300"
+                x="1084"
+                y="1270"
                 textAnchor="middle"
                 dominantBaseline="central"
                 fontFamily="'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif"
@@ -440,7 +463,7 @@ export default function QuizResultPage() {
                 fill="#FFFFFF"
                 filter="url(#scoreTextShadow)"
               >
-                <tspan fontSize="290" dy="0">{score}</tspan><tspan fontSize="110" dy="0" baselineShift="-80">/{totalQuestions}</tspan>
+                <tspan fontSize={svgScoreFontSize} dy="0">{score}</tspan><tspan fontSize={svgDenomFontSize} dy="0" baselineShift={`-${Math.round(svgScoreFontSize * 0.22)}`}>/{totalQuestions}</tspan>
               </text>
 
               {/* 6. Performance Rating (Safe Max Width 820px) */}
