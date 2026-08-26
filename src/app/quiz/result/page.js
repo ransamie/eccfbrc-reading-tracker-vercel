@@ -174,7 +174,7 @@ export default function QuizResultPage() {
         ctx.font = `800 ${cRoundSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
       }
       ctx.letterSpacing = "1px";
-      ctx.fillText(roundUpper, 1418, 508);
+      ctx.fillText(roundUpper, 1418, 538);
       ctx.restore();
 
       // --- 3. Team Name (Centered between golden lines at x: 1080, y: 658, max width: 460px) ---
@@ -379,9 +379,9 @@ export default function QuizResultPage() {
               {/* 2. Round Tag in Navy Pill (Safe Max Width 200px) */}
               <text 
                 x="1418" 
-                y="508" 
+                y="538" 
                 textAnchor="middle" 
-                dominantBaseline="middle" 
+                dominantBaseline="central" 
                 fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
                 fontSize={roundFontSize} 
                 fontWeight="800" 
