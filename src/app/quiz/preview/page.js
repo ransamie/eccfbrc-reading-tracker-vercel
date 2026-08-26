@@ -693,49 +693,60 @@ function QuizPreviewContent() {
                   {answeredCount} of {questions.length} done ({progressPercent}%)
                 </span>
               </div>
+
+              {/* Fixed Question Number Navigation Jumper */}
+              {questions.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  gap: '0.35rem',
+                  alignItems: 'center',
+                  overflowX: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  paddingTop: '0.6rem',
+                  marginTop: '0.5rem',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                  scrollbarWidth: 'none'
+                }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', marginRight: '0.25rem' }}>
+                    Jump:
+                  </span>
+                  {questions.map((q, idx) => {
+                    const isAnswered = !!answers[q.id];
+                    return (
+                      <a
+                        key={q.id}
+                        href={`#q_${q.id}`}
+                        style={{
+                          minWidth: '28px',
+                          height: '28px',
+                          padding: '0 0.35rem',
+                          borderRadius: '0.4rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.8rem',
+                          fontWeight: '800',
+                          textDecoration: 'none',
+                          backgroundColor: isAnswered ? 'var(--accent)' : 'rgba(255, 255, 255, 0.06)',
+                          color: isAnswered ? '#fff' : 'var(--text-secondary)',
+                          border: `1px solid ${isAnswered ? 'var(--accent)' : 'rgba(255, 255, 255, 0.12)'}`,
+                          boxShadow: isAnswered ? '0 2px 8px rgba(37, 99, 235, 0.4)' : 'none',
+                          transition: 'all 0.15s ease',
+                          flexShrink: 0
+                        }}
+                      >
+                        {idx + 1}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+
             </div>
           </header>
 
           {/* Questions Stream */}
-          <main style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '185px', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '6rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            
-            {/* Quick Navigation Pills */}
-            <div style={{
-              display: 'flex',
-              gap: '0.4rem',
-              flexWrap: 'wrap',
-              backgroundColor: 'var(--surface)',
-              padding: '0.85rem 1rem',
-              borderRadius: '0.85rem',
-              border: '1px solid var(--border)'
-            }}>
-              {questions.map((q, idx) => {
-                const isAnswered = !!answers[q.id];
-                return (
-                  <a
-                    key={q.id}
-                    href={`#q_${q.id}`}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '0.4rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.85rem',
-                      fontWeight: '700',
-                      textDecoration: 'none',
-                      backgroundColor: isAnswered ? 'var(--accent)' : 'rgba(255, 255, 255, 0.05)',
-                      color: isAnswered ? '#fff' : 'var(--text-secondary)',
-                      border: `1px solid ${isAnswered ? 'var(--accent)' : 'var(--border)'}`,
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    {idx + 1}
-                  </a>
-                );
-              })}
-            </div>
+          <main style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '220px', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '6rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
             {/* Question Cards */}
             {questions.map((q, idx) => {
@@ -750,7 +761,7 @@ function QuizPreviewContent() {
                     border: '1px solid var(--border)',
                     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)',
                     padding: '1.75rem',
-                    scrollMarginTop: '160px'
+                    scrollMarginTop: '220px'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>

@@ -533,11 +533,59 @@ export default function QuizTakePage() {
             )}
           </div>
 
+          {/* Fixed Question Number Navigation Jumper */}
+          {questions.length > 0 && (
+            <div style={{
+              display: 'flex',
+              gap: '0.35rem',
+              alignItems: 'center',
+              overflowX: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              paddingTop: '0.6rem',
+              marginTop: '0.5rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              scrollbarWidth: 'none'
+            }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', marginRight: '0.25rem' }}>
+                Jump:
+              </span>
+              {questions.map((q, idx) => {
+                const isAnswered = !!answers[q.id];
+                return (
+                  <a
+                    key={q.id}
+                    href={`#q_${q.id}`}
+                    style={{
+                      minWidth: '28px',
+                      height: '28px',
+                      padding: '0 0.35rem',
+                      borderRadius: '0.4rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.8rem',
+                      fontWeight: '800',
+                      textDecoration: 'none',
+                      backgroundColor: isAnswered ? 'var(--accent)' : 'rgba(255, 255, 255, 0.06)',
+                      color: isAnswered ? '#fff' : 'var(--text-secondary)',
+                      border: `1px solid ${isAnswered ? 'var(--accent)' : 'rgba(255, 255, 255, 0.12)'}`,
+                      boxShadow: isAnswered ? '0 2px 8px rgba(37, 99, 235, 0.4)' : 'none',
+                      transition: 'all 0.15s ease',
+                      flexShrink: 0
+                    }}
+                  >
+                    {idx + 1}
+                  </a>
+                );
+              })}
+            </div>
+          )}
+
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '135px', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '6rem' }}>
+      <main style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '185px', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '6rem' }}>
         
         {questions.length === 0 ? (
           <div style={{
@@ -574,13 +622,15 @@ export default function QuizTakePage() {
             {questions.map((q, index) => (
               <div 
                 key={q.id}
+                id={`q_${q.id}`}
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderRadius: '1rem',
                   border: '1px solid var(--border)',
                   boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
                   overflow: 'hidden',
-                  transition: 'border-color 0.2s ease'
+                  transition: 'border-color 0.2s ease',
+                  scrollMarginTop: '185px'
                 }}
               >
                 {/* Question Header */}
