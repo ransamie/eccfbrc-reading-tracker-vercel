@@ -1206,22 +1206,24 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               <Eye size={15} /> Preview
             </a>
 
-            <a 
+            <a
               href="/"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                padding: '0.45rem 0.85rem',
-                backgroundColor: 'var(--surface-secondary)',
-                color: 'var(--text-primary)',
+                padding: '0.5rem 0.9rem',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 border: '1px solid var(--border)',
-                borderRadius: '0.5rem',
+                borderRadius: '0.55rem',
+                color: 'var(--text-secondary)',
                 fontSize: '0.85rem',
                 fontWeight: '600',
                 textDecoration: 'none',
                 transition: 'all 0.2s ease'
               }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'; }}
             >
               <ArrowLeft size={15} /> Dashboard
             </a>
@@ -1232,15 +1234,18 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                padding: '0.45rem 0.85rem',
-                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                padding: '0.5rem 0.9rem',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
                 color: '#F87171',
-                border: '1px solid rgba(239, 68, 68, 0.25)',
-                borderRadius: '0.5rem',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: '0.55rem',
                 fontSize: '0.85rem',
                 fontWeight: '600',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
               }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
             >
               <LogOut size={15} /> Logout
             </button>
@@ -1250,26 +1255,25 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       </header>
 
       {/* Main Container */}
-      {/* Main Container */}
-      <main style={{ maxWidth: '1050px', margin: '1.5rem auto 0 auto', padding: '0 1rem' }}>
+      <main style={{ maxWidth: '1000px', margin: '1.5rem auto 0 auto', padding: '0 1rem' }}>
         
-        {/* TOP READING SCHEDULE / EDITION SELECTOR BANNER */}
+        {/* TOP READING TRACK SELECTOR BAR */}
         <div style={{
           backgroundColor: 'var(--surface)',
           border: '1px solid var(--border)',
           borderRadius: '0.85rem',
-          padding: '0.85rem 1.15rem',
-          marginBottom: '1.25rem',
+          padding: '0.75rem 1.15rem',
+          marginBottom: '1rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '0.75rem',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+          boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <BookOpen size={14} style={{ color: 'var(--accent)' }} /> Reading Schedule:
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '0.35rem', marginRight: '0.25rem' }}>
+              <BookOpen size={14} style={{ color: 'var(--accent)' }} /> Reading Track:
             </span>
 
             {availableEditions.map(ed => {
@@ -1292,25 +1296,26 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.45rem',
-                    padding: '0.45rem 0.85rem',
-                    borderRadius: '0.55rem',
-                    backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.22)' : 'var(--surface-secondary)',
-                    border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border-light)'}`,
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '0.5rem',
+                    backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.2)' : 'var(--surface-secondary)',
+                    border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border-light)'}`,
                     color: isSelected ? '#fff' : 'var(--text-secondary)',
-                    fontSize: '0.84rem',
+                    fontSize: '0.82rem',
                     fontWeight: isSelected ? '700' : '500',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   <span>{ed.includes("New Testament") ? "📖" : (ed.includes("Entire") ? "📜" : "📚")}</span>
                   <span>{ed}</span>
                   <span style={{
                     fontSize: '0.72rem',
-                    padding: '0.1rem 0.45rem',
+                    padding: '0.1rem 0.4rem',
                     borderRadius: '9999px',
                     backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                    color: isSelected ? '#fff' : 'var(--text-secondary)'
+                    color: isSelected ? '#fff' : 'var(--text-secondary)',
+                    fontWeight: 700
                   }}>
                     {questionCount} Qs
                   </span>
@@ -1319,12 +1324,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       fontSize: '0.68rem',
                       padding: '0.1rem 0.4rem',
                       borderRadius: '9999px',
-                      backgroundColor: 'rgba(16, 185, 129, 0.25)',
+                      backgroundColor: 'rgba(16, 185, 129, 0.2)',
                       color: '#34D399',
                       fontWeight: 800,
-                      border: '1px solid rgba(16, 185, 129, 0.4)'
+                      border: '1px solid rgba(16, 185, 129, 0.35)'
                     }}>
-                      Live on Server
+                      Live Active
                     </span>
                   )}
                 </button>
@@ -1340,10 +1345,11 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 gap: '0.35rem',
                 padding: '0.4rem 0.75rem',
                 borderRadius: '0.5rem',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px dashed var(--border)',
+                backgroundColor: 'transparent',
+                border: '1px dashed var(--border-light)',
                 color: 'var(--text-secondary)',
                 fontSize: '0.8rem',
+                fontWeight: 600,
                 cursor: 'pointer'
               }}
             >
@@ -1355,7 +1361,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
             <div style={{ width: '100%', display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
               <input
                 type="text"
-                placeholder="Enter custom reading schedule name (e.g. Proverbs Deep Dive)..."
+                placeholder="Enter custom reading schedule name..."
                 value={newEditionName}
                 onChange={(e) => setNewEditionName(e.target.value)}
                 style={{
@@ -1414,24 +1420,24 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
           )}
         </div>
 
-        {/* Tab Buttons (Responsive, No Horizontal Scrollbar) */}
+        {/* Tab Buttons (Responsive, Clean Segmented Bar) */}
         <div className="quiz-tab-bar" style={{
           display: 'flex',
           flexWrap: 'wrap',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(17, 24, 39, 0.6)',
+          backgroundColor: 'var(--surface)',
           border: '1px solid var(--border)',
-          padding: '0.4rem',
+          padding: '0.35rem',
           borderRadius: '0.75rem',
-          marginBottom: '2rem',
-          gap: '0.4rem'
+          marginBottom: '1.5rem',
+          gap: '0.35rem',
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
         }}>
           {[
-            { id: 'control', label: 'Control Center', icon: Settings },
+            { id: 'control', label: 'Settings & Launch', icon: Settings },
             { id: 'builder', label: editingQuestionId ? 'Editing Question' : 'Question Builder', icon: editingQuestionId ? Pencil : PlusCircle },
             { id: 'bulk', label: 'Bulk Import', icon: Upload },
             { id: 'ai', label: 'AI Generator', icon: Sparkles },
-            { id: 'leaderboard', label: 'Live Leaderboard', icon: Trophy }
+            { id: 'leaderboard', label: 'Submissions', icon: Trophy }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1445,7 +1451,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.45rem',
-                  padding: '0.65rem 1.1rem',
+                  padding: '0.65rem 1rem',
                   backgroundColor: isActive ? 'var(--accent)' : 'transparent',
                   border: 'none',
                   borderRadius: '0.5rem',
@@ -1453,8 +1459,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   fontSize: '0.88rem',
                   fontWeight: isActive ? '700' : '500',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: isActive ? '0 4px 15px rgba(37, 99, 235, 0.35)' : 'none',
+                  transition: 'all 0.15s ease',
+                  boxShadow: isActive ? '0 4px 15px rgba(37, 99, 235, 0.3)' : 'none',
                   flex: '1 1 auto',
                   minWidth: '130px',
                   textAlign: 'center'
@@ -1467,370 +1473,399 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
           })}
         </div>
 
-        {/* TAB 1: CONTROL CENTER */}
+        {/* TAB 1: SETTINGS & LAUNCH (Clean 2-Column Responsive Layout) */}
         {activeTab === 'control' && (() => {
           const serverIsLive = String(settings.Is_Quiz_Live).toUpperCase() === "TRUE";
           const hasLiveStatusChanged = isQuizLive !== serverIsLive;
 
           return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '750px', margin: '0 auto' }}>
-            
-            {/* Compact Shareable Link Card */}
-            <div style={{
-              backgroundColor: 'var(--surface)',
-              borderRadius: '0.85rem',
-              border: '1px solid var(--border)',
-              padding: '1rem 1.25rem',
-              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <Share2 size={16} style={{ color: 'var(--accent)' }} />
-                  <h3 style={{ fontSize: '0.98rem', fontWeight: '700', margin: 0 }}>Participant Quiz Link</h3>
-                </div>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Direct candidate access link</span>
-              </div>
-
-              <div className="quiz-share-box" style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                backgroundColor: 'var(--surface-secondary)',
-                border: '1px solid var(--border-light)',
-                borderRadius: '0.55rem',
-                padding: '0.35rem 0.45rem 0.35rem 0.75rem',
-                flexWrap: 'wrap'
-              }}>
-                <input
-                  type="text"
-                  readOnly
-                  value={quizUrl}
-                  style={{
-                    flex: '1 1 180px',
-                    minWidth: 0,
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.85rem',
-                    outline: 'none',
-                    fontFamily: 'monospace',
-                    padding: '0.2rem 0'
-                  }}
-                />
-                <div className="quiz-share-buttons" style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={handleCopyLink}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      padding: '0.45rem 0.85rem',
-                      backgroundColor: copiedLink ? 'var(--success)' : 'var(--accent)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '0.45rem',
-                      fontSize: '0.82rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {copiedLink ? <CheckCheck size={14} /> : <Copy size={14} />}
-                    <span>{copiedLink ? "Copied!" : "Copy Link"}</span>
-                  </button>
-
-                  <a
-                    href={`/quiz/preview?round=${encodeURIComponent(settings.Active_Round || 'Round 1')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      padding: '0.45rem 0.85rem',
-                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      color: '#fff',
-                      borderRadius: '0.45rem',
-                      fontSize: '0.82rem',
-                      fontWeight: '700',
-                      textDecoration: 'none',
-                      whiteSpace: 'nowrap',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)'; }}
-                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)'; }}
-                  >
-                    <Eye size={14} />
-                    <span>Preview View</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            {/* Global Settings Form */}
-            <div style={{
-              backgroundColor: 'var(--surface)',
-              borderRadius: '1rem',
-              border: '1px solid var(--border)',
-              padding: '1.5rem',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
-            }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Settings size={20} style={{ color: 'var(--accent)' }} />
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: '700', margin: 0 }}>Quiz Configuration</h3>
-                </div>
-
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  padding: '0.25rem 0.65rem',
-                  borderRadius: '9999px',
-                  backgroundColor: serverIsLive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                  border: `1px solid ${serverIsLive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
-                  fontSize: '0.78rem',
-                  fontWeight: '700',
-                  color: serverIsLive ? '#34D399' : '#FCD34D'
-                }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: serverIsLive ? '#10B981' : '#F59E0B' }}></span>
-                  <span>Live on Server: {serverIsLive ? "LIVE" : "MAINTENANCE"}</span>
-                </div>
-              </div>
-
-              <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* Row 1: Status & Participant Link (2-Column Grid) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
                 
-                {/* Live / Coming Soon Switch Card */}
-                <div className="quiz-live-toggle-card" style={{
+                {/* Card 1: Live Status & Instant Toggle */}
+                <div style={{
+                  backgroundColor: 'var(--surface)',
+                  borderRadius: '0.85rem',
+                  border: `1.5px solid ${serverIsLive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
                   padding: '1.25rem',
-                  borderRadius: '0.75rem',
-                  backgroundColor: isQuizLive ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                  border: `1.5px solid ${hasLiveStatusChanged ? '#F59E0B' : (isQuizLive ? 'var(--success)' : '#F59E0B')}`,
                   display: 'flex',
-                  alignItems: 'center',
+                  flexDirection: 'column',
                   justifyContent: 'space-between',
                   gap: '1rem',
-                  flexWrap: 'wrap'
+                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}>
-                  <div style={{ flex: '1 1 240px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                      <Power size={18} color={isQuizLive ? "#10B981" : "#F59E0B"} />
-                      <span style={{ fontSize: '1rem', fontWeight: '800', color: isQuizLive ? '#34D399' : '#FCD34D' }}>
-                        Target: {isQuizLive ? "Quiz LIVE & Active" : "Quiz in Maintenance (Coming Soon)"}
-                      </span>
-                    </div>
-                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                      {isQuizLive 
-                        ? "Participants will be able to access, start, and submit their quiz."
-                        : "Access is blocked. Visitors will see the Coming Soon holding screen."}
-                    </p>
-                    
-                    {hasLiveStatusChanged && (
-                      <div style={{
-                        marginTop: '0.6rem',
-                        padding: '0.4rem 0.65rem',
-                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                        border: '1px solid rgba(245, 158, 11, 0.35)',
-                        borderRadius: '0.4rem',
-                        color: '#FCD34D',
-                        fontSize: '0.78rem',
-                        fontWeight: '700',
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Power size={18} color={isQuizLive ? "#10B981" : "#F59E0B"} />
+                        <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                          Server Status
+                        </h3>
+                      </div>
+
+                      <span style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.35rem'
+                        gap: '0.35rem',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '9999px',
+                        backgroundColor: serverIsLive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                        border: `1px solid ${serverIsLive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        color: serverIsLive ? '#34D399' : '#FCD34D'
                       }}>
-                        <span>⚠️ Status changed locally. Click "Save Settings" below to apply!</span>
-                      </div>
-                    )}
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: serverIsLive ? '#10B981' : '#F59E0B' }}></span>
+                        {serverIsLive ? "LIVE & OPEN" : "IN MAINTENANCE"}
+                      </span>
+                    </div>
+
+                    <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+                      {serverIsLive
+                        ? "Quiz is currently live. Participants can start and submit their official score."
+                        : "Quiz access is blocked. Visitors will see the Coming Soon holding screen."}
+                    </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsQuizLive(!isQuizLive)}
-                    style={{
-                      padding: '0.65rem 1.25rem',
-                      borderRadius: '0.5rem',
-                      border: 'none',
-                      backgroundColor: isQuizLive ? '#EF4444' : '#10B981',
-                      color: '#fff',
-                      fontSize: '0.88rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                      transition: 'all 0.2s ease',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {isQuizLive ? "Switch to Maintenance" : "Switch to Live"}
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-light)' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      Target Mode: <strong style={{ color: isQuizLive ? '#34D399' : '#FCD34D' }}>{isQuizLive ? "LIVE" : "MAINTENANCE"}</strong>
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsQuizLive(!isQuizLive)}
+                      style={{
+                        padding: '0.45rem 1rem',
+                        borderRadius: '0.5rem',
+                        border: 'none',
+                        backgroundColor: isQuizLive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.18)',
+                        color: isQuizLive ? '#F87171' : '#34D399',
+                        border: `1px solid ${isQuizLive ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.35)'}`,
+                        fontSize: '0.82rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                      onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                    >
+                      {isQuizLive ? "Switch to Maintenance" : "Switch to Live"}
+                    </button>
+                  </div>
                 </div>
 
-                {/* Reading Schedule / Edition Selector */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                    Active Reading Schedule / Edition
-                  </label>
-                  <select
-                    value={settings.Active_Edition || "New Testament (3 chapters daily)"}
-                    onChange={(e) => setSettings(prev => ({ ...prev, Active_Edition: e.target.value }))}
-                    style={{
-                      width: '100%',
-                      padding: '0.8rem 1rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.6rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.95rem',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {availableEditions.map(ed => (
-                      <option key={ed} value={ed}>{ed}</option>
-                    ))}
-                  </select>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
-                    Participants taking the live quiz will receive questions assigned to this reading schedule.
-                  </span>
-                </div>
+                {/* Card 2: Shareable Participant Quiz Link */}
+                <div style={{
+                  backgroundColor: 'var(--surface)',
+                  borderRadius: '0.85rem',
+                  border: '1px solid var(--border)',
+                  padding: '1.25rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '1rem',
+                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Share2 size={17} style={{ color: 'var(--accent)' }} />
+                        <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                          Participant Quiz Link
+                        </h3>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Direct Access</span>
+                    </div>
 
-                {/* Active Round Selector & Input */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                    Active Round Tag
-                  </label>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+                      Share this direct link in your group chat or with candidates to take the quiz.
+                    </p>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    backgroundColor: 'var(--surface-secondary)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '0.55rem',
+                    padding: '0.35rem 0.45rem 0.35rem 0.65rem'
+                  }}>
                     <input
                       type="text"
-                      value={settings.Active_Round}
-                      onChange={(e) => setSettings(prev => ({ ...prev, Active_Round: e.target.value }))}
-                      placeholder="e.g. Round 8"
-                      required
+                      readOnly
+                      value={quizUrl}
                       style={{
-                        flex: '1 1 200px',
-                        padding: '0.8rem 1rem',
-                        backgroundColor: 'var(--surface-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.6rem',
+                        flex: 1,
+                        minWidth: 0,
+                        backgroundColor: 'transparent',
+                        border: 'none',
                         color: 'var(--text-primary)',
-                        fontSize: '0.95rem',
+                        fontSize: '0.82rem',
                         outline: 'none',
-                        boxSizing: 'border-box'
+                        fontFamily: 'monospace'
                       }}
                     />
 
-                    {uniqueRoundsInEdition.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        padding: '0.45rem 0.85rem',
+                        backgroundColor: copiedLink ? 'var(--success)' : 'var(--accent)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '0.45rem',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {copiedLink ? <CheckCheck size={14} /> : <Copy size={14} />}
+                      <span>{copiedLink ? "Copied!" : "Copy"}</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Row 2: Quiz Configuration Form */}
+              <div style={{
+                backgroundColor: 'var(--surface)',
+                borderRadius: '0.85rem',
+                border: '1px solid var(--border)',
+                padding: '1.5rem',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                  <Settings size={18} style={{ color: 'var(--accent)' }} />
+                  <h3 style={{ fontSize: '1.08rem', fontWeight: '800', margin: 0 }}>Quiz Configuration Parameters</h3>
+                </div>
+
+                <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  
+                  {/* 2-Column Parameter Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+                    
+                    {/* Active Reading Schedule */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                        Active Reading Schedule / Edition
+                      </label>
                       <select
-                        onChange={(e) => {
-                          if (e.target.value) setSettings(prev => ({ ...prev, Active_Round: e.target.value }));
-                        }}
-                        value={settings.Active_Round}
+                        value={settings.Active_Edition || "New Testament (3 chapters daily)"}
+                        onChange={(e) => setSettings(prev => ({ ...prev, Active_Edition: e.target.value }))}
                         style={{
-                          padding: '0.8rem 1rem',
+                          width: '100%',
+                          padding: '0.75rem 0.9rem',
                           backgroundColor: 'var(--surface-secondary)',
                           border: '1px solid var(--border)',
-                          borderRadius: '0.6rem',
+                          borderRadius: '0.55rem',
                           color: 'var(--text-primary)',
-                          fontSize: '0.88rem',
+                          fontSize: '0.9rem',
                           outline: 'none',
-                          cursor: 'pointer',
-                          minWidth: '150px'
+                          boxSizing: 'border-box',
+                          cursor: 'pointer'
                         }}
                       >
-                        <option value="" disabled>Select Saved Round...</option>
-                        {uniqueRoundsInEdition.map(r => {
-                          const count = editionQuestions.filter(q => q.round === r).length;
-                          return (
-                            <option key={r} value={r}>{r} ({count} Qs)</option>
-                          );
-                        })}
+                        {availableEditions.map(ed => (
+                          <option key={ed} value={ed}>{ed}</option>
+                        ))}
                       </select>
-                    )}
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
-                    Participants will take questions assigned to this exact round tag.
-                  </span>
-                </div>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
+                        The reading track assigned to candidate quiz sessions.
+                      </span>
+                    </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-                    Time Limit (Minutes)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="180"
-                    value={settings.Time_Limit_Minutes}
-                    onChange={(e) => setSettings(prev => ({ ...prev, Time_Limit_Minutes: e.target.value }))}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '0.8rem 1rem',
+                    {/* Active Round Tag */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                          Active Round Tag
+                        </label>
+                        {uniqueRoundsInEdition.length > 0 && (
+                          <span style={{ fontSize: '0.74rem', color: 'var(--accent-hover)', fontWeight: 600 }}>
+                            {uniqueRoundsInEdition.length} saved round{uniqueRoundsInEdition.length > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <input
+                          type="text"
+                          value={settings.Active_Round}
+                          onChange={(e) => setSettings(prev => ({ ...prev, Active_Round: e.target.value }))}
+                          placeholder="e.g. Round 7"
+                          required
+                          style={{
+                            flex: 1,
+                            padding: '0.75rem 0.9rem',
+                            backgroundColor: 'var(--surface-secondary)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '0.55rem',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.9rem',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+
+                        {uniqueRoundsInEdition.length > 0 && (
+                          <select
+                            onChange={(e) => {
+                              if (e.target.value) setSettings(prev => ({ ...prev, Active_Round: e.target.value }));
+                            }}
+                            value={settings.Active_Round}
+                            style={{
+                              padding: '0.75rem 0.75rem',
+                              backgroundColor: 'var(--surface-secondary)',
+                              border: '1px solid var(--border)',
+                              borderRadius: '0.55rem',
+                              color: 'var(--text-secondary)',
+                              fontSize: '0.82rem',
+                              outline: 'none',
+                              cursor: 'pointer',
+                              maxWidth: '130px'
+                            }}
+                            title="Quick select existing round"
+                          >
+                            <option value="" disabled>Saved...</option>
+                            {uniqueRoundsInEdition.map(r => (
+                              <option key={r} value={r}>{r}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
+                        Candidates will receive questions configured for this round.
+                      </span>
+                    </div>
+
+                    {/* Time Limit */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                        Time Limit (Minutes)
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="number"
+                          min="1"
+                          max="180"
+                          value={settings.Time_Limit_Minutes}
+                          onChange={(e) => setSettings(prev => ({ ...prev, Time_Limit_Minutes: e.target.value }))}
+                          required
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem 0.9rem 0.75rem 2.2rem',
+                            backgroundColor: 'var(--surface-secondary)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '0.55rem',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.9rem',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                        <Clock size={15} style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                      </div>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
+                        Countdown timer per session before auto-submission.
+                      </span>
+                    </div>
+
+                    {/* Target Summary Card */}
+                    <div style={{
                       backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.6rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.95rem',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
-                    Unstoppable countdown timer allocated per candidate session.
-                  </span>
-                </div>
+                      borderRadius: '0.55rem',
+                      border: '1px solid var(--border-light)',
+                      padding: '0.75rem 1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      gap: '0.25rem'
+                    }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                        Deployment Target Summary
+                      </span>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        {settings.Active_Round || 'Round 1'} • {isQuizLive ? '🟢 LIVE ACCESS' : '🟡 MAINTENANCE HOLD'}
+                      </span>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                        {settings.Active_Edition || 'New Testament'}
+                      </span>
+                    </div>
 
-                {saveStatus && (
-                  <div style={{
-                    padding: '0.75rem',
-                    borderRadius: '0.5rem',
-                    backgroundColor: saveStatus.includes('Live') || saveStatus.includes('saved') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: saveStatus.includes('Live') || saveStatus.includes('saved') ? '#34D399' : '#F87171',
-                    fontSize: '0.88rem',
-                    fontWeight: '600'
-                  }}>
-                    {saveStatus}
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    padding: '0.85rem',
-                    background: hasLiveStatusChanged 
-                      ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' 
-                      : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '0.6rem',
-                    fontSize: '0.95rem',
-                    fontWeight: '700',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    boxShadow: hasLiveStatusChanged 
-                      ? '0 4px 18px rgba(16, 185, 129, 0.45)' 
-                      : '0 4px 15px rgba(37, 99, 235, 0.35)',
-                    transition: 'all 0.2s ease',
-                    opacity: loading ? 0.7 : 1
-                  }}
-                  onMouseOver={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                  onMouseOut={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(0)'; }}
-                >
-                  <Save size={18} />
-                  <span>{loading ? "Saving to Database..." : (hasLiveStatusChanged ? `Save Settings (Apply ${isQuizLive ? 'LIVE' : 'Maintenance'})` : "Save Settings")}</span>
-                </button>
-              </form>
+                  {/* Save Status Banner */}
+                  {saveStatus && (
+                    <div style={{
+                      padding: '0.65rem 0.9rem',
+                      borderRadius: '0.5rem',
+                      backgroundColor: saveStatus.includes('Live') || saveStatus.includes('saved') ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                      color: saveStatus.includes('Live') || saveStatus.includes('saved') ? '#34D399' : '#F87171',
+                      border: `1px solid ${saveStatus.includes('Live') || saveStatus.includes('saved') ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
+                      fontSize: '0.85rem',
+                      fontWeight: '700'
+                    }}>
+                      {saveStatus}
+                    </div>
+                  )}
+
+                  {/* Save Button */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    style={{
+                      padding: '0.85rem 1.5rem',
+                      background: hasLiveStatusChanged 
+                        ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' 
+                        : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '0.6rem',
+                      fontSize: '0.92rem',
+                      fontWeight: '800',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      boxShadow: hasLiveStatusChanged 
+                        ? '0 4px 18px rgba(16, 185, 129, 0.4)' 
+                        : '0 4px 15px rgba(37, 99, 235, 0.3)',
+                      transition: 'all 0.2s ease',
+                      opacity: loading ? 0.7 : 1,
+                      marginTop: '0.25rem'
+                    }}
+                    onMouseOver={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                    onMouseOut={(e) => { if (!loading) e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <Save size={17} />
+                    <span>
+                      {loading 
+                        ? "Saving Settings to Database..." 
+                        : (hasLiveStatusChanged 
+                            ? `Save & Apply ${isQuizLive ? 'LIVE' : 'MAINTENANCE'} Mode` 
+                            : "Save Configuration Settings")}
+                    </span>
+                  </button>
+
+                </form>
+              </div>
+
             </div>
-
-          </div>
           );
         })()}
 
