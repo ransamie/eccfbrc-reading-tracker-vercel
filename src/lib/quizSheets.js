@@ -258,6 +258,56 @@ export async function getAllQuizResults() {
   }));
 }
 
+export async function getResultByWhatsApp(whatsAppNumber, round, edition) {
+  const sheet = await getSheetByTitle("Quiz_Results", [
+    "Full_Name",
+    "WhatsApp_Number",
+    "Team_Name",
+    "Edition",
+    "Round",
+    "Score",
+    "Total_Questions",
+    "Timestamp",
+    "Details"
+  ]);
+  const rows = await sheet.getRows();
+  const normalized = String(whatsAppNumber).replace(/\D/g, "").replace(/^0+/, "");
+  const targetEdition = edition ? String(edition).trim().toLowerCase() : "";
+
+  const match = rows.find((row) => {
+    const rowPhone = String(row.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
+    const phoneMatches = rowPhone === normalized;
+    const roundMatches = String(row.get("Round") || "").trim().toLowerCase() === String(round).trim().toLowerCase();
+    if (!phoneMatches || !roundMatches) return false;
+    if (!targetEdition) return true;
+    const rowEdition = String(row.get("Edition") || "").trim().toLowerCase();
+    if (!rowEdition) return targetEdition.includes("new testament");
+    return rowEdition === targetEdition;
+  });
+
+  if (!match) return null;
+
+  const detailsRaw = match.get("Details");
+  let evaluatedAnswers = [];
+  try {
+    evaluatedAnswers = detailsRaw ? JSON.parse(detailsRaw) : [];
+  } catch {
+    evaluatedAnswers = [];
+  }
+
+  return {
+    fullName: match.get("Full_Name"),
+    whatsApp: match.get("WhatsApp_Number"),
+    team: match.get("Team_Name") || match.get("Team") || "Unassigned",
+    edition: match.get("Edition") || "New Testament (3 chapters daily)",
+    round: match.get("Round"),
+    score: Number(match.get("Score")),
+    totalQuestions: Number(match.get("Total_Questions")),
+    timestamp: match.get("Timestamp"),
+    evaluatedAnswers
+  };
+}
+
 export async function addQuizQuestion(q) {
   const sheet = await getSheetByTitle("Quiz_Questions", [
     "ID",

@@ -17,6 +17,12 @@ export default function QuizLandingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Result lookup state
+  const [showLookup, setShowLookup] = useState(false);
+  const [lookupPhone, setLookupPhone] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState("");
+
   useEffect(() => {
     // 1. Fetch Quiz Status (isLive, active edition & active round) from server
     fetch(`/api/quiz/init?t=${Date.now()}`, { cache: 'no-store' })
@@ -96,6 +102,44 @@ export default function QuizLandingPage() {
     localStorage.setItem("quiz_saved_whatsapp", cleanPhone);
     sessionStorage.setItem("quiz_current_participant", JSON.stringify(pendingInfo));
     router.push("/quiz/take");
+  };
+
+  const handleLookup = async (e) => {
+    e.preventDefault();
+    setLookupError("");
+    const cleanPhone = lookupPhone.replace(/\D/g, "");
+    if (!cleanPhone || cleanPhone.length < 8) {
+      setLookupError("Please enter a valid WhatsApp number (minimum 8 digits, numbers only).");
+      return;
+    }
+    setLookupLoading(true);
+    try {
+      const res = await fetch(`/api/quiz/lookup?whatsapp=${encodeURIComponent(cleanPhone)}&t=${Date.now()}`);
+      const data = await res.json();
+      if (!res.ok || !data.found) {
+        setLookupError(data.error || "No result found for this number.");
+        return;
+      }
+      // Hydrate sessionStorage and redirect to result page — same as after fresh submission
+      const r = data.result;
+      sessionStorage.setItem("quiz_result_data", JSON.stringify({
+        score: r.score,
+        totalQuestions: r.totalQuestions,
+        evaluatedAnswers: r.evaluatedAnswers || [],
+        participant: {
+          fullName: r.fullName,
+          whatsapp: r.whatsApp,
+          team: r.team,
+          edition: r.edition,
+          round: r.round
+        }
+      }));
+      router.push("/quiz/result");
+    } catch (err) {
+      setLookupError("Failed to look up result. Please check your connection and try again.");
+    } finally {
+      setLookupLoading(false);
+    }
   };
 
   // Loading State
@@ -199,6 +243,7 @@ export default function QuizLandingPage() {
     <div style={{
       minHeight: '100vh',
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '2rem 1rem',
@@ -411,6 +456,107 @@ export default function QuizLandingPage() {
 
         </form>
       </div>
+
+      {/* ── Look Up Previous Result ── */}
+      <div style={{ maxWidth: '480px', width: '100%', marginTop: '1rem' }}>
+        <button
+          type="button"
+          onClick={() => { setShowLookup(v => !v); setLookupError(""); }}
+          style={{
+            width: '100%',
+            padding: '0.75rem 1rem',
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '0.75rem',
+            color: 'var(--text-secondary)',
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          🔍 {showLookup ? "Hide Result Lookup" : "Already submitted? Look Up My Score"}
+        </button>
+
+        {showLookup && (
+          <div style={{
+            marginTop: '0.75rem',
+            backgroundColor: 'rgba(17, 24, 39, 0.75)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderRadius: '1rem',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '1.5rem',
+          }}>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0 0 1rem 0', lineHeight: '1.5' }}>
+              If you already submitted and missed your result page, enter the WhatsApp number you used to take the quiz and we'll retrieve your scorecard for <strong style={{ color: '#fff' }}>{activeRound}</strong>.
+            </p>
+            <form onSubmit={handleLookup} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <input
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="Enter your WhatsApp number..."
+                value={lookupPhone}
+                onChange={(e) => setLookupPhone(e.target.value.replace(/\D/g, ""))}
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.8rem 1rem',
+                  backgroundColor: 'var(--surface-secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '0.6rem',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.98rem',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+              {lookupError && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  borderRadius: '0.5rem',
+                  padding: '0.65rem 0.9rem',
+                  color: '#F87171',
+                  fontSize: '0.85rem'
+                }}>
+                  <ShieldAlert size={15} style={{ flexShrink: 0 }} />
+                  <span>{lookupError}</span>
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={lookupLoading}
+                style={{
+                  width: '100%',
+                  padding: '0.85rem',
+                  background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '0.6rem',
+                  fontSize: '0.98rem',
+                  fontWeight: '700',
+                  cursor: lookupLoading ? 'not-allowed' : 'pointer',
+                  opacity: lookupLoading ? 0.7 : 1,
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 6px 18px rgba(124, 58, 237, 0.35)'
+                }}
+              >
+                {lookupLoading ? "Looking up..." : "View My Result →"}
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
