@@ -712,7 +712,7 @@ export default function LeaderDashboard({ team, onLogout }) {
       )}
 
       {activeTab === 'quiz' && (
-        <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+        <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
             <div style={{
               width: '42px',
