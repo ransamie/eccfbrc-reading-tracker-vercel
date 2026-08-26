@@ -350,6 +350,23 @@ export default function LeaderDashboard({ team, onLogout }) {
           </div>
         </div>
         <div className="tracker-header-actions">
+          <button 
+            onClick={handleCopyQuizLink}
+            title="Copy Quiz Link to share with team"
+            className="tracker-btn-icon"
+            style={{ 
+              background: quizCopied ? 'rgba(16,185,129,0.15)' : 'var(--surface-secondary)',
+              color: quizCopied ? 'var(--success)' : '#60A5FA',
+              border: `1px solid ${quizCopied ? 'rgba(16,185,129,0.4)' : 'var(--border-light)'}`,
+              width: 'auto',
+              padding: '0 0.75rem',
+              gap: '0.4rem',
+              cursor: 'pointer'
+            }}
+          >
+            {quizCopied ? <CheckCheck size={16} /> : <Share2 size={16} />}
+            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{quizCopied ? 'Copied!' : 'Quiz Link'}</span>
+          </button>
           <InstallPwaButton />
           <button 
             onClick={() => loadData(true)} 
@@ -379,20 +396,6 @@ export default function LeaderDashboard({ team, onLogout }) {
         </button>
         <button className={`tracker-tab-pill ${activeTab === 'quiz' ? 'active' : ''}`} onClick={() => setActiveTab('quiz')}>
           <Trophy size={15} /> <span>Quiz Hub</span>
-        </button>
-        <button
-          onClick={handleCopyQuizLink}
-          title="Copy Quiz Link to share with team"
-          className="tracker-tab-pill"
-          style={{ 
-            flex: 'none',
-            background: quizCopied ? 'rgba(16, 185, 129, 0.15)' : 'rgba(37, 99, 235, 0.12)',
-            color: quizCopied ? 'var(--success)' : '#60A5FA',
-            border: `1px solid ${quizCopied ? 'rgba(16, 185, 129, 0.3)' : 'rgba(37, 99, 235, 0.25)'}`,
-          }}
-        >
-          {quizCopied ? <CheckCheck size={15} /> : <Share2 size={15} />}
-          <span>{quizCopied ? 'Copied!' : 'Quiz'}</span>
         </button>
       </div>
 
