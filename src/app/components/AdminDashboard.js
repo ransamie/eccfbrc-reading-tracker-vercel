@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
@@ -85,6 +85,24 @@ export default function AdminDashboard({ onLogout }) {
   const [leaderSearchQuery, setLeaderSearchQuery] = useState("");
   const [rosterSearchQuery, setRosterSearchQuery] = useState("");
   const reportRef = useRef(null);
+
+  // Logs tab
+  const [logs, setLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logSearchQuery, setLogSearchQuery] = useState('');
+
+  const fetchLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const res = await fetch('/api/logs');
+      const data = await res.json();
+      setLogs(data.logs || []);
+    } catch (e) {
+      console.error('Failed to fetch logs', e);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (reportText && reportRef.current) {
@@ -547,6 +565,9 @@ export default function AdminDashboard({ onLogout }) {
         </button>
         <button className={`tracker-tab-pill ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
           <Settings size={15} /> <span>Settings</span>
+        </button>
+        <button className={`tracker-tab-pill ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => { setActiveTab('logs'); fetchLogs(); }}>
+          <Activity size={15} /> <span>Logs</span>
         </button>
       </div>
 
@@ -1309,6 +1330,104 @@ export default function AdminDashboard({ onLogout }) {
           </div>
         </div>
       )}
+
+      {activeTab === 'logs' && (() => {
+        const todayWAT = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Lagos', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
+        const filteredLogs = logs.filter(l =>
+          !logSearchQuery ||
+          l.teamName.toLowerCase().includes(logSearchQuery.toLowerCase()) ||
+          l.loginType.toLowerCase().includes(logSearchQuery.toLowerCase()) ||
+          l.device.toLowerCase().includes(logSearchQuery.toLowerCase())
+        );
+        const todayLogs = filteredLogs.filter(l => l.timestamp.startsWith(todayWAT.split(' ').reverse().join('-').substring(0,7)) || l.timestamp.includes(todayWAT.split(' ')[0] + ' ' + todayWAT.split(' ')[1]));
+
+        // Last login per team
+        const lastLoginMap = {};
+        [...logs].reverse().forEach(l => {
+          if (!lastLoginMap[l.teamName]) lastLoginMap[l.teamName] = l;
+        });
+
+        return (
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700' }}>📋 Activity Logs</h3>
+                <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Track who logged in and when</p>
+              </div>
+              <button onClick={fetchLogs} disabled={logsLoading} className="tracker-btn-icon" style={{ cursor: logsLoading ? 'not-allowed' : 'pointer', opacity: logsLoading ? 0.6 : 1, padding: '0 0.75rem', width: 'auto', gap: '0.4rem' }}>
+                <RefreshCw size={15} style={{ animation: logsLoading ? 'spin 1s linear infinite' : 'none' }} />
+                <span style={{ fontSize: '0.8rem' }}>Refresh</span>
+              </button>
+            </div>
+
+            {/* Search */}
+            <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
+              <Search size={15} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input
+                type="text"
+                className="input-field"
+                placeholder="Search by team, type, or device..."
+                value={logSearchQuery}
+                onChange={e => setLogSearchQuery(e.target.value)}
+                style={{ paddingLeft: '2.25rem' }}
+              />
+            </div>
+
+            {/* Last Login Per Team */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)' }}>🕐 Last Login Per Team</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.5rem' }}>
+                {Object.values(lastLoginMap).map(l => (
+                  <div key={l.teamName} style={{ background: 'var(--surface-secondary)', borderRadius: '0.5rem', padding: '0.65rem 0.85rem', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>{l.teamName}</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{l.timestamp}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{l.device}</span>
+                  </div>
+                ))}
+                {Object.keys(lastLoginMap).length === 0 && !logsLoading && (
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No logins recorded yet.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Full log table */}
+            <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)' }}>📜 Full Log History ({filteredLogs.length})</h4>
+            {logsLoading ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Loading logs...</div>
+            ) : filteredLogs.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No logs found.</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                      {['Timestamp', 'Team / User', 'Type', 'Device'].map(h => (
+                        <th key={h} style={{ padding: '0.6rem 0.75rem', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: '700', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLogs.map((l, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid var(--border-light)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                        <td style={{ padding: '0.6rem 0.75rem', color: 'var(--text-secondary)', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{l.timestamp}</td>
+                        <td style={{ padding: '0.6rem 0.75rem', fontWeight: '600' }}>{l.teamName}</td>
+                        <td style={{ padding: '0.6rem 0.75rem' }}>
+                          <span style={{
+                            display: 'inline-block', padding: '0.15rem 0.55rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '700',
+                            background: l.loginType === 'Admin' ? 'rgba(139,92,246,0.15)' : 'rgba(37,99,235,0.15)',
+                            color: l.loginType === 'Admin' ? '#A78BFA' : '#60A5FA'
+                          }}>{l.loginType}</span>
+                        </td>
+                        <td style={{ padding: '0.6rem 0.75rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>{l.device}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
