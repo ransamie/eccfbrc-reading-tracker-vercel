@@ -174,7 +174,7 @@ export default function QuizResultPage() {
         ctx.font = `800 ${cRoundSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
       }
       ctx.letterSpacing = "1px";
-      ctx.fillText(roundUpper, 1418, 526);
+      ctx.fillText(roundUpper, 1418, 508);
       ctx.restore();
 
       // --- 3. Team Name (Centered between golden lines at x: 1080, y: 658, max width: 460px) ---
@@ -209,35 +209,58 @@ export default function QuizResultPage() {
       ctx.fillText(nameUpper, 1080, 814);
       ctx.restore();
 
-      // --- 5. Big Score Digits in Purple Circle (Centered at x: 1080, y: 1300) ---
+      // --- 5. Big Score Digits in Purple Circle ---
+      // Circle visual center is at (1080, 1300). We use textBaseline="middle" and
+      // measureText metrics to get the TRUE visual height of each glyph so the
+      // combined score+denominator group is pixel-perfectly centered regardless of
+      // whether the score is a single digit (5) or double digit (12).
       ctx.save();
       ctx.fillStyle = "#FFFFFF";
       ctx.shadowColor = "rgba(0, 0, 0, 0.65)";
       ctx.shadowBlur = 14;
       ctx.shadowOffsetX = 6;
       ctx.shadowOffsetY = 6;
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "left";
+
+      const CIRCLE_CX = 1080; // horizontal center of purple circle
+      const CIRCLE_CY = 1300; // vertical center of purple circle
 
       const scoreStr = String(score);
       const denomStr = `/${totalQuestions}`;
 
+      // Measure score width
       ctx.font = "900 290px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
-      const scoreWidth = ctx.measureText(scoreStr).width;
+      const scoreMetrics = ctx.measureText(scoreStr);
+      const scoreWidth = scoreMetrics.width;
+      // True visual half-height of the score glyph
+      const scoreHalfH = (scoreMetrics.actualBoundingBoxAscent + scoreMetrics.actualBoundingBoxDescent) / 2;
 
+      // Measure denom width
       ctx.font = "900 110px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
-      const denomWidth = ctx.measureText(denomStr).width;
+      const denomMetrics = ctx.measureText(denomStr);
+      const denomWidth = denomMetrics.width;
+      // True visual half-height of the denom glyph
+      const denomHalfH = (denomMetrics.actualBoundingBoxAscent + denomMetrics.actualBoundingBoxDescent) / 2;
 
-      const totalGroupWidth = scoreWidth + denomWidth + 12;
-      const startX = 1080 - (totalGroupWidth / 2);
+      // Gap between score and denom
+      const GAP = 10;
+      const totalGroupWidth = scoreWidth + GAP + denomWidth;
 
-      // Draw score number
-      ctx.textAlign = "left";
-      ctx.textBaseline = "alphabetic";
+      // Left edge so the whole group is horizontally centered on CIRCLE_CX
+      const startX = CIRCLE_CX - totalGroupWidth / 2;
+
+      // Draw score — its vertical midpoint sits at CIRCLE_CY
       ctx.font = "900 290px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillText(scoreStr, startX, 1395);
+      ctx.fillText(scoreStr, startX, CIRCLE_CY);
 
-      // Draw denominator
+      // Draw denom — align its baseline to the score's baseline for a natural look.
+      // Score baseline = CIRCLE_CY + scoreHalfH (since textBaseline=middle).
+      // Denom middle = baseline - denomHalfH.
+      const denomMidY = CIRCLE_CY + scoreHalfH - denomHalfH;
       ctx.font = "900 110px 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillText(denomStr, startX + scoreWidth + 12, 1380);
+      ctx.fillText(denomStr, startX + scoreWidth + GAP, denomMidY);
+
       ctx.restore();
 
       // --- 6. Performance Rating below circle (Centered at x: 1080, y: 1754, max width: 820px) ---
@@ -356,9 +379,9 @@ export default function QuizResultPage() {
               {/* 2. Round Tag in Navy Pill (Safe Max Width 200px) */}
               <text 
                 x="1418" 
-                y="526" 
+                y="508" 
                 textAnchor="middle" 
-                dominantBaseline="central" 
+                dominantBaseline="middle" 
                 fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
                 fontSize={roundFontSize} 
                 fontWeight="800" 
@@ -404,31 +427,21 @@ export default function QuizResultPage() {
                 {nameUpper}
               </text>
 
-              {/* 5. Big Score Digits inside Purple Circle */}
-              <g filter="url(#scoreTextShadow)">
-                <text 
-                  x={score === 10 ? "1025" : (score === 0 ? "1000" : "1010")} 
-                  y="1395" 
-                  textAnchor="end" 
-                  fontFamily="'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif" 
-                  fontSize="290" 
-                  fontWeight="900" 
-                  fill="#FFFFFF"
-                >
-                  {score}
-                </text>
-                <text 
-                  x={score === 10 ? "1035" : (score === 0 ? "1010" : "1020")} 
-                  y="1380" 
-                  textAnchor="start" 
-                  fontFamily="'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif" 
-                  fontSize="110" 
-                  fontWeight="900" 
-                  fill="#FFFFFF"
-                >
-                  /{totalQuestions}
-                </text>
-              </g>
+              {/* 5. Big Score Digits inside Purple Circle — pixel-perfect centered for any score */}
+              {/* Single text with textAnchor=middle + dominantBaseline=central so SVG auto-centers
+                  the full "score/total" unit around the circle's exact center (1080, 1300). */}
+              <text
+                x="1080"
+                y="1300"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontFamily="'Arial Black', Impact, -apple-system, BlinkMacSystemFont, sans-serif"
+                fontWeight="900"
+                fill="#FFFFFF"
+                filter="url(#scoreTextShadow)"
+              >
+                <tspan fontSize="290" dy="0">{score}</tspan><tspan fontSize="110" dy="0" baselineShift="-80">/{totalQuestions}</tspan>
+              </text>
 
               {/* 6. Performance Rating (Safe Max Width 820px) */}
               <text 
