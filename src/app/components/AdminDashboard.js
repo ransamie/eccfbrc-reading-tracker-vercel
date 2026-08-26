@@ -1361,16 +1361,37 @@ export default function AdminDashboard({ onLogout }) {
             </div>
 
             {/* Search */}
-            <div style={{ position: 'relative', marginBottom: '1.25rem', display: 'flex', alignItems: 'center' }}>
-              <Search size={15} style={{ position: 'absolute', left: '0.75rem', color: 'var(--text-secondary)', pointerEvents: 'none', zIndex: 1 }} />
+            <div className="tracker-search-wrap">
+              <Search className="search-icon" size={16} />
               <input
                 type="text"
-                className="input-field"
+                className="tracker-search-input"
                 placeholder="Search by team, type, or device..."
                 value={logSearchQuery}
                 onChange={e => setLogSearchQuery(e.target.value)}
-                style={{ paddingLeft: '2.25rem' }}
               />
+              {logSearchQuery && (
+                <button
+                  onClick={() => setLogSearchQuery("")}
+                  style={{
+                    position: 'absolute',
+                    right: '0.85rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0.2rem'
+                  }}
+                  title="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
             {/* Last Login Per Team */}
