@@ -118,7 +118,16 @@ export default function AdminDashboard({ onLogout }) {
   const [expandBulkUpload, setExpandBulkUpload] = useState(false);
   const [expandRawData, setExpandRawData] = useState(false);
 
-  const [settingsForm, setSettingsForm] = useState({ currentRound: 1, evictionThreshold: 5 });
+  const [settingsForm, setSettingsForm] = useState({ 
+    currentRound: 1, 
+    evictionThreshold: 5,
+    challengeName: "",
+    challengeEdition: "",
+    mornStart: "",
+    mornEnd: "",
+    eveStart: "",
+    eveEnd: ""
+  });
 
   const [newTeam, setNewTeam] = useState({ name: '', pin: '' });
   const [pinUpdate, setPinUpdate] = useState({ team: '', pin: '' });
@@ -155,6 +164,8 @@ export default function AdminDashboard({ onLogout }) {
         setSettingsForm({ 
           currentRound: parseInt(d.settings?.Current_Round || 1), 
           evictionThreshold: parseInt(d.settings?.Eviction_Threshold || 5),
+          challengeName: d.settings?.Challenge_Name || "ECCF Bible Reading Challenge Tracker",
+          challengeEdition: d.settings?.Challenge_Edition || "📖 June-August NT Edition",
           mornStart: parse12to24(d.settings?.Morning_Window_Start || "04:00 AM"),
           mornEnd: parse12to24(d.settings?.Morning_Window_End || "11:00 AM"),
           eveStart: parse12to24(d.settings?.Evening_Window_Start || "06:00 PM"),
@@ -375,7 +386,8 @@ export default function AdminDashboard({ onLogout }) {
        evictionSection = `\\n\\n*Eviction List 🚨🚨🚨*\\n_(Members behind by more than ${evictionThreshold} days. Eviction takes effect next round!)_\\n${evictStr}`;
     }
 
-    const text = `*ECCF Bible Reading Club*\\n\\n*Daily Reading Report*\\n\\n*GLOBAL TEAM LEADERS*\\n\\n*Team Status Update*\\n- *Number Assigned*: ${numAssigned.toString().padStart(2,'0')}\\n- *Number Committed*: ${numCommitted.toString().padStart(2,'0')}\\n- *Number Declined*: ${numDeclined.toString().padStart(2,'0')}\\n- *Number Left*: ${numLeft.toString().padStart(2,'0')}\\n- *Number Evicted*: ${numEvicted.toString().padStart(2,'0')}\\n- *Number Settled*: ${numCommitted.toString().padStart(2,'0')}\\n\\n*Bible Reading Team Report 📃*\\n\\n${previousRoundsStr}   *ROUND ${currentRound} ✅*\\n${roundBreakdownStr}\\n\\n*YET TO UPDATE 🤲✨*\\n${yetToUpdateStr}\\n\\n*UP-TO-DATE 🤩🚀*\\n${upToDateStr}${evictionSection}\\n\\n*REFLECTION*\\n*${reflection}*`;
+    const challengeHeader = data?.settings?.Challenge_Name || 'ECCF Bible Reading Club';
+    const text = `*${challengeHeader}*\n\n*Daily Reading Report*\n\n*GLOBAL TEAM LEADERS*\n\n*Team Status Update*\n- *Number Assigned*: ${numAssigned.toString().padStart(2,'0')}\n- *Number Committed*: ${numCommitted.toString().padStart(2,'0')}\n- *Number Declined*: ${numDeclined.toString().padStart(2,'0')}\n- *Number Left*: ${numLeft.toString().padStart(2,'0')}\n- *Number Evicted*: ${numEvicted.toString().padStart(2,'0')}\n- *Number Settled*: ${numCommitted.toString().padStart(2,'0')}\n\n*Bible Reading Team Report 📃*\n\n${previousRoundsStr}   *ROUND ${currentRound} ✅*\n${roundBreakdownStr}\n\n*YET TO UPDATE 🤲✨*\n${yetToUpdateStr}\n\n*UP-TO-DATE 🤩🚀*\n${upToDateStr}${evictionSection}\n\n*REFLECTION*\n*${reflection}*`;
     setReportText(text.replace(/\\n/g, '\n'));
   };
 
@@ -385,6 +397,8 @@ export default function AdminDashboard({ onLogout }) {
       const payload = {
         currentRound: settingsForm.currentRound,
         evictionThreshold: settingsForm.evictionThreshold,
+        Challenge_Name: settingsForm.challengeName,
+        Challenge_Edition: settingsForm.challengeEdition,
         Morning_Window_Start: parse24to12(settingsForm.mornStart),
         Morning_Window_End: parse24to12(settingsForm.mornEnd),
         Evening_Window_Start: parse24to12(settingsForm.eveStart),
@@ -1219,7 +1233,30 @@ export default function AdminDashboard({ onLogout }) {
           <div className="st-expander mb-3">
             <div className="st-expander-content" style={{borderTop: 'none'}}>
               <h3 className="mb-2">⚙️ Modify Global Settings</h3>
-              <p className="label">Update the active reading round and the maximum missed days before eviction.</p>
+              <p className="label">Update the reading challenge branding, active round, eviction rules, and reporting windows.</p>
+              
+              <div className="mb-3">
+                <label className="label">Reading Challenge Title</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  placeholder="e.g., ECCF Bible Reading Challenge Tracker" 
+                  value={settingsForm.challengeName || ""} 
+                  onChange={(e) => setSettingsForm({...settingsForm, challengeName: e.target.value})} 
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="label">Edition Subtitle (e.g., Season / Edition)</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  placeholder="e.g., 📖 September - December Edition" 
+                  value={settingsForm.challengeEdition || ""} 
+                  onChange={(e) => setSettingsForm({...settingsForm, challengeEdition: e.target.value})} 
+                />
+              </div>
+
               <div className="mb-3">
                 <label className="label">Current Active Round</label>
                 <input type="number" className="input-field" value={settingsForm.currentRound} onChange={(e) => setSettingsForm({...settingsForm, currentRound: e.target.value})} />

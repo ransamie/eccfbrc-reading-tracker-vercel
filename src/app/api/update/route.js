@@ -313,7 +313,16 @@ export async function POST(request) {
     }
 
     if (action === 'admin_settings') {
-      const { currentRound, evictionThreshold, Morning_Window_Start, Morning_Window_End, Evening_Window_Start, Evening_Window_End } = payload;
+      const { 
+        currentRound, 
+        evictionThreshold, 
+        Morning_Window_Start, 
+        Morning_Window_End, 
+        Evening_Window_Start, 
+        Evening_Window_End,
+        Challenge_Name,
+        Challenge_Edition
+      } = payload;
       const settingsSheet = db.sheetsByTitle["Global_Settings"];
       const rows = await settingsSheet.getRows();
       
@@ -323,7 +332,9 @@ export async function POST(request) {
         'Morning_Window_Start': Morning_Window_Start,
         'Morning_Window_End': Morning_Window_End,
         'Evening_Window_Start': Evening_Window_Start,
-        'Evening_Window_End': Evening_Window_End
+        'Evening_Window_End': Evening_Window_End,
+        'Challenge_Name': Challenge_Name,
+        'Challenge_Edition': Challenge_Edition
       };
 
       const foundKeys = new Set();

@@ -8,6 +8,7 @@ export default function Home() {
   const [session, setSession] = useState(null); // { role: 'admin' | 'leader', team?: string }
   const [loginType, setLoginType] = useState("Team Leader");
   const [teams, setTeams] = useState([]);
+  const [appSettings, setAppSettings] = useState(null);
   const [selectedTeam, setSelectedTeam] = useState("");
   const [pin, setPin] = useState("");
   const [showPin, setShowPin] = useState(false);
@@ -29,6 +30,9 @@ export default function Home() {
       .then((data) => {
         if (data.validTeams) {
           setTeams(data.validTeams);
+        }
+        if (data.settings) {
+          setAppSettings(data.settings);
         }
         setLoading(false);
       })
@@ -95,9 +99,11 @@ export default function Home() {
         }}>
           <img src="/eccfbrclogo.png" alt="ECCF Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.15)' }} />
         </div>
-        <h2 style={{ fontSize: "1.75rem", fontWeight: "700", margin: "0", textAlign: "center", lineHeight: "1.3" }}>ECCF Bible Reading Challenge Tracker</h2>
+        <h2 style={{ fontSize: "1.75rem", fontWeight: "700", margin: "0", textAlign: "center", lineHeight: "1.3" }}>
+          {appSettings?.Challenge_Name || "ECCF Bible Reading Challenge Tracker"}
+        </h2>
         <p style={{ color: "var(--text-secondary)", fontWeight: 500, marginTop: "10px", textAlign: "center", fontSize: "1.1rem" }}>
-          📖 June-August NT Edition
+          {appSettings?.Challenge_Edition || "📖 June-August NT Edition"}
         </p>
       </div>
 

@@ -30,7 +30,10 @@ export async function GET(request) {
     const globalData = await fetchGlobalData();
 
     if (type === 'valid_teams') {
-      return NextResponse.json({ validTeams: globalData.validTeams });
+      return NextResponse.json({ 
+        validTeams: globalData.validTeams,
+        settings: globalData.settings
+      });
     }
 
     if (type === 'leader') {
