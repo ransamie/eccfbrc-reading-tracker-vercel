@@ -1361,8 +1361,8 @@ export default function AdminDashboard({ onLogout }) {
             </div>
 
             {/* Search */}
-            <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
-              <Search size={15} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <div style={{ position: 'relative', marginBottom: '1.25rem', display: 'flex', alignItems: 'center' }}>
+              <Search size={15} style={{ position: 'absolute', left: '0.75rem', color: 'var(--text-secondary)', pointerEvents: 'none', zIndex: 1 }} />
               <input
                 type="text"
                 className="input-field"
