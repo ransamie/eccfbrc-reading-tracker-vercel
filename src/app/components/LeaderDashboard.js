@@ -560,9 +560,6 @@ export default function LeaderDashboard({ team, onLogout }) {
                         </div>
                         <div className="tracker-tile-info">
                           <span className="tracker-tile-name">{nameTrimmed}</span>
-                          <span className="tracker-tile-badge">
-                            Team {team}
-                          </span>
                         </div>
                       </div>
                     );
