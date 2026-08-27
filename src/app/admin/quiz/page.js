@@ -69,7 +69,7 @@ export default function AdminQuizPage() {
   const [selectedLeaderboardEdition, setSelectedLeaderboardEdition] = useState("All");
   const [selectedRoundFilter, setSelectedRoundFilter] = useState("All");
   const [selectedTeamFilter, setSelectedTeamFilter] = useState("All");
-  const [resultSortBy, setResultSortBy] = useState("score");   // "score" | "date"
+  const [resultSortBy, setResultSortBy] = useState("date");    // "score" | "date"
   const [resultSortOrder, setResultSortOrder] = useState("desc"); // "asc" | "desc"
   const [showCustomEditionInput, setShowCustomEditionInput] = useState(false);
   const [newEditionName, setNewEditionName] = useState("");
@@ -842,13 +842,18 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     .filter(r => selectedRoundFilter === "All" || r.round === selectedRoundFilter)
     .filter(r => selectedTeamFilter === "All" || r.team === selectedTeamFilter)
     .sort((a, b) => {
-      const dir = resultSortOrder === "desc" ? -1 : 1;
       if (resultSortBy === "date") {
-        return dir * (new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+        // newest first = desc, oldest first = asc
+        const ta = new Date(a.timestamp || 0).getTime();
+        const tb = new Date(b.timestamp || 0).getTime();
+        return resultSortOrder === "desc" ? tb - ta : ta - tb;
       }
-      // Default: sort by score; tie-break by date ascending
-      if (b.score !== a.score) return dir * (b.score - a.score);
-      return new Date(a.timestamp || 0) - new Date(b.timestamp || 0);
+      // Score (rank) sort: highest first = desc, lowest first = asc
+      if (a.score !== b.score) {
+        return resultSortOrder === "desc" ? b.score - a.score : a.score - b.score;
+      }
+      // Tie-break: earlier submission ranks higher
+      return new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime();
     });
 
   const toggleSort = (col) => {
@@ -3364,9 +3369,9 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     <th style={{ padding: '0.65rem 0.75rem' }}>Team</th>
                     <th style={{ padding: '0.65rem 0.75rem' }}>Track & Round</th>
                     <th
-                      style={{ padding: '0.65rem 0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                      style={{ padding: '0.65rem 0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "score" ? 'var(--accent)' : undefined }}
                       onClick={() => toggleSort("score")}
-                      title="Sort by score"
+                      title="Sort by score / rank"
                     >
                       Score {resultSortBy === "score" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
                     </th>
