@@ -3275,25 +3275,54 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 <Trophy size={20} style={{ color: '#F59E0B' }} /> Submissions ({sortedResults.length})
               </h3>
 
-              <div className="quiz-leaderboard-filters" style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+              <div className="quiz-leaderboard-filters" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 
+                {/* Sort By Dropdown */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Sliders size={13} style={{ color: 'var(--text-secondary)' }} />
+                  <select
+                    value={`${resultSortBy}_${resultSortOrder}`}
+                    onChange={(e) => {
+                      const [by, order] = e.target.value.split('_');
+                      setResultSortBy(by);
+                      setResultSortOrder(order);
+                    }}
+                    style={{
+                      padding: '0.4rem 0.75rem',
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '0.5rem',
+                      color: '#60A5FA',
+                      fontSize: '0.82rem',
+                      fontWeight: '700',
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="date_desc">⏱️ Newest First</option>
+                    <option value="date_asc">⏱️ Oldest First</option>
+                    <option value="score_desc">🏆 Highest Score</option>
+                    <option value="score_asc">📉 Lowest Score</option>
+                  </select>
+                </div>
+
                 {/* Edition Filter */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <BookOpen size={14} style={{ color: 'var(--text-secondary)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <BookOpen size={13} style={{ color: 'var(--text-secondary)' }} />
                   <select
                     value={selectedLeaderboardEdition}
                     onChange={(e) => setSelectedLeaderboardEdition(e.target.value)}
                     style={{
-                      padding: '0.45rem 0.85rem',
+                      padding: '0.4rem 0.75rem',
                       backgroundColor: 'var(--surface-secondary)',
                       border: '1px solid var(--border)',
                       borderRadius: '0.5rem',
                       color: 'var(--text-primary)',
-                      fontSize: '0.85rem',
+                      fontSize: '0.82rem',
                       fontWeight: '600',
                       outline: 'none',
                       cursor: 'pointer',
-                      minWidth: '130px'
+                      maxWidth: '150px'
                     }}
                   >
                     <option value="All">All Schedules</option>
@@ -3304,22 +3333,21 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 </div>
 
                 {/* Round Filter */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Filter size={14} style={{ color: 'var(--text-secondary)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Filter size={13} style={{ color: 'var(--text-secondary)' }} />
                   <select
                     value={selectedRoundFilter}
                     onChange={(e) => setSelectedRoundFilter(e.target.value)}
                     style={{
-                      padding: '0.45rem 0.85rem',
+                      padding: '0.4rem 0.75rem',
                       backgroundColor: 'var(--surface-secondary)',
                       border: '1px solid var(--border)',
                       borderRadius: '0.5rem',
                       color: 'var(--text-primary)',
-                      fontSize: '0.85rem',
+                      fontSize: '0.82rem',
                       fontWeight: '600',
                       outline: 'none',
-                      cursor: 'pointer',
-                      minWidth: '120px'
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="All">All Rounds</option>
@@ -3330,22 +3358,21 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 </div>
 
                 {/* Team Filter */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Users size={14} style={{ color: 'var(--text-secondary)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Users size={13} style={{ color: 'var(--text-secondary)' }} />
                   <select
                     value={selectedTeamFilter}
                     onChange={(e) => setSelectedTeamFilter(e.target.value)}
                     style={{
-                      padding: '0.45rem 0.85rem',
+                      padding: '0.4rem 0.75rem',
                       backgroundColor: 'var(--surface-secondary)',
                       border: '1px solid var(--border)',
                       borderRadius: '0.5rem',
                       color: 'var(--text-primary)',
-                      fontSize: '0.85rem',
+                      fontSize: '0.82rem',
                       fontWeight: '600',
                       outline: 'none',
-                      cursor: 'pointer',
-                      minWidth: '120px'
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="All">All Teams</option>
@@ -3358,139 +3385,156 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               </div>
             </div>
 
-            {/* Table */}
-            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
-              <table style={{ width: '100%', minWidth: '820px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+            {/* Compact Table */}
+            <div style={{ width: '100%', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    <th style={{ padding: '0.65rem 0.75rem' }}>Rank</th>
-                    <th style={{ padding: '0.65rem 0.75rem' }}>Candidate</th>
-                    <th style={{ padding: '0.65rem 0.75rem' }}>WhatsApp</th>
-                    <th style={{ padding: '0.65rem 0.75rem' }}>Team</th>
-                    <th style={{ padding: '0.65rem 0.75rem' }}>Track & Round</th>
+                  <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <th style={{ padding: '0.55rem 0.6rem', width: '40px', textAlign: 'center' }}>{resultSortBy === "score" ? "Rank" : "#"}</th>
+                    <th style={{ padding: '0.55rem 0.6rem' }}>Candidate</th>
+                    <th style={{ padding: '0.55rem 0.6rem' }}>Team & Round</th>
                     <th
-                      style={{ padding: '0.65rem 0.75rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "score" ? 'var(--accent)' : undefined }}
+                      style={{ padding: '0.55rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "score" ? '#60A5FA' : undefined }}
                       onClick={() => toggleSort("score")}
-                      title="Sort by score / rank"
+                      title="Click to sort by score / rank"
                     >
                       Score {resultSortBy === "score" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
                     </th>
                     <th
-                      style={{ padding: '0.65rem 0.75rem', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "date" ? 'var(--accent)' : undefined }}
+                      style={{ padding: '0.55rem 0.6rem', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "date" ? '#60A5FA' : undefined }}
                       onClick={() => toggleSort("date")}
-                      title="Sort by submission date"
+                      title="Click to sort by submission date"
                     >
                       Submitted {resultSortBy === "date" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
                     </th>
-                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'center' }}>Actions</th>
+                    <th style={{ padding: '0.55rem 0.6rem', textAlign: 'center', width: '70px' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sortedResults.length === 0 ? (
                     <tr>
-                      <td colSpan={8} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                      <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                         No quiz submissions recorded yet for the selected filters.
                       </td>
                     </tr>
                   ) : (
-                    sortedResults.map((r, i) => (
-                      <tr 
-                        key={i}
-                        style={{ borderBottom: '1px solid var(--border-light)', transition: 'background-color 0.15s ease' }}
-                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'; }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                      >
-                        <td style={{ padding: '0.75rem', fontWeight: '800', color: i < 3 ? '#F59E0B' : 'var(--text-secondary)' }}>
-                          #{i + 1}
-                        </td>
-                        <td style={{ padding: '0.75rem', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                          {r.fullName}
-                        </td>
-                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                          {r.whatsApp || r.whatsapp || "—"}
-                        </td>
-                        <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}>
-                          {(() => {
-                            const raw = String(r.team || '').trim();
-                            const displayTeam = !raw || raw.toLowerCase() === 'unassigned'
-                              ? 'Unassigned'
-                              : (raw.toLowerCase().startsWith('team ') ? raw : `Team ${raw}`);
-                            const isUnassigned = displayTeam === 'Unassigned';
+                    sortedResults.map((r, i) => {
+                      const total = r.totalQuestions || 10;
+                      const pct = total > 0 ? (r.score / total) : 0;
+                      const isHigh = pct >= 0.7;
 
-                            return (
+                      const rawTeam = String(r.team || '').trim();
+                      const displayTeam = !rawTeam || rawTeam.toLowerCase() === 'unassigned'
+                        ? 'Unassigned'
+                        : (rawTeam.toLowerCase().startsWith('team ') ? rawTeam : `Team ${rawTeam}`);
+                      const isUnassigned = displayTeam === 'Unassigned';
+
+                      return (
+                        <tr 
+                          key={i}
+                          style={{ borderBottom: '1px solid var(--border-light)', transition: 'background-color 0.15s ease' }}
+                          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        >
+                          {/* Index / Rank */}
+                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: '800', fontSize: '0.8rem', color: (resultSortBy === 'score' && i < 3) ? '#F59E0B' : 'var(--text-secondary)' }}>
+                            #{i + 1}
+                          </td>
+
+                          {/* Candidate (Name + Phone) */}
+                          <td style={{ padding: '0.55rem 0.6rem' }}>
+                            <div style={{ fontWeight: '700', color: 'var(--text-primary)', fontSize: '0.88rem', lineHeight: '1.25' }}>
+                              {r.fullName}
+                            </div>
+                            <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', fontFamily: 'monospace', marginTop: '0.15rem' }}>
+                              {r.whatsApp || r.whatsapp || "—"}
+                            </div>
+                          </td>
+
+                          {/* Team & Round */}
+                          <td style={{ padding: '0.55rem 0.6rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                               <span style={{
-                                backgroundColor: isUnassigned ? 'rgba(255, 255, 255, 0.08)' : 'var(--accent-light)',
+                                backgroundColor: isUnassigned ? 'rgba(255, 255, 255, 0.06)' : 'var(--accent-light)',
                                 color: isUnassigned ? 'var(--text-secondary)' : 'var(--accent-hover)',
-                                padding: '0.25rem 0.65rem',
+                                padding: '0.15rem 0.5rem',
                                 borderRadius: '0.35rem',
-                                fontSize: '0.8rem',
+                                fontSize: '0.75rem',
                                 fontWeight: '700',
-                                whiteSpace: 'nowrap',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.3rem'
+                                whiteSpace: 'nowrap'
                               }}>
                                 {displayTeam}
                               </span>
-                            );
-                          })()}
-                        </td>
-                        <td style={{ padding: '0.75rem' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                              {r.round}
-                            </span>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                              {r.edition || "New Testament (3 chapters daily)"}
-                            </span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                          <span style={{ 
-                            fontWeight: '800', 
-                            fontSize: '0.95rem',
-                            color: (r.score / (r.totalQuestions || 10)) >= 0.7 ? '#34D399' : 'var(--text-primary)' 
-                          }}>
-                            {r.score}
-                          </span>
-                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}> / {r.totalQuestions}</span>
-                        </td>
-                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                          {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }) : 'N/A'}
-                        </td>
-                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSubmission(r)}
-                            title={`Delete submission and allow ${r.fullName || 'candidate'} to retake`}
-                            style={{
+                              <span style={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                color: 'var(--text-primary)',
+                                padding: '0.15rem 0.45rem',
+                                borderRadius: '0.35rem',
+                                fontSize: '0.73rem',
+                                fontWeight: '600',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {r.round}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Score Badge */}
+                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>
+                            <span style={{
                               display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              padding: '0.35rem 0.65rem',
-                              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                              color: '#F87171',
-                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              alignItems: 'baseline',
+                              gap: '2px',
+                              padding: '0.2rem 0.55rem',
                               borderRadius: '0.4rem',
-                              fontSize: '0.78rem',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease'
-                            }}
-                            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)'; }}
-                            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.12)'; }}
-                          >
-                            <Trash2 size={13} />
-                            <span>Reset / Retake</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                              backgroundColor: isHigh ? 'rgba(52, 211, 153, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+                              border: isHigh ? '1px solid rgba(52, 211, 153, 0.3)' : '1px solid var(--border-light)'
+                            }}>
+                              <strong style={{ fontSize: '0.9rem', color: isHigh ? '#34D399' : 'var(--text-primary)' }}>{r.score}</strong>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>/{total}</span>
+                            </span>
+                          </td>
+
+                          {/* Submission Date */}
+                          <td style={{ padding: '0.55rem 0.6rem', color: 'var(--text-secondary)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                            {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : 'N/A'}
+                          </td>
+
+                          {/* Actions */}
+                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSubmission(r)}
+                              title={`Reset submission and allow ${r.fullName || 'candidate'} to retake`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                padding: '0.3rem 0.55rem',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                color: '#F87171',
+                                border: '1px solid rgba(239, 68, 68, 0.25)',
+                                borderRadius: '0.4rem',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
+                            >
+                              <Trash2 size={12} />
+                              <span>Reset</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
