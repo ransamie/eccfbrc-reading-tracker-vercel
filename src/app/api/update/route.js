@@ -45,7 +45,12 @@ export async function POST(request) {
       const trackerSheet = db.sheetsByTitle["Tracker_Data"];
       await trackerSheet.loadHeaderRow();
       
-      const editingDayNum = parseInt(day.split('_')[1] || 1);
+      const totalDays = parseInt(globalData.settings?.Total_Days || 0);
+      let editingDayNum = parseInt(day.split('_')[1] || 1);
+      if (totalDays > 0 && editingDayNum > totalDays) {
+        editingDayNum = totalDays;
+      }
+      
       let headersChanged = false;
       const currentHeaders = [...trackerSheet.headerValues];
       
@@ -57,7 +62,7 @@ export async function POST(request) {
         }
       }
       
-      if (!currentHeaders.includes(day)) {
+      if (!currentHeaders.includes(day) && (totalDays === 0 || parseInt(day.split('_')[1] || 1) <= totalDays)) {
         currentHeaders.push(day);
         headersChanged = true;
       }
@@ -160,7 +165,12 @@ export async function POST(request) {
       const { day, updates, reflection, currentDayNum: globalCurrentDayNum, evictionThreshold } = payload;
       const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
       
-      const currentDayNum = parseInt(day.split('_')[1] || 1);
+      const globalData = await fetchGlobalData();
+      const totalDays = parseInt(globalData.settings?.Total_Days || 0);
+      let currentDayNum = parseInt(day.split('_')[1] || 1);
+      if (totalDays > 0 && currentDayNum > totalDays) {
+        currentDayNum = totalDays;
+      }
       const daysPerRound = 10;
       const completedRounds = Math.floor(((globalCurrentDayNum || 1) - 1) / daysPerRound);
       
@@ -195,7 +205,7 @@ export async function POST(request) {
         }
       }
       
-      if (!currentHeaders.includes(day)) {
+      if (!currentHeaders.includes(day) && (totalDays === 0 || parseInt(day.split('_')[1] || 1) <= totalDays)) {
         currentHeaders.push(day);
         headersChanged = true;
       }
@@ -218,24 +228,30 @@ export async function POST(request) {
       // Process updates first
       for (const row of rows) {
         const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
-        if (updates[rowName] !== undefined) {
-           const dayCell = leadersSheet.getCell(row.rowNumber - 1, dayColIndex);
-           if (String(dayCell.value || '').toUpperCase() !== String(updates[rowName]).toUpperCase() && dayCell.value !== updates[rowName]) {
-              dayCell.value = updates[rowName] ? 'TRUE' : 'FALSE';
-              hasUpdates = true;
-           }
-        }
-        if (updates[rowName]) {
-           for (let pastD = 1; pastD < currentDayNum; pastD++) {
-              const pastColIndex = leadersSheet.headerValues.indexOf(`Day_${pastD}`);
+        if (rowName && updates && updates[rowName] !== undefined) {
+          const val = updates[rowName] ? 'TRUE' : 'FALSE';
+          const rIndex = row.rowIndex - 1;
+          
+          if (dayColIndex !== -1) {
+            const cell = leadersSheet.getCell(rIndex, dayColIndex);
+            cell.value = val;
+            hasUpdates = true;
+          }
+          
+          if (updates[rowName]) {
+            const editingDayNum = parseInt(day.split('_')[1] || 1);
+            for (let pastD = 1; pastD < editingDayNum; pastD++) {
+              const pastDStr = `Day_${pastD}`;
+              const pastColIndex = leadersSheet.headerValues.indexOf(pastDStr);
               if (pastColIndex !== -1) {
-                 const pastCell = leadersSheet.getCell(row.rowNumber - 1, pastColIndex);
-                 if (String(pastCell.value || '').toUpperCase() !== 'TRUE' && pastCell.value !== true) {
-                    pastCell.value = 'TRUE';
-                    hasUpdates = true;
-                 }
+                const pastCell = leadersSheet.getCell(rIndex, pastColIndex);
+                if (String(pastCell.value || '').toUpperCase() !== 'TRUE') {
+                  pastCell.value = 'TRUE';
+                  hasUpdates = true;
+                }
               }
-           }
+            }
+          }
         }
       }
 
@@ -259,8 +275,6 @@ export async function POST(request) {
                        try {
                           val = String(pastCell.value || '').toUpperCase();
                        } catch (e) {
-                          // google-spreadsheet throws if we try to read a cell we just modified
-                          // In this script, any modified past day was set to 'TRUE'
                           val = 'TRUE';
                        }
                     }
@@ -321,7 +335,8 @@ export async function POST(request) {
         Evening_Window_Start, 
         Evening_Window_End,
         Challenge_Name,
-        Challenge_Edition
+        Challenge_Edition,
+        Total_Days
       } = payload;
       const settingsSheet = db.sheetsByTitle["Global_Settings"];
       const rows = await settingsSheet.getRows();
@@ -334,7 +349,8 @@ export async function POST(request) {
         'Evening_Window_Start': Evening_Window_Start,
         'Evening_Window_End': Evening_Window_End,
         'Challenge_Name': Challenge_Name,
-        'Challenge_Edition': Challenge_Edition
+        'Challenge_Edition': Challenge_Edition,
+        'Total_Days': Total_Days
       };
 
       const foundKeys = new Set();

@@ -123,6 +123,7 @@ export default function AdminDashboard({ onLogout }) {
     evictionThreshold: 5,
     challengeName: "",
     challengeEdition: "",
+    totalDays: "",
     mornStart: "",
     mornEnd: "",
     eveStart: "",
@@ -153,7 +154,11 @@ export default function AdminDashboard({ onLogout }) {
         const startDate = new Date(startDateStr);
         const today = new Date();
         const diffTime = Math.abs(today - startDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        const totalDays = parseInt(d.settings?.Total_Days || 0);
+        if (totalDays > 0 && diffDays > totalDays) {
+          diffDays = totalDays;
+        }
         const calcCurrentDay = `Day_${diffDays}`;
 
         setCurrentDayNum(diffDays);
@@ -166,6 +171,7 @@ export default function AdminDashboard({ onLogout }) {
           evictionThreshold: parseInt(d.settings?.Eviction_Threshold || 5),
           challengeName: d.settings?.Challenge_Name || "ECCF Bible Reading Challenge Tracker",
           challengeEdition: d.settings?.Challenge_Edition || "📖 June-August NT Edition",
+          totalDays: d.settings?.Total_Days || "",
           mornStart: parse12to24(d.settings?.Morning_Window_Start || "04:00 AM"),
           mornEnd: parse12to24(d.settings?.Morning_Window_End || "11:00 AM"),
           eveStart: parse12to24(d.settings?.Evening_Window_Start || "06:00 PM"),
@@ -399,6 +405,7 @@ export default function AdminDashboard({ onLogout }) {
         evictionThreshold: settingsForm.evictionThreshold,
         Challenge_Name: settingsForm.challengeName,
         Challenge_Edition: settingsForm.challengeEdition,
+        Total_Days: settingsForm.totalDays,
         Morning_Window_Start: parse24to12(settingsForm.mornStart),
         Morning_Window_End: parse24to12(settingsForm.mornEnd),
         Evening_Window_Start: parse24to12(settingsForm.eveStart),
@@ -1255,6 +1262,20 @@ export default function AdminDashboard({ onLogout }) {
                   value={settingsForm.challengeEdition || ""} 
                   onChange={(e) => setSettingsForm({...settingsForm, challengeEdition: e.target.value})} 
                 />
+              </div>
+
+              <div className="mb-3">
+                <label className="label">Total Reading Days (Max Challenge Length)</label>
+                <input 
+                  type="number" 
+                  className="input-field" 
+                  placeholder="e.g., 87 (Leave blank or 0 for unlimited)" 
+                  value={settingsForm.totalDays || ""} 
+                  onChange={(e) => setSettingsForm({...settingsForm, totalDays: e.target.value})} 
+                />
+                <small style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block', marginTop: '0.25rem' }}>
+                  When this day is reached, the app stops counting forward and prevents creating extra day columns in the database.
+                </small>
               </div>
 
               <div className="mb-3">

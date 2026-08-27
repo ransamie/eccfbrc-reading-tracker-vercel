@@ -34,7 +34,8 @@ import {
   CheckCircle2,
   Info,
   Eye,
-  Layers
+  Layers,
+  ChevronDown
 } from "lucide-react";
 import { parseQuizQuestions } from "@/lib/quizParser";
 
@@ -42,6 +43,144 @@ const DEFAULT_EDITIONS = [
   "New Testament (3 chapters daily)",
   "Entire Bible Reading (4 chapters daily)"
 ];
+
+function CustomDropdown({
+  icon: Icon,
+  value,
+  options,
+  onChange,
+  isOpen,
+  onToggle,
+  onClose,
+  accent = false,
+  minWidth = "150px"
+}) {
+  const dropdownRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose]);
+
+  const selectedOption = options.find(o => (typeof o === 'object' ? o.value === value : o === value));
+  const selectedLabel = typeof selectedOption === 'object' ? selectedOption.label : (selectedOption || value);
+
+  return (
+    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.45rem',
+          padding: '0.42rem 0.75rem',
+          backgroundColor: accent ? 'rgba(59, 130, 246, 0.12)' : 'var(--surface-secondary)',
+          border: accent ? '1px solid rgba(59, 130, 246, 0.35)' : '1px solid var(--border)',
+          borderRadius: '0.55rem',
+          color: accent ? '#60A5FA' : 'var(--text-primary)',
+          fontSize: '0.82rem',
+          fontWeight: '700',
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+          outline: 'none',
+          whiteSpace: 'nowrap'
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.backgroundColor = accent ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.08)';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.backgroundColor = accent ? 'rgba(59, 130, 246, 0.12)' : 'var(--surface-secondary)';
+        }}
+      >
+        {Icon && <Icon size={13} style={{ color: accent ? '#60A5FA' : 'var(--text-secondary)', flexShrink: 0 }} />}
+        <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selectedLabel}
+        </span>
+        <ChevronDown 
+          size={13} 
+          style={{ 
+            color: accent ? '#60A5FA' : 'var(--text-secondary)',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease',
+            flexShrink: 0
+          }} 
+        />
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 6px)',
+          left: 0,
+          zIndex: 100,
+          minWidth: minWidth,
+          maxWidth: '280px',
+          maxHeight: '260px',
+          overflowY: 'auto',
+          backgroundColor: '#111827',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: '0.75rem',
+          boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06)',
+          backdropFilter: 'blur(16px)',
+          padding: '0.35rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.2rem'
+        }}>
+          {options.map((opt) => {
+            const optVal = typeof opt === 'object' ? opt.value : opt;
+            const optLabel = typeof opt === 'object' ? opt.label : opt;
+            const isSelected = optVal === value;
+
+            return (
+              <button
+                key={optVal}
+                type="button"
+                onClick={() => {
+                  onChange(optVal);
+                  onClose();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.5rem',
+                  padding: '0.45rem 0.65rem',
+                  borderRadius: '0.45rem',
+                  backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
+                  color: isSelected ? '#60A5FA' : 'var(--text-primary)',
+                  border: 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: isSelected ? '700' : '500',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.12s ease',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseOver={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                }}
+                onMouseOut={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <span>{optLabel}</span>
+                {isSelected && <Check size={13} style={{ color: '#60A5FA', flexShrink: 0 }} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AdminQuizPage() {
   const [pin, setPin] = useState("");
@@ -71,6 +210,7 @@ export default function AdminQuizPage() {
   const [selectedTeamFilter, setSelectedTeamFilter] = useState("All");
   const [resultSortBy, setResultSortBy] = useState("date");    // "score" | "date"
   const [resultSortOrder, setResultSortOrder] = useState("desc"); // "asc" | "desc"
+  const [openDropdown, setOpenDropdown] = useState(null); // 'sort' | 'edition' | 'round' | 'team' | null
   const [showCustomEditionInput, setShowCustomEditionInput] = useState(false);
   const [newEditionName, setNewEditionName] = useState("");
   
@@ -3277,110 +3417,72 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
               <div className="quiz-leaderboard-filters" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 
-                {/* Sort By Dropdown */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <Sliders size={13} style={{ color: 'var(--text-secondary)' }} />
-                  <select
-                    value={`${resultSortBy}_${resultSortOrder}`}
-                    onChange={(e) => {
-                      const [by, order] = e.target.value.split('_');
-                      setResultSortBy(by);
-                      setResultSortOrder(order);
-                    }}
-                    style={{
-                      padding: '0.4rem 0.75rem',
-                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
-                      borderRadius: '0.5rem',
-                      color: '#60A5FA',
-                      fontSize: '0.82rem',
-                      fontWeight: '700',
-                      outline: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="date_desc">⏱️ Newest First</option>
-                    <option value="date_asc">⏱️ Oldest First</option>
-                    <option value="score_desc">🏆 Highest Score</option>
-                    <option value="score_asc">📉 Lowest Score</option>
-                  </select>
-                </div>
+                {/* Custom Sort By Dropdown */}
+                <CustomDropdown
+                  icon={Sliders}
+                  value={`${resultSortBy}_${resultSortOrder}`}
+                  accent={true}
+                  minWidth="175px"
+                  isOpen={openDropdown === 'sort'}
+                  onToggle={() => setOpenDropdown(prev => prev === 'sort' ? null : 'sort')}
+                  onClose={() => setOpenDropdown(null)}
+                  onChange={(val) => {
+                    const [by, order] = val.split('_');
+                    setResultSortBy(by);
+                    setResultSortOrder(order);
+                  }}
+                  options={[
+                    { value: 'date_desc', label: '⏱️ Newest First' },
+                    { value: 'date_asc', label: '⏱️ Oldest First' },
+                    { value: 'score_desc', label: '🏆 Highest Score' },
+                    { value: 'score_asc', label: '📉 Lowest Score' }
+                  ]}
+                />
 
-                {/* Edition Filter */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <BookOpen size={13} style={{ color: 'var(--text-secondary)' }} />
-                  <select
-                    value={selectedLeaderboardEdition}
-                    onChange={(e) => setSelectedLeaderboardEdition(e.target.value)}
-                    style={{
-                      padding: '0.4rem 0.75rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.5rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.82rem',
-                      fontWeight: '600',
-                      outline: 'none',
-                      cursor: 'pointer',
-                      maxWidth: '150px'
-                    }}
-                  >
-                    <option value="All">All Schedules</option>
-                    {availableEditions.map(ed => (
-                      <option key={ed} value={ed}>{ed}</option>
-                    ))}
-                  </select>
-                </div>
+                {/* Custom Edition / Schedule Filter */}
+                <CustomDropdown
+                  icon={BookOpen}
+                  value={selectedLeaderboardEdition}
+                  minWidth="200px"
+                  isOpen={openDropdown === 'edition'}
+                  onToggle={() => setOpenDropdown(prev => prev === 'edition' ? null : 'edition')}
+                  onClose={() => setOpenDropdown(null)}
+                  onChange={(val) => setSelectedLeaderboardEdition(val)}
+                  options={[
+                    { value: 'All', label: 'All Schedules' },
+                    ...availableEditions.map(ed => ({ value: ed, label: ed }))
+                  ]}
+                />
 
-                {/* Round Filter */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <Filter size={13} style={{ color: 'var(--text-secondary)' }} />
-                  <select
-                    value={selectedRoundFilter}
-                    onChange={(e) => setSelectedRoundFilter(e.target.value)}
-                    style={{
-                      padding: '0.4rem 0.75rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.5rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.82rem',
-                      fontWeight: '600',
-                      outline: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="All">All Rounds</option>
-                    {allUniqueRounds.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
+                {/* Custom Round Filter */}
+                <CustomDropdown
+                  icon={Filter}
+                  value={selectedRoundFilter}
+                  minWidth="140px"
+                  isOpen={openDropdown === 'round'}
+                  onToggle={() => setOpenDropdown(prev => prev === 'round' ? null : 'round')}
+                  onClose={() => setOpenDropdown(null)}
+                  onChange={(val) => setSelectedRoundFilter(val)}
+                  options={[
+                    { value: 'All', label: 'All Rounds' },
+                    ...allUniqueRounds.map(r => ({ value: r, label: r }))
+                  ]}
+                />
 
-                {/* Team Filter */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <Users size={13} style={{ color: 'var(--text-secondary)' }} />
-                  <select
-                    value={selectedTeamFilter}
-                    onChange={(e) => setSelectedTeamFilter(e.target.value)}
-                    style={{
-                      padding: '0.4rem 0.75rem',
-                      backgroundColor: 'var(--surface-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.5rem',
-                      color: 'var(--text-primary)',
-                      fontSize: '0.82rem',
-                      fontWeight: '600',
-                      outline: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="All">All Teams</option>
-                    {uniqueTeams.map(t => (
-                      <option key={t} value={t}>Team {t}</option>
-                    ))}
-                  </select>
-                </div>
+                {/* Custom Team Filter */}
+                <CustomDropdown
+                  icon={Users}
+                  value={selectedTeamFilter}
+                  minWidth="150px"
+                  isOpen={openDropdown === 'team'}
+                  onToggle={() => setOpenDropdown(prev => prev === 'team' ? null : 'team')}
+                  onClose={() => setOpenDropdown(null)}
+                  onChange={(val) => setSelectedTeamFilter(val)}
+                  options={[
+                    { value: 'All', label: 'All Teams' },
+                    ...uniqueTeams.map(t => ({ value: t, label: `Team ${t}` }))
+                  ]}
+                />
 
               </div>
             </div>

@@ -56,7 +56,11 @@ export default function LeaderDashboard({ team, onLogout }) {
         const startDate = new Date(startDateStr);
         const today = new Date();
         const diffTime = Math.abs(today - startDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        const totalDays = parseInt(d.settings?.Total_Days || 0);
+        if (totalDays > 0 && diffDays > totalDays) {
+          diffDays = totalDays;
+        }
         const calcCurrentDay = `Day_${diffDays}`;
         
         setCurrentDay(calcCurrentDay);
