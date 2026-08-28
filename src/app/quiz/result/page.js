@@ -125,15 +125,16 @@ export default function QuizResultPage() {
   const perfLen = Math.max(perfTitle.length, 1);
   const perfFontSize = Math.min(76, Math.max(30, Math.floor(820 / (perfLen * 0.68))));
 
-  // Score font size — auto-scale so score+denom always fits in the circle (safe width: 538px in 2160 space).
-  // Impact/Arial Black average char width ≈ 0.58 × fontSize for digits, 0.45 × fontSize for '/'.
-  const SCORE_SAFE_W = 538;
+  // Score font size — auto-scale so score+denom always fits comfortably inside the circle.
+  // Solid circle measured: X=[799, 1309] (width 510px, center X=1054, Y=1270).
+  // Safe max text width set to 365px to guarantee clean 70px+ margins from circle curvature.
+  const SCORE_SAFE_W = 365;
   const SCORE_RATIO = 110 / 290;
-  let svgScoreFontSize = 260;
-  while (svgScoreFontSize > 60) {
+  let svgScoreFontSize = 240;
+  while (svgScoreFontSize > 50) {
     const svgDenomFontSize = Math.round(svgScoreFontSize * SCORE_RATIO);
-    const estScoreW = String(score).length * svgScoreFontSize * 0.60;
-    const estDenomW = (`/${totalQuestions}`).length * svgDenomFontSize * 0.52;
+    const estScoreW = String(score).length * svgScoreFontSize * 0.65;
+    const estDenomW = (`/${totalQuestions}`).length * svgDenomFontSize * 0.55;
     if (estScoreW + 8 + estDenomW <= SCORE_SAFE_W) break;
     svgScoreFontSize -= 4;
   }
@@ -237,9 +238,9 @@ export default function QuizResultPage() {
       ctx.textBaseline = "middle";
       ctx.textAlign = "left";
 
-      const CIRCLE_CX = 1084;
+      const CIRCLE_CX = 1054;
       const CIRCLE_CY = 1270;
-      const MAX_TEXT_WIDTH = 538; // 80% of measured circle diameter
+      const MAX_TEXT_WIDTH = 365; // Solid circle measured diameter is 510px (X: 799->1309)
       const GAP = 8;
 
       const scoreStr = String(score);
@@ -451,10 +452,10 @@ export default function QuizResultPage() {
 
               {/* 5. Big Score Digits inside Purple Circle — auto-scaled to always fit */}
               {/* textAnchor=middle + dominantBaseline=central centers the group on the
-                  pixel-measured circle center (1084, 1270). Font sizes shrink proportionally
-                  until the combined text fits within the 538px safe circle width. */}
+                  pixel-measured circle center (1054, 1270). Font sizes shrink proportionally
+                  until the combined text fits within the 365px safe circle width. */}
               <text
-                x="1084"
+                x="1054"
                 y="1270"
                 textAnchor="middle"
                 dominantBaseline="central"
