@@ -218,83 +218,50 @@ export async function POST(request) {
         await leadersSheet.loadHeaderRow(); // Reload to update headerValues correctly
       }
       
-      const dayColIndex = leadersSheet.headerValues.indexOf(day);
-      const statusColIndex = leadersSheet.headerValues.indexOf('Status');
-      await leadersSheet.loadCells();
       const rows = await leadersSheet.getRows();
 
-      let hasUpdates = false;
-
-      // Process updates first
+      // Process updates and evictions
       for (const row of rows) {
         const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
-        if (rowName && updates && updates[rowName] !== undefined) {
-          const val = updates[rowName] ? 'TRUE' : 'FALSE';
-          const rIndex = row.rowIndex - 1;
-          
-          if (dayColIndex !== -1) {
-            const cell = leadersSheet.getCell(rIndex, dayColIndex);
-            cell.value = val;
-            hasUpdates = true;
-          }
-          
+        const currentStatus = String(row.get('Status') || '').trim().toLowerCase();
+
+        if (rowName && updates && updates[rowName] !== undefined && currentStatus === 'active') {
+          row.set(day, updates[rowName] ? 'TRUE' : 'FALSE');
+
           if (updates[rowName]) {
             const editingDayNum = parseInt(day.split('_')[1] || 1);
             for (let pastD = 1; pastD < editingDayNum; pastD++) {
               const pastDStr = `Day_${pastD}`;
-              const pastColIndex = leadersSheet.headerValues.indexOf(pastDStr);
-              if (pastColIndex !== -1) {
-                const pastCell = leadersSheet.getCell(rIndex, pastColIndex);
-                if (String(pastCell.value || '').toUpperCase() !== 'TRUE') {
-                  pastCell.value = 'TRUE';
-                  hasUpdates = true;
-                }
+              if (String(row.get(pastDStr) || '').toUpperCase() !== 'TRUE') {
+                row.set(pastDStr, 'TRUE');
               }
             }
           }
         }
+
+        // Evaluate evictions for leaders
+        if (currentStatus === 'active' && completedRounds > 0 && evictionThreshold) {
+          for (let r = 1; r <= completedRounds; r++) {
+            let missedDaysCount = 0;
+            const prevRoundEnd = r * daysPerRound;
+            const prevRoundStart = prevRoundEnd - daysPerRound + 1;
+            for (let pastD = prevRoundStart; pastD <= prevRoundEnd; pastD++) {
+              const checkDay = `Day_${pastD}`;
+              const val = String(row.get(checkDay) || '').toUpperCase();
+              if (val === 'FALSE' || val === '') {
+                missedDaysCount++;
+              }
+            }
+            if (missedDaysCount > parseInt(evictionThreshold)) {
+              row.set('Status', 'Evicted');
+              break;
+            }
+          }
+        }
+
+        await row.save();
       }
 
-      // Process eviction logic based on updated values
-      for (const row of rows) {
-        const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
-        
-        // Evaluate Evictions if active
-        if (statusColIndex !== -1 && completedRounds > 0 && evictionThreshold) {
-           const statusCell = leadersSheet.getCell(row.rowNumber - 1, statusColIndex);
-           if (String(statusCell.value || '').toLowerCase() === 'active') {
-              for (let r = 1; r <= completedRounds; r++) {
-                 let missedDaysCount = 0;
-                 const prevRoundEnd = r * daysPerRound;
-                 const prevRoundStart = prevRoundEnd - daysPerRound + 1;
-                 for (let pastD = prevRoundStart; pastD <= prevRoundEnd; pastD++) {
-                    const pastColIndex = leadersSheet.headerValues.indexOf(`Day_${pastD}`);
-                    let val = 'FALSE';
-                    if (pastColIndex !== -1) {
-                       const pastCell = leadersSheet.getCell(row.rowNumber - 1, pastColIndex);
-                       try {
-                          val = String(pastCell.value || '').toUpperCase();
-                       } catch (e) {
-                          val = 'TRUE';
-                       }
-                    }
-                    if (val !== 'TRUE') {
-                       missedDaysCount++;
-                    }
-                 }
-                 if (missedDaysCount > parseInt(evictionThreshold)) {
-                    statusCell.value = 'Evicted';
-                    hasUpdates = true;
-                    break;
-                 }
-              }
-           }
-        }
-      }
-      
-      if (hasUpdates) {
-        await leadersSheet.saveUpdatedCells();
-      }
       invalidateCache();
       return NextResponse.json({ success: true });
     }
@@ -302,25 +269,14 @@ export async function POST(request) {
     if (action === 'admin_update_roster') {
       const { rosterUpdates } = payload;
       const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
-      await leadersSheet.loadHeaderRow();
-      const statusColIndex = leadersSheet.headerValues.indexOf('Status');
-      if (statusColIndex === -1) return NextResponse.json({ success: true });
-      await leadersSheet.loadCells();
       const rows = await leadersSheet.getRows();
       
-      let hasUpdates = false;
       for (const row of rows) {
         const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
-        if (rosterUpdates[rowName]) {
-           const statusCell = leadersSheet.getCell(row.rowNumber - 1, statusColIndex);
-           if (statusCell.value !== rosterUpdates[rowName]) {
-              statusCell.value = rosterUpdates[rowName];
-              hasUpdates = true;
-           }
+        if (rosterUpdates[rowName] && row.get('Status') !== rosterUpdates[rowName]) {
+          row.set('Status', rosterUpdates[rowName]);
+          await row.save();
         }
-      }
-      if (hasUpdates) {
-        await leadersSheet.saveUpdatedCells();
       }
       invalidateCache();
       return NextResponse.json({ success: true });
