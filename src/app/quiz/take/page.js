@@ -24,7 +24,10 @@ export default function QuizTakePage() {
 
   // 1. Initialization and Offline Support
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
+    const handleOnline = () => {
+      setIsOffline(false);
+      syncServerDeadline();
+    };
     const handleOffline = () => setIsOffline(true);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -76,6 +79,37 @@ export default function QuizTakePage() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [router]);
+
+  // Sync server deadline dynamically if extended by admin
+  const syncServerDeadline = useCallback(async () => {
+    const rawPhone = participant.whatsapp || (typeof window !== "undefined" ? (localStorage.getItem("quiz_saved_whatsapp") || "") : "");
+    const cleanPhone = rawPhone.replace(/\D/g, "").replace(/^0+/, "");
+    const round = participant.round || "Round 1";
+    if (!cleanPhone) return;
+
+    try {
+      const res = await fetch(`/api/quiz/init?whatsapp=${encodeURIComponent(cleanPhone)}&round=${encodeURIComponent(round)}&t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.activeSession && data.activeSession.deadlineTimestamp) {
+          const serverDeadline = Number(data.activeSession.deadlineTimestamp);
+          if (serverDeadline > Date.now()) {
+            setDeadline(serverDeadline);
+            setTimeExpired(false);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Could not sync server deadline:", err);
+    }
+  }, [participant.whatsapp, participant.round]);
+
+  // Periodic deadline sync while taking quiz
+  useEffect(() => {
+    if (!hasStarted) return;
+    const interval = setInterval(syncServerDeadline, 25000);
+    return () => clearInterval(interval);
+  }, [hasStarted, syncServerDeadline]);
 
   // 2. Persist Answers
   useEffect(() => {

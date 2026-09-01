@@ -204,6 +204,7 @@ export default function AdminQuizPage() {
   const [isQuizLive, setIsQuizLive] = useState(false);
   const [questions, setQuestions] = useState([]);
   const [results, setResults] = useState([]);
+  const [sessions, setSessions] = useState([]);
   
   // Reading Schedule & Round UI filters
   const [selectedEdition, setSelectedEdition] = useState("New Testament (3 chapters daily)");
@@ -211,9 +212,13 @@ export default function AdminQuizPage() {
   const [selectedLeaderboardEdition, setSelectedLeaderboardEdition] = useState("All");
   const [selectedRoundFilter, setSelectedRoundFilter] = useState("All");
   const [selectedTeamFilter, setSelectedTeamFilter] = useState("All");
+  const [selectedSessionStatusFilter, setSelectedSessionStatusFilter] = useState("All");
+  const [selectedSessionRoundFilter, setSelectedSessionRoundFilter] = useState("All");
+  const [selectedSessionTeamFilter, setSelectedSessionTeamFilter] = useState("All");
+  const [selectedSessionEditionFilter, setSelectedSessionEditionFilter] = useState("All");
   const [resultSortBy, setResultSortBy] = useState("date");    // "score" | "date"
   const [resultSortOrder, setResultSortOrder] = useState("desc"); // "asc" | "desc"
-  const [openDropdown, setOpenDropdown] = useState(null); // 'sort' | 'edition' | 'round' | 'team' | null
+  const [openDropdown, setOpenDropdown] = useState(null); // 'sort' | 'edition' | 'round' | 'team' | 'session_status' | 'session_edition' | 'session_round' | 'session_team' | null
   const [showCustomEditionInput, setShowCustomEditionInput] = useState(false);
   const [newEditionName, setNewEditionName] = useState("");
   
@@ -342,6 +347,7 @@ export default function AdminQuizPage() {
         }
         setQuestions(data.questions || []);
         setResults(data.results || []);
+        setSessions(data.sessions || []);
         setQuestionForm(prev => ({ 
           ...prev, 
           edition: loadedSettings.Active_Edition || "New Testament (3 chapters daily)",
@@ -381,9 +387,63 @@ export default function AdminQuizPage() {
         setIsQuizLive(String(loadedSettings.Is_Quiz_Live).toUpperCase() === "TRUE");
         setQuestions(data.questions || []);
         setResults(data.results || []);
+        setSessions(data.sessions || []);
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const formatTimeSpent = (seconds) => {
+    if (seconds === undefined || seconds === null || isNaN(seconds) || seconds === "") return null;
+    const s = Math.round(Number(seconds));
+    const m = Math.floor(s / 60);
+    const remS = s % 60;
+    if (m === 0) return `${remS}s`;
+    return `${m}m ${remS.toString().padStart(2, '0')}s`;
+  };
+
+  const handleExtendSession = async (item, extraMinutes = 5) => {
+    const targetPhone = item.whatsApp || item.whatsapp || "";
+    const targetRound = item.round || "";
+    const candidateName = item.fullName || "Candidate";
+
+    if (!targetPhone || !targetRound) {
+      showAlert({ title: "Error", message: "Missing candidate phone number or round.", type: "danger" });
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/quiz/admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": pin
+        },
+        body: JSON.stringify({
+          action: "extendSession",
+          whatsApp: targetPhone,
+          round: targetRound,
+          extraMinutes
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`⏱️ Extended +${extraMinutes} mins for ${candidateName}!`);
+        fetchWorkspaceData();
+      } else {
+        showAlert({
+          title: "Extension Failed",
+          message: data.error || "Failed to extend time for this candidate.",
+          type: "danger"
+        });
+      }
+    } catch (err) {
+      showAlert({
+        title: "Network Error",
+        message: "Error extending time. Please check your connection.",
+        type: "danger"
+      });
     }
   };
 
@@ -999,6 +1059,89 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       return new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime();
     });
 
+  const uniqueSessionTeams = Array.from(new Set([
+    ...uniqueTeams,
+    ...sessions.map(s => s.team).filter(Boolean)
+  ])).sort((a, b) => {
+    const numA = parseInt(a, 10);
+    const numB = parseInt(b, 10);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return String(a).localeCompare(String(b));
+  });
+
+  const enrichedSessions = sessions.map(s => {
+    const sNormPhone = String(s.whatsApp || "").replace(/\D/g, "").replace(/^0+/, "");
+    const sRound = String(s.round || "").trim().toLowerCase();
+
+    // Check if matching result exists in results
+    const matchingResult = results.find(r => {
+      const rNormPhone = String(r.whatsApp || "").replace(/\D/g, "").replace(/^0+/, "");
+      const rRound = String(r.round || "").trim().toLowerCase();
+      return rNormPhone === sNormPhone && rRound === sRound;
+    });
+
+    const now = Date.now();
+    const isCompleted = !!matchingResult;
+    const deadline = Number(s.absoluteDeadline) || (s.startTimestamp + 15 * 60 * 1000);
+    const isExpired = !isCompleted && now >= deadline;
+    const isActive = !isCompleted && now < deadline;
+
+    let status = "active";
+    let statusLabel = "In Progress";
+    if (isCompleted) {
+      status = "completed";
+      statusLabel = "Completed";
+    } else if (isExpired) {
+      status = "expired";
+      statusLabel = "Time Expired";
+    }
+
+    let timeRemainingStr = "";
+    if (isActive) {
+      const diffMs = Math.max(0, deadline - now);
+      const remM = Math.floor(diffMs / 60000);
+      const remS = Math.floor((diffMs % 60000) / 1000);
+      timeRemainingStr = `${remM}m ${remS.toString().padStart(2, '0')}s left`;
+    }
+
+    let timeSpentSeconds = matchingResult ? matchingResult.timeSpentSeconds : null;
+    if (isCompleted && (timeSpentSeconds === null || timeSpentSeconds === undefined) && matchingResult.timestamp && s.startTimestamp) {
+      const subMs = new Date(matchingResult.timestamp).getTime() - s.startTimestamp;
+      if (subMs > 0) timeSpentSeconds = Math.round(subMs / 1000);
+    }
+
+    return {
+      ...s,
+      fullName: s.fullName || (matchingResult ? matchingResult.fullName : "Candidate"),
+      team: s.team || (matchingResult ? matchingResult.team : "Unassigned"),
+      edition: s.edition || (matchingResult ? matchingResult.edition : "New Testament (3 chapters daily)"),
+      status,
+      statusLabel,
+      isCompleted,
+      isActive,
+      isExpired,
+      timeRemainingStr,
+      matchingResult,
+      timeSpentSeconds,
+      formattedTimeSpent: formatTimeSpent(timeSpentSeconds)
+    };
+  });
+
+  const filteredSessions = enrichedSessions
+    .filter(s => {
+      if (selectedSessionEditionFilter === "All") return true;
+      const sEd = s.edition || "New Testament (3 chapters daily)";
+      return sEd.trim().toLowerCase() === selectedSessionEditionFilter.trim().toLowerCase();
+    })
+    .filter(s => selectedSessionRoundFilter === "All" || s.round === selectedSessionRoundFilter)
+    .filter(s => selectedSessionTeamFilter === "All" || s.team === selectedSessionTeamFilter)
+    .filter(s => selectedSessionStatusFilter === "All" || s.status === selectedSessionStatusFilter)
+    .sort((a, b) => (b.startTimestamp || 0) - (a.startTimestamp || 0));
+
+  const activeSessionsCount = enrichedSessions.filter(s => s.status === 'active').length;
+  const completedSessionsCount = enrichedSessions.filter(s => s.status === 'completed').length;
+  const expiredSessionsCount = enrichedSessions.filter(s => s.status === 'expired').length;
+
   const toggleSort = (col) => {
     if (resultSortBy === col) {
       setResultSortOrder(o => o === "desc" ? "asc" : "desc");
@@ -1601,7 +1744,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
             { id: 'builder', label: editingQuestionId ? 'Editing Question' : 'Question Builder', icon: editingQuestionId ? Pencil : PlusCircle },
             { id: 'bulk', label: 'Bulk Import', icon: Upload },
             { id: 'ai', label: 'AI Generator', icon: Sparkles },
-            { id: 'leaderboard', label: 'Submissions', icon: Trophy }
+            { id: 'logs', label: `Live Logs (${sessions.length})`, icon: Clock },
+            { id: 'leaderboard', label: `Submissions (${results.length})`, icon: Trophy }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -3401,7 +3545,435 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
           </div>
         )}
 
-        {/* TAB 5: LIVE LEADERBOARD */}
+        {/* TAB 5: LIVE QUIZ LOGS & SESSIONS */}
+        {activeTab === 'logs' && (
+          <div style={{
+            backgroundColor: 'var(--surface)',
+            borderRadius: '1rem',
+            border: '1px solid var(--border)',
+            padding: '1.5rem',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+            maxWidth: '1050px',
+            margin: '0 auto'
+          }}>
+            
+            {/* Header & Refresh */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Clock size={20} style={{ color: '#3B82F6' }} /> Live Activity & Session Logs ({filteredSessions.length})
+                </h3>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  Track who started the quiz, monitor time used, and grant individual time extensions.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={fetchWorkspaceData}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.45rem 0.85rem',
+                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '0.5rem',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.8rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)'; }}
+              >
+                <RefreshCw size={13} />
+                <span>Refresh Live Logs</span>
+              </button>
+            </div>
+
+            {/* Metric Summary Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: '0.75rem',
+              marginBottom: '1.25rem'
+            }}>
+              <div style={{
+                backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                border: '1px solid rgba(59, 130, 246, 0.25)',
+                borderRadius: '0.75rem',
+                padding: '0.85rem 1rem'
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
+                  Total Started
+                </div>
+                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#60A5FA', marginTop: '0.15rem' }}>
+                  {enrichedSessions.length}
+                </div>
+              </div>
+
+              <div style={{
+                backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                borderRadius: '0.75rem',
+                padding: '0.85rem 1rem'
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
+                  🟢 In Progress
+                </div>
+                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#FBBF24', marginTop: '0.15rem' }}>
+                  {activeSessionsCount}
+                </div>
+              </div>
+
+              <div style={{
+                backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                borderRadius: '0.75rem',
+                padding: '0.85rem 1rem'
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
+                  ✅ Completed
+                </div>
+                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#34D399', marginTop: '0.15rem' }}>
+                  {completedSessionsCount}
+                </div>
+              </div>
+
+              <div style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: '0.75rem',
+                padding: '0.85rem 1rem'
+              }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
+                  ⚠️ Expired / Stalled
+                </div>
+                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#F87171', marginTop: '0.15rem' }}>
+                  {expiredSessionsCount}
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
+              {/* Status Filter */}
+              <CustomDropdown
+                icon={Activity}
+                value={selectedSessionStatusFilter}
+                accent={true}
+                minWidth="150px"
+                isOpen={openDropdown === 'session_status'}
+                onToggle={() => setOpenDropdown(prev => prev === 'session_status' ? null : 'session_status')}
+                onClose={() => setOpenDropdown(null)}
+                onChange={(val) => setSelectedSessionStatusFilter(val)}
+                options={[
+                  { value: 'All', label: 'All Statuses' },
+                  { value: 'active', label: '🟢 In Progress' },
+                  { value: 'completed', label: '✅ Completed' },
+                  { value: 'expired', label: '⚠️ Expired' }
+                ]}
+              />
+
+              {/* Schedule Filter */}
+              <CustomDropdown
+                icon={BookOpen}
+                value={selectedSessionEditionFilter}
+                minWidth="180px"
+                isOpen={openDropdown === 'session_edition'}
+                onToggle={() => setOpenDropdown(prev => prev === 'session_edition' ? null : 'session_edition')}
+                onClose={() => setOpenDropdown(null)}
+                onChange={(val) => setSelectedSessionEditionFilter(val)}
+                options={[
+                  { value: 'All', label: 'All Schedules' },
+                  ...availableEditions.map(ed => ({ value: ed, label: ed }))
+                ]}
+              />
+
+              {/* Round Filter */}
+              <CustomDropdown
+                icon={Filter}
+                value={selectedSessionRoundFilter}
+                minWidth="140px"
+                isOpen={openDropdown === 'session_round'}
+                onToggle={() => setOpenDropdown(prev => prev === 'session_round' ? null : 'session_round')}
+                onClose={() => setOpenDropdown(null)}
+                onChange={(val) => setSelectedSessionRoundFilter(val)}
+                options={[
+                  { value: 'All', label: 'All Rounds' },
+                  ...allUniqueRounds.map(r => ({ value: r, label: r }))
+                ]}
+              />
+
+              {/* Team Filter */}
+              <CustomDropdown
+                icon={Users}
+                value={selectedSessionTeamFilter}
+                minWidth="150px"
+                isOpen={openDropdown === 'session_team'}
+                onToggle={() => setOpenDropdown(prev => prev === 'session_team' ? null : 'session_team')}
+                onClose={() => setOpenDropdown(null)}
+                onChange={(val) => setSelectedSessionTeamFilter(val)}
+                options={[
+                  { value: 'All', label: 'All Teams' },
+                  ...uniqueSessionTeams.map(t => ({ value: t, label: `Team ${t}` }))
+                ]}
+              />
+            </div>
+
+            {/* Sessions Table */}
+            <div style={{ width: '100%', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <th style={{ padding: '0.55rem 0.6rem', width: '36px', textAlign: 'center' }}>#</th>
+                    <th style={{ padding: '0.55rem 0.6rem' }}>Candidate</th>
+                    <th style={{ padding: '0.55rem 0.6rem' }}>Team & Round</th>
+                    <th style={{ padding: '0.55rem 0.6rem' }}>Started At</th>
+                    <th style={{ padding: '0.55rem 0.6rem' }}>Status & Timing</th>
+                    <th style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>Extend / Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSessions.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        No candidate activity logs recorded yet for the selected filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredSessions.map((s, i) => {
+                      const rawTeam = String(s.team || '').trim();
+                      const displayTeam = !rawTeam || rawTeam.toLowerCase() === 'unassigned'
+                        ? 'Unassigned'
+                        : (rawTeam.toLowerCase().startsWith('team ') ? rawTeam : `Team ${rawTeam}`);
+                      const isUnassigned = displayTeam === 'Unassigned';
+
+                      return (
+                        <tr 
+                          key={i}
+                          style={{ borderBottom: '1px solid var(--border-light)', transition: 'background-color 0.15s ease' }}
+                          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        >
+                          {/* Index */}
+                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: '700', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                            #{i + 1}
+                          </td>
+
+                          {/* Candidate */}
+                          <td style={{ padding: '0.55rem 0.6rem' }}>
+                            <div style={{ fontWeight: '700', color: 'var(--text-primary)', fontSize: '0.88rem', lineHeight: '1.25' }}>
+                              {s.fullName}
+                            </div>
+                            <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', fontFamily: 'monospace', marginTop: '0.15rem' }}>
+                              {s.whatsApp || "—"}
+                            </div>
+                          </td>
+
+                          {/* Team & Round */}
+                          <td style={{ padding: '0.55rem 0.6rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                              <span style={{
+                                backgroundColor: isUnassigned ? 'rgba(255, 255, 255, 0.06)' : 'var(--accent-light)',
+                                color: isUnassigned ? 'var(--text-secondary)' : 'var(--accent-hover)',
+                                padding: '0.15rem 0.5rem',
+                                borderRadius: '0.35rem',
+                                fontSize: '0.75rem',
+                                fontWeight: '700',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {displayTeam}
+                              </span>
+                              <span style={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                color: 'var(--text-primary)',
+                                padding: '0.15rem 0.45rem',
+                                borderRadius: '0.35rem',
+                                fontSize: '0.73rem',
+                                fontWeight: '600',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {s.round}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Start Time */}
+                          <td style={{ padding: '0.55rem 0.6rem', color: 'var(--text-secondary)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                            {s.startTimestamp ? new Date(s.startTimestamp).toLocaleString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : 'N/A'}
+                          </td>
+
+                          {/* Status & Timing */}
+                          <td style={{ padding: '0.55rem 0.6rem' }}>
+                            {s.status === 'completed' && (
+                              <div>
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                                  color: '#10B981',
+                                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                                  padding: '0.2rem 0.55rem',
+                                  borderRadius: '0.4rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '700'
+                                }}>
+                                  <CheckCircle2 size={12} /> Submitted ({s.matchingResult?.score || 0}/{s.matchingResult?.totalQuestions || 10})
+                                </span>
+                                <div style={{ fontSize: '0.73rem', color: '#60A5FA', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '600' }}>
+                                  <Clock size={11} /> Time used: {s.formattedTimeSpent || '—'}
+                                </div>
+                              </div>
+                            )}
+
+                            {s.status === 'active' && (
+                              <div>
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                                  color: '#F59E0B',
+                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  padding: '0.2rem 0.55rem',
+                                  borderRadius: '0.4rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '700'
+                                }}>
+                                  <Timer size={12} /> In Progress
+                                </span>
+                                <div style={{ fontSize: '0.73rem', color: '#FCD34D', marginTop: '0.2rem', fontWeight: '600' }}>
+                                  ⏱️ {s.timeRemainingStr}
+                                </div>
+                              </div>
+                            )}
+
+                            {s.status === 'expired' && (
+                              <div>
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                                  color: '#F87171',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  padding: '0.2rem 0.55rem',
+                                  borderRadius: '0.4rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '700'
+                                }}>
+                                  <AlertCircle size={12} /> Time Expired
+                                </span>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                  Not submitted yet
+                                </div>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Quick Extend & Reset Actions */}
+                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                              {/* +5m Extension Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleExtendSession(s, 5)}
+                                title={`Extend time limit by +5 minutes for ${s.fullName}`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem',
+                                  padding: '0.3rem 0.55rem',
+                                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                                  color: '#60A5FA',
+                                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                                  borderRadius: '0.4rem',
+                                  fontSize: '0.74rem',
+                                  fontWeight: '700',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.25)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.12)'; }}
+                              >
+                                <Clock size={12} />
+                                <span>+5m</span>
+                              </button>
+
+                              {/* +10m Extension Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleExtendSession(s, 10)}
+                                title={`Extend time limit by +10 minutes for ${s.fullName}`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem',
+                                  padding: '0.3rem 0.55rem',
+                                  backgroundColor: 'rgba(147, 51, 234, 0.12)',
+                                  color: '#C084FC',
+                                  border: '1px solid rgba(147, 51, 234, 0.3)',
+                                  borderRadius: '0.4rem',
+                                  fontSize: '0.74rem',
+                                  fontWeight: '700',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(147, 51, 234, 0.25)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(147, 51, 234, 0.12)'; }}
+                              >
+                                <Clock size={12} />
+                                <span>+10m</span>
+                              </button>
+
+                              {/* Reset Session Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSubmission(s)}
+                                title={`Reset session & timer to let ${s.fullName} retake the quiz`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem',
+                                  padding: '0.3rem 0.55rem',
+                                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                  color: '#F87171',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  borderRadius: '0.4rem',
+                                  fontSize: '0.74rem',
+                                  fontWeight: '600',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
+                              >
+                                <RotateCcw size={12} />
+                                <span>Reset</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB 6: SUBMISSIONS LEADERBOARD */}
         {activeTab === 'leaderboard' && (
           <div style={{
             backgroundColor: 'var(--surface)',
@@ -3495,7 +4067,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    <th style={{ padding: '0.55rem 0.6rem', width: '40px', textAlign: 'center' }}>{resultSortBy === "score" ? "Rank" : "#"}</th>
+                    <th style={{ padding: '0.55rem 0.6rem', width: '36px', textAlign: 'center' }}>{resultSortBy === "score" ? "Rank" : "#"}</th>
                     <th style={{ padding: '0.55rem 0.6rem' }}>Candidate</th>
                     <th style={{ padding: '0.55rem 0.6rem' }}>Team & Round</th>
                     <th
@@ -3510,9 +4082,9 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       onClick={() => toggleSort("date")}
                       title="Click to sort by submission date"
                     >
-                      Submitted {resultSortBy === "date" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
+                      Time Taken & Submitted {resultSortBy === "date" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
                     </th>
-                    <th style={{ padding: '0.55rem 0.6rem', textAlign: 'center', width: '70px' }}>Action</th>
+                    <th style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3600,42 +4172,75 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                             </span>
                           </td>
 
-                          {/* Submission Date */}
-                          <td style={{ padding: '0.55rem 0.6rem', color: 'var(--text-secondary)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-                            {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            }) : 'N/A'}
+                          {/* Time Taken & Submitted */}
+                          <td style={{ padding: '0.55rem 0.6rem', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '700', fontSize: '0.8rem', color: r.timeSpentSeconds ? '#60A5FA' : 'var(--text-secondary)' }}>
+                              <Clock size={12} style={{ color: '#60A5FA', flexShrink: 0 }} />
+                              <span>{formatTimeSpent(r.timeSpentSeconds) || '—'}</span>
+                            </div>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '0.15rem' }}>
+                              {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : 'N/A'}
+                            </div>
                           </td>
 
                           {/* Actions */}
-                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteSubmission(r)}
-                              title={`Reset submission and allow ${r.fullName || 'candidate'} to retake`}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.25rem',
-                                padding: '0.3rem 0.55rem',
-                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                color: '#F87171',
-                                border: '1px solid rgba(239, 68, 68, 0.25)',
-                                borderRadius: '0.4rem',
-                                fontSize: '0.75rem',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
-                              }}
-                              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'; }}
-                              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
-                            >
-                              <Trash2 size={12} />
-                              <span>Reset</span>
-                            </button>
+                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleExtendSession(r, 5)}
+                                title={`Grant +5 minutes extension to ${r.fullName || 'candidate'}`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem',
+                                  padding: '0.28rem 0.5rem',
+                                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                                  color: '#60A5FA',
+                                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                                  borderRadius: '0.4rem',
+                                  fontSize: '0.73rem',
+                                  fontWeight: '700',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.25)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.12)'; }}
+                              >
+                                <Clock size={11} />
+                                <span>+5m</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSubmission(r)}
+                                title={`Reset submission and allow ${r.fullName || 'candidate'} to retake`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem',
+                                  padding: '0.28rem 0.5rem',
+                                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                  color: '#F87171',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  borderRadius: '0.4rem',
+                                  fontSize: '0.73rem',
+                                  fontWeight: '600',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
+                              >
+                                <Trash2 size={11} />
+                                <span>Reset</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

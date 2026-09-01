@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import AdminDashboard from "./components/AdminDashboard";
 import LeaderDashboard from "./components/LeaderDashboard";
+import ActivityTracker from "./components/ActivityTracker";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function Home() {
@@ -82,11 +83,21 @@ export default function Home() {
   };
 
   if (session?.role === "admin") {
-    return <AdminDashboard onLogout={handleLogout} />;
+    return (
+      <>
+        <ActivityTracker session={session} />
+        <AdminDashboard onLogout={handleLogout} />
+      </>
+    );
   }
 
   if (session?.role === "leader") {
-    return <LeaderDashboard team={session.team} onLogout={handleLogout} />;
+    return (
+      <>
+        <ActivityTracker session={session} />
+        <LeaderDashboard team={session.team} onLogout={handleLogout} />
+      </>
+    );
   }
 
   return (
