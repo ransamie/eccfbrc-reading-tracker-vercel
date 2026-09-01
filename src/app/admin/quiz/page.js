@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Settings, 
   PlusCircle, 
@@ -186,10 +187,11 @@ function CustomDropdown({
 }
 
 export default function AdminQuizPage() {
+  const router = useRouter();
   const [pin, setPin] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [authError, setAuthError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Workspace Tabs: 'control' | 'builder' | 'bulk' | 'ai' | 'leaderboard'
   const [activeTab, setActiveTab] = useState("control");
@@ -306,7 +308,7 @@ export default function AdminQuizPage() {
   const [savingApiKey, setSavingApiKey] = useState(false);
   const [showApiKeySetting, setShowApiKeySetting] = useState(false);
 
-  // 1. Check Authentication on Mount
+  // 1. Direct Load on Mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       setQuizUrl(`${window.location.origin}/quiz`);
@@ -314,19 +316,13 @@ export default function AdminQuizPage() {
       if (savedAiKey) setAiApiKey(savedAiKey);
     }
 
-    const savedPin = sessionStorage.getItem("admin_quiz_pin");
-    if (savedPin) {
-      verifyAndLoad(savedPin);
-    }
+    fetchWorkspaceData();
   }, []);
 
-  const verifyAndLoad = async (inputPin) => {
+  const fetchWorkspaceData = async () => {
     setLoading(true);
-    setAuthError("");
     try {
-      const res = await fetch("/api/quiz/admin", {
-        headers: { "Authorization": inputPin }
-      });
+      const res = await fetch("/api/quiz/admin");
       if (res.ok) {
         const data = await res.json();
         const loadedSettings = data.settings || { 
@@ -355,42 +351,12 @@ export default function AdminQuizPage() {
         }));
         setBulkRound(loadedSettings.Active_Round || "Round 1");
         setAiRound(loadedSettings.Active_Round || "Round 7");
-        sessionStorage.setItem("admin_quiz_pin", inputPin);
-        setPin(inputPin);
         setIsAuthenticated(true);
-      } else {
-        setAuthError("Invalid Super Admin PIN");
-        sessionStorage.removeItem("admin_quiz_pin");
       }
     } catch (err) {
-      setAuthError("Failed to connect to database");
+      console.error("Failed to connect to database:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchWorkspaceData = async () => {
-    if (!pin) return;
-    try {
-      const res = await fetch("/api/quiz/admin", {
-        headers: { "Authorization": pin }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const loadedSettings = data.settings || { 
-          Active_Edition: "New Testament (3 chapters daily)",
-          Active_Round: "Round 1", 
-          Time_Limit_Minutes: "15", 
-          Is_Quiz_Live: "FALSE" 
-        };
-        setSettings(loadedSettings);
-        setIsQuizLive(String(loadedSettings.Is_Quiz_Live).toUpperCase() === "TRUE");
-        setQuestions(data.questions || []);
-        setResults(data.results || []);
-        setSessions(data.sessions || []);
-      }
-    } catch (e) {
-      console.error(e);
     }
   };
 
@@ -447,15 +413,8 @@ export default function AdminQuizPage() {
     }
   };
 
-  const handleLoginSubmit = (e) => {
-    e.preventDefault();
-    if (pin) verifyAndLoad(pin);
-  };
-
   const handleLogout = () => {
-    sessionStorage.removeItem("admin_quiz_pin");
-    setIsAuthenticated(false);
-    setPin("");
+    router.push("/");
   };
 
   // 2. Settings Updates (Active Edition, Active Round, Time Limit, Live Switch)
@@ -1000,16 +959,22 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
   const availableEditions = Array.from(new Set([
     ...DEFAULT_EDITIONS,
     settings.Active_Edition || "New Testament (3 chapters daily)",
-    ...questions.map(q => q.edition).filter(Boolean)
-  ]));
+    ...questions.map(q => q.edition).filter(Boolean),
+    ...results.map(r => r.edition).filter(Boolean),
+    ...sessions.map(s => s.edition).filter(Boolean)
+  ])).filter(Boolean);
 
-  // Questions filtered for the currently selected Reading Schedule / Edition
+  // Active Reading Track (Root container)
+  const currentTrack = selectedEdition || settings.Active_Edition || "New Testament (3 chapters daily)";
+  const isCurrentTrackLive = (settings.Active_Edition || "").trim().toLowerCase() === currentTrack.trim().toLowerCase() && isQuizLive;
+
+  // Questions scoped to active reading track
   const editionQuestions = questions.filter(q => {
     const qEd = q.edition || "New Testament (3 chapters daily)";
-    return qEd.trim().toLowerCase() === selectedEdition.trim().toLowerCase();
+    return qEd.trim().toLowerCase() === currentTrack.trim().toLowerCase();
   });
 
-  // Unique rounds inside currently selected edition
+  // Unique rounds inside currently selected edition / track
   const uniqueRoundsInEdition = Array.from(new Set(
     editionQuestions.map(q => q.round).filter(Boolean)
   )).sort((a, b) => {
@@ -1029,39 +994,54 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     return a.localeCompare(b);
   });
 
-  const uniqueTeams = Array.from(new Set(results.map(r => r.team).filter(Boolean))).sort((a, b) => {
+  // Results scoped to currently selected reading track
+  const trackResults = results.filter(r => {
+    const rEd = r.edition || "New Testament (3 chapters daily)";
+    return rEd.trim().toLowerCase() === currentTrack.trim().toLowerCase();
+  });
+
+  const uniqueTeams = Array.from(new Set(trackResults.map(r => r.team).filter(Boolean))).sort((a, b) => {
     const numA = parseInt(a, 10);
     const numB = parseInt(b, 10);
     if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
     return String(a).localeCompare(String(b));
   });
 
-  const sortedResults = results
-    .filter(r => {
-      if (selectedLeaderboardEdition === "All") return true;
-      const rEd = r.edition || "New Testament (3 chapters daily)";
-      return rEd.trim().toLowerCase() === selectedLeaderboardEdition.trim().toLowerCase();
-    })
+  // Submissions sorted with independent Date, Score, and Time Taken sorting
+  const sortedResults = trackResults
     .filter(r => selectedRoundFilter === "All" || r.round === selectedRoundFilter)
     .filter(r => selectedTeamFilter === "All" || r.team === selectedTeamFilter)
     .sort((a, b) => {
       if (resultSortBy === "date") {
-        // newest first = desc, oldest first = asc
         const ta = new Date(a.timestamp || 0).getTime();
         const tb = new Date(b.timestamp || 0).getTime();
         return resultSortOrder === "desc" ? tb - ta : ta - tb;
       }
-      // Score (rank) sort: highest first = desc, lowest first = asc
+      if (resultSortBy === "time") {
+        const ta = (a.timeSpentSeconds !== null && a.timeSpentSeconds !== undefined && !isNaN(a.timeSpentSeconds)) ? Number(a.timeSpentSeconds) : 999999;
+        const tb = (b.timeSpentSeconds !== null && b.timeSpentSeconds !== undefined && !isNaN(b.timeSpentSeconds)) ? Number(b.timeSpentSeconds) : 999999;
+        return resultSortOrder === "desc" ? tb - ta : ta - tb;
+      }
+      // Score (rank) sort
       if (a.score !== b.score) {
         return resultSortOrder === "desc" ? b.score - a.score : a.score - b.score;
       }
-      // Tie-break: earlier submission ranks higher
+      // Tie-break: faster time ranks higher, then earlier submission
+      const timeA = (a.timeSpentSeconds !== null && a.timeSpentSeconds !== undefined) ? Number(a.timeSpentSeconds) : 999999;
+      const timeB = (b.timeSpentSeconds !== null && b.timeSpentSeconds !== undefined) ? Number(b.timeSpentSeconds) : 999999;
+      if (timeA !== timeB) return timeA - timeB;
       return new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime();
     });
 
+  // Sessions scoped to currently selected reading track
+  const trackSessions = sessions.filter(s => {
+    const sEd = s.edition || "New Testament (3 chapters daily)";
+    return sEd.trim().toLowerCase() === currentTrack.trim().toLowerCase();
+  });
+
   const uniqueSessionTeams = Array.from(new Set([
     ...uniqueTeams,
-    ...sessions.map(s => s.team).filter(Boolean)
+    ...trackSessions.map(s => s.team).filter(Boolean)
   ])).sort((a, b) => {
     const numA = parseInt(a, 10);
     const numB = parseInt(b, 10);
@@ -1082,7 +1062,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     return false;
   };
 
-  const enrichedSessions = sessions.map(s => {
+  const enrichedSessions = trackSessions.map(s => {
     const sRound = String(s.round || "").trim().toLowerCase();
 
     // Check if matching result exists in results
@@ -1138,7 +1118,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       ...s,
       fullName: resolvedName || "Candidate",
       team: resolvedTeam || "Unassigned",
-      edition: s.edition || (matchingResult ? matchingResult.edition : "New Testament (3 chapters daily)"),
+      edition: s.edition || currentTrack,
       status,
       statusLabel,
       isCompleted,
@@ -1152,11 +1132,6 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
   });
 
   const filteredSessions = enrichedSessions
-    .filter(s => {
-      if (selectedSessionEditionFilter === "All") return true;
-      const sEd = s.edition || "New Testament (3 chapters daily)";
-      return sEd.trim().toLowerCase() === selectedSessionEditionFilter.trim().toLowerCase();
-    })
     .filter(s => selectedSessionRoundFilter === "All" || s.round === selectedSessionRoundFilter)
     .filter(s => selectedSessionTeamFilter === "All" || s.team === selectedSessionTeamFilter)
     .filter(s => selectedSessionStatusFilter === "All" || s.status === selectedSessionStatusFilter)
@@ -1171,123 +1146,11 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       setResultSortOrder(o => o === "desc" ? "asc" : "desc");
     } else {
       setResultSortBy(col);
-      setResultSortOrder("desc");
+      setResultSortOrder(col === "time" ? "asc" : "desc");
     }
   };
 
-  // --- SCREEN 1: ADMIN LOGIN ---
-  if (!isAuthenticated) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem 1rem',
-        background: 'radial-gradient(ellipse at top, #1e293b 0%, #0f172a 100%)',
-        color: 'var(--text-primary)',
-        fontFamily: 'var(--font-sans)'
-      }}>
-        <div style={{
-          maxWidth: '400px',
-          width: '100%',
-          backgroundColor: 'rgba(17, 24, 39, 0.75)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderRadius: '1.25rem',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.5)',
-          padding: '2.5rem 2rem',
-          textAlign: 'center'
-        }}>
-          
-          <div style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '16px',
-            backgroundColor: 'rgba(37, 99, 235, 0.15)',
-            border: '1.5px solid var(--accent)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 1.5rem auto',
-            boxShadow: '0 0 25px rgba(37, 99, 235, 0.25)'
-          }}>
-            <Lock size={30} style={{ color: 'var(--accent)' }} />
-          </div>
-
-          <h1 style={{ fontSize: '1.45rem', fontWeight: '800', margin: '0 0 0.4rem 0' }}>
-            Quiz Control Center
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: '0 0 1.75rem 0' }}>
-            Super Admin access required to manage settings and questions.
-          </p>
-
-          <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input
-              type="password"
-              placeholder="Enter Super Admin PIN"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '0.85rem 1rem',
-                backgroundColor: 'var(--surface-secondary)',
-                border: '1px solid var(--border)',
-                borderRadius: '0.65rem',
-                color: 'var(--text-primary)',
-                fontSize: '1.1rem',
-                textAlign: 'center',
-                letterSpacing: '3px',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
-            />
-
-            {authError && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid var(--error)',
-                borderRadius: '0.5rem',
-                padding: '0.65rem 0.85rem',
-                color: '#F87171',
-                fontSize: '0.85rem'
-              }}>
-                <AlertCircle size={16} />
-                <span>{authError}</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.85rem',
-                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '0.65rem',
-                fontSize: '1rem',
-                fontWeight: '700',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: '0 8px 20px rgba(37, 99, 235, 0.3)',
-                opacity: loading ? 0.7 : 1
-              }}
-            >
-              {loading ? "Verifying..." : "Access Quiz Workspace"}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // --- SCREEN 2: ADMIN WORKSPACE ---
+  // --- ADMIN WORKSPACE ---
   return (
     <div style={{
       minHeight: '100vh',
@@ -1542,44 +1405,22 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.5rem 0.9rem',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border)',
-                borderRadius: '0.55rem',
-                color: 'var(--text-secondary)',
+                gap: '0.45rem',
+                padding: '0.45rem 0.95rem',
+                backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                border: '1px solid rgba(59, 130, 246, 0.35)',
+                borderRadius: '0.5rem',
+                color: '#60A5FA',
                 fontSize: '0.85rem',
-                fontWeight: '600',
+                fontWeight: '700',
                 textDecoration: 'none',
                 transition: 'all 0.2s ease'
               }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'; }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.22)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.12)'; }}
             >
-              <ArrowLeft size={15} /> Dashboard
+              <ArrowLeft size={15} /> Back to Dashboard
             </a>
-
-            <button
-              onClick={handleLogout}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.5rem 0.9rem',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                color: '#F87171',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
-                borderRadius: '0.55rem',
-                fontSize: '0.85rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
-            >
-              <LogOut size={15} /> Logout
-            </button>
           </div>
 
         </div>
@@ -1765,11 +1606,11 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
         }}>
           {[
             { id: 'control', label: 'Settings & Launch', icon: Settings },
-            { id: 'builder', label: editingQuestionId ? 'Editing Question' : 'Question Builder', icon: editingQuestionId ? Pencil : PlusCircle },
+            { id: 'builder', label: editingQuestionId ? 'Editing Question' : `Question Builder (${editionQuestions.length})`, icon: editingQuestionId ? Pencil : PlusCircle },
             { id: 'bulk', label: 'Bulk Import', icon: Upload },
             { id: 'ai', label: 'AI Generator', icon: Sparkles },
-            { id: 'logs', label: `Live Logs (${sessions.length})`, icon: Clock },
-            { id: 'leaderboard', label: `Submissions (${results.length})`, icon: Trophy }
+            { id: 'logs', label: `Live Logs (${filteredSessions.length})`, icon: Clock },
+            { id: 'leaderboard', label: `Submissions (${sortedResults.length})`, icon: Trophy }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -3701,21 +3542,6 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 ]}
               />
 
-              {/* Schedule Filter */}
-              <CustomDropdown
-                icon={BookOpen}
-                value={selectedSessionEditionFilter}
-                minWidth="180px"
-                isOpen={openDropdown === 'session_edition'}
-                onToggle={() => setOpenDropdown(prev => prev === 'session_edition' ? null : 'session_edition')}
-                onClose={() => setOpenDropdown(null)}
-                onChange={(val) => setSelectedSessionEditionFilter(val)}
-                options={[
-                  { value: 'All', label: 'All Schedules' },
-                  ...availableEditions.map(ed => ({ value: ed, label: ed }))
-                ]}
-              />
-
               {/* Round Filter */}
               <CustomDropdown
                 icon={Filter}
@@ -3727,7 +3553,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 onChange={(val) => setSelectedSessionRoundFilter(val)}
                 options={[
                   { value: 'All', label: 'All Rounds' },
-                  ...allUniqueRounds.map(r => ({ value: r, label: r }))
+                  ...uniqueRoundsInEdition.map(r => ({ value: r, label: r }))
                 ]}
               />
 
@@ -4038,18 +3864,27 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   ]}
                 />
 
-                {/* Custom Edition / Schedule Filter */}
+                {/* Custom Sort By Dropdown */}
                 <CustomDropdown
-                  icon={BookOpen}
-                  value={selectedLeaderboardEdition}
-                  minWidth="200px"
-                  isOpen={openDropdown === 'edition'}
-                  onToggle={() => setOpenDropdown(prev => prev === 'edition' ? null : 'edition')}
+                  icon={Sliders}
+                  value={`${resultSortBy}_${resultSortOrder}`}
+                  accent={true}
+                  minWidth="175px"
+                  isOpen={openDropdown === 'sort'}
+                  onToggle={() => setOpenDropdown(prev => prev === 'sort' ? null : 'sort')}
                   onClose={() => setOpenDropdown(null)}
-                  onChange={(val) => setSelectedLeaderboardEdition(val)}
+                  onChange={(val) => {
+                    const [by, order] = val.split('_');
+                    setResultSortBy(by);
+                    setResultSortOrder(order);
+                  }}
                   options={[
-                    { value: 'All', label: 'All Schedules' },
-                    ...availableEditions.map(ed => ({ value: ed, label: ed }))
+                    { value: 'date_desc', label: '⏱️ Date: Newest First' },
+                    { value: 'date_asc', label: '⏱️ Date: Oldest First' },
+                    { value: 'time_asc', label: '⚡ Time: Fastest First' },
+                    { value: 'time_desc', label: '⏳ Time: Slowest First' },
+                    { value: 'score_desc', label: '🏆 Score: Highest First' },
+                    { value: 'score_asc', label: '📉 Score: Lowest First' }
                   ]}
                 />
 
@@ -4064,7 +3899,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   onChange={(val) => setSelectedRoundFilter(val)}
                   options={[
                     { value: 'All', label: 'All Rounds' },
-                    ...allUniqueRounds.map(r => ({ value: r, label: r }))
+                    ...uniqueRoundsInEdition.map(r => ({ value: r, label: r }))
                   ]}
                 />
 
@@ -4102,11 +3937,18 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       Score {resultSortBy === "score" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
                     </th>
                     <th
+                      style={{ padding: '0.55rem 0.6rem', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "time" ? '#60A5FA' : undefined }}
+                      onClick={() => toggleSort("time")}
+                      title="Click to sort by time taken"
+                    >
+                      Time Taken {resultSortBy === "time" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
+                    </th>
+                    <th
                       style={{ padding: '0.55rem 0.6rem', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "date" ? '#60A5FA' : undefined }}
                       onClick={() => toggleSort("date")}
                       title="Click to sort by submission date"
                     >
-                      Time Taken & Submitted {resultSortBy === "date" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
+                      Submitted {resultSortBy === "date" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
                     </th>
                     <th style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>Action</th>
                   </tr>
@@ -4114,8 +3956,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 <tbody>
                   {sortedResults.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                        No quiz submissions recorded yet for the selected filters.
+                      <td colSpan={7} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        No quiz submissions recorded yet for this reading track.
                       </td>
                     </tr>
                   ) : (
@@ -4196,7 +4038,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                             </span>
                           </td>
 
-                          {/* Time Taken & Submitted */}
+                          {/* Time Taken */}
                           <td style={{ padding: '0.55rem 0.6rem', whiteSpace: 'nowrap' }}>
                             {(() => {
                               let timeSpent = r.timeSpentSeconds;
@@ -4213,22 +4055,22 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                               }
                               const formattedTime = formatTimeSpent(timeSpent);
                               return (
-                                <>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '700', fontSize: '0.8rem', color: formattedTime ? '#60A5FA' : 'var(--text-secondary)' }}>
-                                    <Clock size={12} style={{ color: '#60A5FA', flexShrink: 0 }} />
-                                    <span>{formattedTime || '—'}</span>
-                                  </div>
-                                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '0.15rem' }}>
-                                    {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    }) : 'N/A'}
-                                  </div>
-                                </>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontWeight: '700', fontSize: '0.8rem', color: formattedTime ? '#60A5FA' : 'var(--text-secondary)' }}>
+                                  <Clock size={12} style={{ color: '#60A5FA', flexShrink: 0 }} />
+                                  <span>{formattedTime || '—'}</span>
+                                </div>
                               );
                             })()}
+                          </td>
+
+                          {/* Submission Date */}
+                          <td style={{ padding: '0.55rem 0.6rem', color: 'var(--text-secondary)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                            {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : 'N/A'}
                           </td>
 
                           {/* Actions */}

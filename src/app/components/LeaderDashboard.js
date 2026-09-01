@@ -836,32 +836,61 @@ export default function LeaderDashboard({ team, onLogout }) {
             </p>
           </div>
 
-          <a
-            href="/quiz"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              width: '100%',
-              padding: '0.8rem',
-              backgroundColor: 'var(--surface-secondary)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-light)',
-              borderRadius: '0.5rem',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              textDecoration: 'none',
-              transition: 'all 0.2s ease',
-              boxSizing: 'border-box'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; }}
-          >
-            <ExternalLink size={16} /> Open Quiz in New Tab
-          </a>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <a
+              href="/admin/quiz"
+              style={{
+                flex: 1,
+                minWidth: '180px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '0.8rem',
+                backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                color: '#60A5FA',
+                border: '1px solid rgba(59, 130, 246, 0.35)',
+                borderRadius: '0.5rem',
+                fontSize: '0.9rem',
+                fontWeight: '700',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+                boxSizing: 'border-box'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.25)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.15)'; }}
+            >
+              <Trophy size={16} /> Open Quiz Control Center
+            </a>
+
+            <a
+              href="/quiz"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                flex: 1,
+                minWidth: '180px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '0.8rem',
+                backgroundColor: 'var(--surface-secondary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '0.5rem',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+                boxSizing: 'border-box'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; }}
+            >
+              <ExternalLink size={16} /> Preview Candidate Screen
+            </a>
+          </div>
         </div>
       )}
     </div>
