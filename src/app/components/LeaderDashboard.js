@@ -535,7 +535,8 @@ export default function LeaderDashboard({ team, onLogout }) {
             {(() => {
               const filteredMembers = activeMembers.filter(m => {
                 const name = String(m.Member_Name || '').trim();
-                return name.toLowerCase().includes(memberSearchQuery.toLowerCase());
+                const phone = String(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m['WhatsApp Number'] || m['Whatsapp Number'] || m.Phone || m.Phone_Number || m['Phone Number'] || '').trim();
+                return name.toLowerCase().includes(memberSearchQuery.toLowerCase()) || phone.includes(memberSearchQuery);
               });
 
               if (filteredMembers.length === 0) {
@@ -553,6 +554,7 @@ export default function LeaderDashboard({ team, onLogout }) {
                   {filteredMembers.map(m => {
                     const nameTrimmed = String(m.Member_Name || '').trim();
                     const isChecked = !!updates[nameTrimmed];
+                    const phone = String(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m['WhatsApp Number'] || m['Whatsapp Number'] || m.Phone || m.Phone_Number || m['Phone Number'] || '').trim();
 
                     return (
                       <div 
@@ -565,6 +567,11 @@ export default function LeaderDashboard({ team, onLogout }) {
                         </div>
                         <div className="tracker-tile-info">
                           <span className="tracker-tile-name">{nameTrimmed}</span>
+                          {phone && (
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '500', display: 'block' }}>
+                              {phone}
+                            </span>
+                          )}
                         </div>
                       </div>
                     );
@@ -683,7 +690,18 @@ export default function LeaderDashboard({ team, onLogout }) {
                         }}>
                            {m.Member_Name.trim().charAt(0).toUpperCase()}
                         </div>
-                         <span style={{ fontSize: '0.95rem', fontWeight: '600', lineHeight: '1.2', display: 'block', wordBreak: 'break-word' }}>{trimmedName}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <span style={{ fontSize: '0.95rem', fontWeight: '600', lineHeight: '1.2', display: 'block', wordBreak: 'break-word' }}>{trimmedName}</span>
+                          {(() => {
+                            const phone = String(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m['WhatsApp Number'] || m['Whatsapp Number'] || m.Phone || m.Phone_Number || m['Phone Number'] || '').trim();
+                            if (!phone) return null;
+                            return (
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '500', display: 'block', marginTop: '0.15rem' }}>
+                                {phone}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </div>
                       <select 
                         className="input-field" 

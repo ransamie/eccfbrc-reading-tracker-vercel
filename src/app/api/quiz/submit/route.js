@@ -71,7 +71,11 @@ export async function POST(req) {
       }
     }
 
-    // 4. Save to Google Sheets Database
+    // 4. Compute Time Spent & Save to Google Sheets Database
+    const timeSpentSeconds = session.startTimestamp 
+      ? Math.max(0, Math.round((receiptTime - session.startTimestamp) / 1000))
+      : null;
+
     const finalResult = {
       fullName: participant.fullName,
       whatsApp: normalizedWhatsApp,
@@ -80,6 +84,7 @@ export async function POST(req) {
       round: participant.round,
       score,
       totalQuestions: questions.length,
+      timeSpentSeconds,
       timestamp: new Date(receiptTime).toISOString(),
       details: JSON.stringify(evaluatedAnswers)
     };
@@ -91,6 +96,7 @@ export async function POST(req) {
       success: true,
       score,
       totalQuestions: questions.length,
+      timeSpentSeconds,
       evaluatedAnswers,
       participant: {
         fullName: participant.fullName,

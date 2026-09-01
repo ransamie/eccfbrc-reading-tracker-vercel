@@ -15,6 +15,7 @@ export async function GET(req) {
     const targetRound = searchParams.get("round");
     const targetEdition = searchParams.get("edition");
     const isPreview = searchParams.get("preview") === "true";
+    const checkPhone = searchParams.get("whatsapp");
 
     const settings = await getQuizSettings();
     const isLive = String(settings.Is_Quiz_Live).toUpperCase() === "TRUE";
@@ -27,12 +28,25 @@ export async function GET(req) {
       questions = await getQuestionsForRound(activeRound, activeEdition);
     }
 
+    let activeSession = null;
+    if (checkPhone) {
+      const normPhone = checkPhone.replace(/\D/g, "").replace(/^0+/, "");
+      const session = await getSession(normPhone, activeRound);
+      if (session) {
+        activeSession = {
+          deadlineTimestamp: session.absoluteDeadline,
+          startTimestamp: session.startTimestamp
+        };
+      }
+    }
+
     return NextResponse.json({
       isLive,
       activeEdition,
       activeRound,
       timeLimitMinutes,
-      questions
+      questions,
+      activeSession
     }, { status: 200 });
   } catch (error) {
     console.error("Quiz Status GET Error:", error);
@@ -42,7 +56,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { whatsapp, fullName } = await req.json();
+    const { whatsapp, fullName, team } = await req.json();
 
     if (!whatsapp || !fullName) {
       return NextResponse.json({ error: "Missing WhatsApp number or Full Name" }, { status: 400 });
@@ -75,7 +89,14 @@ export async function POST(req) {
     }
 
     // 4. Retrieve or lock in a session deadline
-    const session = await getOrCreateSession(normalizedWhatsApp, activeRound, timeLimitMinutes);
+    const session = await getOrCreateSession(
+      normalizedWhatsApp, 
+      activeRound, 
+      timeLimitMinutes,
+      fullName,
+      team || "Unassigned",
+      activeEdition
+    );
 
     // 5. Fetch questions and strip answers to prevent client payload inspection
     const rawQuestions = await getQuestionsForRound(activeRound, activeEdition);
@@ -88,7 +109,8 @@ export async function POST(req) {
       edition: activeEdition,
       round: activeRound,
       questions: securedQuestions,
-      deadlineTimestamp: session.absoluteDeadline
+      deadlineTimestamp: session.absoluteDeadline,
+      startTimestamp: session.startTimestamp
     }, { status: 200 });
 
   } catch (error) {

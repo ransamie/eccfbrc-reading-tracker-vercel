@@ -35,7 +35,10 @@ import {
   Info,
   Eye,
   Layers,
-  ChevronDown
+  ChevronDown,
+  Activity,
+  Timer,
+  RotateCcw
 } from "lucide-react";
 import { parseQuizQuestions } from "@/lib/quizParser";
 

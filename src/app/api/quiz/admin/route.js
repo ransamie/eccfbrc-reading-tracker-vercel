@@ -4,6 +4,8 @@ import {
   updateQuizSettings, 
   getAllQuestions, 
   getAllQuizResults, 
+  getAllQuizSessions,
+  extendQuizSession,
   addQuizQuestion, 
   bulkAddQuizQuestions,
   updateQuizQuestion,
@@ -35,16 +37,17 @@ export async function GET(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [settings, questions, rawResults, globalData] = await Promise.all([
+    const [settings, questions, rawResults, rawSessions, globalData] = await Promise.all([
       getQuizSettings(),
       getAllQuestions(),
       getAllQuizResults(),
+      getAllQuizSessions().catch(() => []),
       fetchGlobalData().catch(() => ({ members: [] }))
     ]);
 
     const members = globalData.members || [];
 
-    // Auto-resolve any missing or unassigned teams from member directory
+    // Auto-resolve any missing or unassigned teams from member directory for results
     const results = rawResults.map(r => {
       let team = r.team;
       if (!team || team.trim() === "" || team.toLowerCase() === "unassigned") {
@@ -68,10 +71,35 @@ export async function GET(request) {
       };
     });
 
+    // Auto-resolve team and name for sessions
+    const sessions = rawSessions.map(s => {
+      let fullName = s.fullName;
+      let team = s.team;
+      const normPhone = s.whatsApp ? String(s.whatsApp).replace(/\D/g, "").replace(/^0+/, "") : "";
+
+      if (!fullName || !team || team.toLowerCase() === "unassigned") {
+        const matchedMember = members.find(m => {
+          const mPhone = m.whatsapp ? String(m.whatsapp).replace(/\D/g, "").replace(/^0+/, "") : "";
+          return normPhone && mPhone && (normPhone === mPhone || mPhone.endsWith(normPhone) || normPhone.endsWith(mPhone));
+        });
+        if (matchedMember) {
+          if (!fullName) fullName = matchedMember.name || "";
+          if (!team || team.toLowerCase() === "unassigned") team = matchedMember.team || "Unassigned";
+        }
+      }
+
+      return {
+        ...s,
+        fullName: fullName || "Candidate",
+        team: team || "Unassigned"
+      };
+    });
+
     return NextResponse.json({
       settings,
       questions,
-      results
+      results,
+      sessions
     }, { status: 200 });
 
   } catch (error) {
@@ -88,6 +116,40 @@ export async function POST(request) {
 
     const body = await request.json();
     const { action } = body;
+
+    if (action === "extendSession") {
+      const whatsApp = body.whatsApp || body.whatsapp || body.phone;
+      const round = body.round;
+      const extraMinutes = Number(body.extraMinutes) || 5;
+
+      if (!whatsApp || !round) {
+        return NextResponse.json({ error: "Missing candidate WhatsApp number or round to extend time." }, { status: 400 });
+      }
+
+      const res = await extendQuizSession(whatsApp, round, extraMinutes);
+      if (res.success) {
+        return NextResponse.json({ 
+          success: true, 
+          message: `Successfully extended timer by +${extraMinutes} minutes for ${whatsApp}.`,
+          newDeadline: res.newDeadline
+        });
+      } else {
+        return NextResponse.json({ error: res.error || "Active quiz session not found for this candidate." }, { status: 404 });
+      }
+    }
+
+    if (action === "resetSession") {
+      const whatsApp = body.whatsApp || body.whatsapp || body.phone;
+      const round = body.round;
+      const fullName = body.fullName || body.name;
+
+      if (!whatsApp || !round) {
+        return NextResponse.json({ error: "Missing candidate WhatsApp number or round to reset session." }, { status: 400 });
+      }
+
+      await deleteQuizSubmission(whatsApp, round, null, fullName);
+      return NextResponse.json({ success: true, message: "Quiz session has been reset. The candidate can now take the quiz fresh." });
+    }
 
     if (action === "updateSettings") {
       const { activeEdition, activeRound, timeLimitMinutes, isQuizLive, geminiApiKey } = body;

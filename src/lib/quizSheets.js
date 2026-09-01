@@ -129,21 +129,30 @@ export async function checkExistingResult(whatsAppNumber, round, edition) {
 
 export async function getSession(whatsAppNumber, round) {
   const sheet = await getSheetByTitle("Quiz_Sessions", [
+    "Full_Name",
     "WhatsApp_Number",
+    "Team_Name",
+    "Edition",
     "Round",
     "Start_Timestamp",
     "Absolute_Deadline"
   ]);
   const rows = await sheet.getRows();
-  const existingRow = rows.find(
-    (row) =>
-      String(row.get("WhatsApp_Number")).trim() === String(whatsAppNumber).trim() &&
-      String(row.get("Round")).trim() === String(round).trim()
-  );
+  const normPhone = String(whatsAppNumber || "").replace(/\D/g, "").replace(/^0+/, "");
+  const targetRound = String(round || "").trim().toLowerCase();
+
+  const existingRow = rows.find((row) => {
+    const rowPhone = String(row.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
+    const rowRound = String(row.get("Round") || "").trim().toLowerCase();
+    return rowPhone === normPhone && rowRound === targetRound;
+  });
 
   if (existingRow) {
     return {
+      fullName: existingRow.get("Full_Name") || "",
       whatsAppNumber: existingRow.get("WhatsApp_Number"),
+      team: existingRow.get("Team_Name") || "Unassigned",
+      edition: existingRow.get("Edition") || "New Testament (3 chapters daily)",
       round: existingRow.get("Round"),
       startTimestamp: Number(existingRow.get("Start_Timestamp")),
       absoluteDeadline: Number(existingRow.get("Absolute_Deadline"))
@@ -152,12 +161,16 @@ export async function getSession(whatsAppNumber, round) {
   return null;
 }
 
-export async function getOrCreateSession(whatsAppNumber, round, durationMinutes) {
-  const session = await getSession(whatsAppNumber, round);
+export async function getOrCreateSession(whatsAppNumber, round, durationMinutes, fullName = "", team = "", edition = "") {
+  const normPhone = String(whatsAppNumber || "").replace(/\D/g, "").replace(/^0+/, "");
+  const session = await getSession(normPhone, round);
   if (session) return session;
 
   const sheet = await getSheetByTitle("Quiz_Sessions", [
+    "Full_Name",
     "WhatsApp_Number",
+    "Team_Name",
+    "Edition",
     "Round",
     "Start_Timestamp",
     "Absolute_Deadline"
@@ -167,17 +180,83 @@ export async function getOrCreateSession(whatsAppNumber, round, durationMinutes)
   const absoluteDeadline = startTimestamp + durationMinutes * 60 * 1000;
 
   await sheet.addRow({
-    WhatsApp_Number: String(whatsAppNumber),
+    Full_Name: String(fullName || ""),
+    WhatsApp_Number: String(normPhone),
+    Team_Name: String(team || "Unassigned"),
+    Edition: String(edition || "New Testament (3 chapters daily)"),
     Round: String(round),
     Start_Timestamp: String(startTimestamp),
     Absolute_Deadline: String(absoluteDeadline)
   });
 
   return {
-    whatsAppNumber,
+    fullName,
+    whatsAppNumber: normPhone,
+    team,
+    edition,
     round,
     startTimestamp,
     absoluteDeadline
+  };
+}
+
+export async function getAllQuizSessions() {
+  const sheet = await getSheetByTitle("Quiz_Sessions", [
+    "Full_Name",
+    "WhatsApp_Number",
+    "Team_Name",
+    "Edition",
+    "Round",
+    "Start_Timestamp",
+    "Absolute_Deadline"
+  ]);
+  const rows = await sheet.getRows();
+  return rows.map((row) => ({
+    fullName: row.get("Full_Name") || "",
+    whatsApp: row.get("WhatsApp_Number"),
+    team: row.get("Team_Name") || "Unassigned",
+    edition: row.get("Edition") || "New Testament (3 chapters daily)",
+    round: row.get("Round"),
+    startTimestamp: Number(row.get("Start_Timestamp")),
+    absoluteDeadline: Number(row.get("Absolute_Deadline"))
+  }));
+}
+
+export async function extendQuizSession(whatsAppNumber, round, extraMinutes = 5) {
+  const sheet = await getSheetByTitle("Quiz_Sessions", [
+    "Full_Name",
+    "WhatsApp_Number",
+    "Team_Name",
+    "Edition",
+    "Round",
+    "Start_Timestamp",
+    "Absolute_Deadline"
+  ]);
+  const rows = await sheet.getRows();
+  const normPhone = String(whatsAppNumber || "").replace(/\D/g, "").replace(/^0+/, "");
+  const targetRound = String(round || "").trim().toLowerCase();
+
+  const existingRow = rows.find((row) => {
+    const rowPhone = String(row.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
+    const rowRound = String(row.get("Round") || "").trim().toLowerCase();
+    return rowPhone === normPhone && rowRound === targetRound;
+  });
+
+  if (!existingRow) {
+    return { success: false, error: "Active session not found" };
+  }
+
+  const currentDeadline = Number(existingRow.get("Absolute_Deadline")) || Date.now();
+  const newDeadline = Math.max(Date.now(), currentDeadline) + Number(extraMinutes) * 60 * 1000;
+
+  existingRow.set("Absolute_Deadline", String(newDeadline));
+  await existingRow.save();
+
+  return { 
+    success: true, 
+    newDeadline,
+    whatsApp: normPhone,
+    round
   };
 }
 
@@ -190,6 +269,7 @@ export async function saveQuizResult(result) {
     "Round",
     "Score",
     "Total_Questions",
+    "Time_Spent_Seconds",
     "Timestamp",
     "Details"
   ]);
@@ -201,6 +281,7 @@ export async function saveQuizResult(result) {
     Round: result.round,
     Score: String(result.score),
     Total_Questions: String(result.totalQuestions),
+    Time_Spent_Seconds: result.timeSpentSeconds !== undefined ? String(result.timeSpentSeconds) : "",
     Timestamp: result.timestamp,
     Details: result.details
   });
@@ -241,6 +322,7 @@ export async function getAllQuizResults() {
     "Round",
     "Score",
     "Total_Questions",
+    "Time_Spent_Seconds",
     "Timestamp",
     "Details"
   ]);
@@ -253,6 +335,7 @@ export async function getAllQuizResults() {
     round: row.get("Round"),
     score: Number(row.get("Score")),
     totalQuestions: Number(row.get("Total_Questions")),
+    timeSpentSeconds: row.get("Time_Spent_Seconds") ? Number(row.get("Time_Spent_Seconds")) : null,
     timestamp: row.get("Timestamp"),
     details: row.get("Details")
   }));
