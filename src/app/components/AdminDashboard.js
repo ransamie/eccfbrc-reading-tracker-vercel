@@ -1398,9 +1398,9 @@ export default function AdminDashboard({ onLogout }) {
           (l.timestamp && l.timestamp.toLowerCase().includes(logSearchQuery.toLowerCase()))
         );
 
-        // Last activity per team
+        // Last activity per team (logs is already sorted newest first)
         const lastLoginMap = {};
-        [...logs].reverse().forEach(l => {
+        logs.forEach(l => {
           if (l.teamName && !lastLoginMap[l.teamName]) {
             lastLoginMap[l.teamName] = l;
           }
