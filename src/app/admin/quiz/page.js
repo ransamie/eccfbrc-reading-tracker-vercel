@@ -4198,18 +4198,37 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
                           {/* Time Taken & Submitted */}
                           <td style={{ padding: '0.55rem 0.6rem', whiteSpace: 'nowrap' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '700', fontSize: '0.8rem', color: r.timeSpentSeconds ? '#60A5FA' : 'var(--text-secondary)' }}>
-                              <Clock size={12} style={{ color: '#60A5FA', flexShrink: 0 }} />
-                              <span>{formatTimeSpent(r.timeSpentSeconds) || '—'}</span>
-                            </div>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '0.15rem' }}>
-                              {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              }) : 'N/A'}
-                            </div>
+                            {(() => {
+                              let timeSpent = r.timeSpentSeconds;
+                              if ((timeSpent === null || timeSpent === undefined) && r.timestamp) {
+                                const sRound = String(r.round || "").trim().toLowerCase();
+                                const sMatch = sessions.find(s => isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp) && String(s.round || "").trim().toLowerCase() === sRound) ||
+                                               sessions.find(s => isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp));
+                                if (sMatch && sMatch.startTimestamp) {
+                                  const diff = Math.round((new Date(r.timestamp).getTime() - Number(sMatch.startTimestamp)) / 1000);
+                                  if (diff > 0 && diff < 86400) {
+                                    timeSpent = diff;
+                                  }
+                                }
+                              }
+                              const formattedTime = formatTimeSpent(timeSpent);
+                              return (
+                                <>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '700', fontSize: '0.8rem', color: formattedTime ? '#60A5FA' : 'var(--text-secondary)' }}>
+                                    <Clock size={12} style={{ color: '#60A5FA', flexShrink: 0 }} />
+                                    <span>{formattedTime || '—'}</span>
+                                  </div>
+                                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '0.15rem' }}>
+                                    {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    }) : 'N/A'}
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </td>
 
                           {/* Actions */}

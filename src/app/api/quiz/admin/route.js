@@ -78,10 +78,29 @@ export async function GET(request) {
         }
       }
 
+      // Compute timeSpentSeconds by cross-referencing rawSessions
+      let timeSpentSeconds = r.timeSpentSeconds;
+      if (timeSpentSeconds === null || timeSpentSeconds === undefined || isNaN(timeSpentSeconds)) {
+        const rRound = String(r.round || "").trim().toLowerCase();
+        const matchedSession = rawSessions.find(s => 
+          isPhoneMatch(r.whatsApp, s.whatsApp) && String(s.round || "").trim().toLowerCase() === rRound
+        ) || rawSessions.find(s => isPhoneMatch(r.whatsApp, s.whatsApp));
+
+        if (matchedSession && matchedSession.startTimestamp && r.timestamp) {
+          const startMs = Number(matchedSession.startTimestamp);
+          const submitMs = new Date(r.timestamp).getTime();
+          const diffSec = Math.round((submitMs - startMs) / 1000);
+          if (diffSec > 0 && diffSec < 86400) {
+            timeSpentSeconds = diffSec;
+          }
+        }
+      }
+
       return {
         ...r,
         fullName: fullName || "Candidate",
-        team: team && team.trim() !== "" ? team : "Unassigned"
+        team: team && team.trim() !== "" ? team : "Unassigned",
+        timeSpentSeconds: timeSpentSeconds !== undefined ? timeSpentSeconds : null
       };
     });
 
