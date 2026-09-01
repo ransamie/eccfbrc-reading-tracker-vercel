@@ -1069,16 +1069,28 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     return String(a).localeCompare(String(b));
   });
 
+  const isPhoneMatch = (p1, p2) => {
+    if (!p1 || !p2) return false;
+    const s1 = String(p1).replace(/\D/g, "").replace(/^0+/, "");
+    const s2 = String(p2).replace(/\D/g, "").replace(/^0+/, "");
+    if (!s1 || !s2) return false;
+    if (s1 === s2) return true;
+    if (s1.endsWith(s2) || s2.endsWith(s1)) return true;
+    const last10A = s1.length >= 10 ? s1.slice(-10) : s1;
+    const last10B = s2.length >= 10 ? s2.slice(-10) : s2;
+    if (last10A.length >= 8 && last10A === last10B) return true;
+    return false;
+  };
+
   const enrichedSessions = sessions.map(s => {
-    const sNormPhone = String(s.whatsApp || "").replace(/\D/g, "").replace(/^0+/, "");
     const sRound = String(s.round || "").trim().toLowerCase();
 
     // Check if matching result exists in results
     const matchingResult = results.find(r => {
-      const rNormPhone = String(r.whatsApp || "").replace(/\D/g, "").replace(/^0+/, "");
+      const isPhone = isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp);
       const rRound = String(r.round || "").trim().toLowerCase();
-      return rNormPhone === sNormPhone && rRound === sRound;
-    });
+      return isPhone && (!rRound || !sRound || rRound === sRound);
+    }) || results.find(r => isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp));
 
     const now = Date.now();
     const isCompleted = !!matchingResult;
@@ -1110,10 +1122,22 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       if (subMs > 0) timeSpentSeconds = Math.round(subMs / 1000);
     }
 
+    // Resolve Name: s.fullName -> matchingResult.fullName -> "Candidate"
+    let resolvedName = s.fullName && s.fullName !== "Candidate" ? s.fullName : "";
+    if (!resolvedName && matchingResult && matchingResult.fullName && matchingResult.fullName !== "Candidate") {
+      resolvedName = matchingResult.fullName;
+    }
+
+    // Resolve Team: s.team -> matchingResult.team -> "Unassigned"
+    let resolvedTeam = s.team && s.team !== "Unassigned" ? s.team : "";
+    if (!resolvedTeam && matchingResult && matchingResult.team && matchingResult.team !== "Unassigned") {
+      resolvedTeam = matchingResult.team;
+    }
+
     return {
       ...s,
-      fullName: s.fullName || (matchingResult ? matchingResult.fullName : "Candidate"),
-      team: s.team || (matchingResult ? matchingResult.team : "Unassigned"),
+      fullName: resolvedName || "Candidate",
+      team: resolvedTeam || "Unassigned",
       edition: s.edition || (matchingResult ? matchingResult.edition : "New Testament (3 chapters daily)"),
       status,
       statusLabel,

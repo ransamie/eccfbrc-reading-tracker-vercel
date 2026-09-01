@@ -31,6 +31,20 @@ async function verifyAdminAuth(request) {
   }
 }
 
+// Robust phone number matcher (handles international prefix +234, leading 0, etc.)
+function isPhoneMatch(p1, p2) {
+  if (!p1 || !p2) return false;
+  const s1 = String(p1).replace(/\D/g, "").replace(/^0+/, "");
+  const s2 = String(p2).replace(/\D/g, "").replace(/^0+/, "");
+  if (!s1 || !s2) return false;
+  if (s1 === s2) return true;
+  if (s1.endsWith(s2) || s2.endsWith(s1)) return true;
+  const last10A = s1.length >= 10 ? s1.slice(-10) : s1;
+  const last10B = s2.length >= 10 ? s2.slice(-10) : s2;
+  if (last10A.length >= 8 && last10A === last10B) return true;
+  return false;
+}
+
 export async function GET(request) {
   try {
     if (!(await verifyAdminAuth(request))) {
@@ -50,41 +64,53 @@ export async function GET(request) {
     // Auto-resolve any missing or unassigned teams from member directory for results
     const results = rawResults.map(r => {
       let team = r.team;
-      if (!team || team.trim() === "" || team.toLowerCase() === "unassigned") {
-        const normPhone = r.whatsApp ? String(r.whatsApp).replace(/\D/g, "").replace(/^0+/, "") : "";
-        const normName = r.fullName ? String(r.fullName).trim().toLowerCase() : "";
-        
-        const matchedMember = members.find(m => {
-          const mPhone = m.whatsapp ? String(m.whatsapp).replace(/\D/g, "").replace(/^0+/, "") : "";
-          const mName = m.name ? String(m.name).trim().toLowerCase() : "";
-          return (normPhone && mPhone && (normPhone === mPhone || mPhone.endsWith(normPhone) || normPhone.endsWith(mPhone))) ||
-                 (normName && mName && normName === mName);
-        });
+      let fullName = r.fullName;
+      
+      const matchedMember = members.find(m => 
+        isPhoneMatch(r.whatsApp, m.whatsapp) ||
+        (r.fullName && m.name && String(r.fullName).trim().toLowerCase() === String(m.name).trim().toLowerCase())
+      );
 
-        if (matchedMember && matchedMember.team) {
-          team = matchedMember.team;
+      if (matchedMember) {
+        if (!fullName || fullName === "Candidate") fullName = matchedMember.name || fullName;
+        if (!team || team.trim() === "" || team.toLowerCase() === "unassigned") {
+          team = matchedMember.team || team;
         }
       }
+
       return {
         ...r,
-        team: team || "Unassigned"
+        fullName: fullName || "Candidate",
+        team: team && team.trim() !== "" ? team : "Unassigned"
       };
     });
 
-    // Auto-resolve team and name for sessions
+    // Auto-resolve team and name for sessions (cross-referencing with results and member directory)
     const sessions = rawSessions.map(s => {
-      let fullName = s.fullName;
-      let team = s.team;
-      const normPhone = s.whatsApp ? String(s.whatsApp).replace(/\D/g, "").replace(/^0+/, "") : "";
+      let fullName = s.fullName && s.fullName !== "Candidate" ? s.fullName : "";
+      let team = s.team && s.team.toLowerCase() !== "unassigned" ? s.team : "";
 
-      if (!fullName || !team || team.toLowerCase() === "unassigned") {
-        const matchedMember = members.find(m => {
-          const mPhone = m.whatsapp ? String(m.whatsapp).replace(/\D/g, "").replace(/^0+/, "") : "";
-          return normPhone && mPhone && (normPhone === mPhone || mPhone.endsWith(normPhone) || normPhone.endsWith(mPhone));
-        });
-        if (matchedMember) {
-          if (!fullName) fullName = matchedMember.name || "";
-          if (!team || team.toLowerCase() === "unassigned") team = matchedMember.team || "Unassigned";
+      // 1. Try matching with results
+      const sRound = String(s.round || "").trim().toLowerCase();
+      const matchedResult = results.find(r => 
+        isPhoneMatch(s.whatsApp, r.whatsApp) && String(r.round || "").trim().toLowerCase() === sRound
+      ) || results.find(r => isPhoneMatch(s.whatsApp, r.whatsApp));
+
+      if (matchedResult) {
+        if (!fullName && matchedResult.fullName && matchedResult.fullName !== "Candidate") {
+          fullName = matchedResult.fullName;
+        }
+        if (!team && matchedResult.team && matchedResult.team.toLowerCase() !== "unassigned") {
+          team = matchedResult.team;
+        }
+      }
+
+      // 2. Try matching with member directory
+      const matchedMember = members.find(m => isPhoneMatch(s.whatsApp, m.whatsapp));
+      if (matchedMember) {
+        if (!fullName && matchedMember.name) fullName = matchedMember.name;
+        if (!team && matchedMember.team && matchedMember.team.toLowerCase() !== "unassigned") {
+          team = matchedMember.team;
         }
       }
 
