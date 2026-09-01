@@ -1035,7 +1035,7 @@ export default function AdminDashboard({ onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {leaderboardData.slice(0, 10).map((t, idx) => (
+                        {leaderboardData.map((t, idx) => (
                           <tr key={t.team} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>#{idx + 1}</td>
                             <td style={{ padding: '0.4rem 0.6rem', fontWeight: 'bold', border: '1px solid var(--border-light)' }}>{t.team}</td>
