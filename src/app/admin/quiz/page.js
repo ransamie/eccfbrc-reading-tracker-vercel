@@ -193,8 +193,10 @@ export default function AdminQuizPage() {
   const [authError, setAuthError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Workspace Tabs: 'control' | 'builder' | 'bulk' | 'ai' | 'leaderboard'
+  // Workspace Tabs: 'control' | 'builder' | 'ai' | 'activity'
   const [activeTab, setActiveTab] = useState("control");
+  const [builderMode, setBuilderMode] = useState("single"); // 'single' | 'bulk'
+  const [activityView, setActivityView] = useState("submissions"); // 'submissions' | 'logs'
   
   // Data States
   const [settings, setSettings] = useState({ 
@@ -1607,10 +1609,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
           {[
             { id: 'control', label: 'Settings & Launch', icon: Settings },
             { id: 'builder', label: editingQuestionId ? 'Editing Question' : `Question Builder (${editionQuestions.length})`, icon: editingQuestionId ? Pencil : PlusCircle },
-            { id: 'bulk', label: 'Bulk Import', icon: Upload },
             { id: 'ai', label: 'AI Generator', icon: Sparkles },
-            { id: 'logs', label: `Live Logs (${filteredSessions.length})`, icon: Clock },
-            { id: 'leaderboard', label: `Submissions (${sortedResults.length})`, icon: Trophy }
+            { id: 'activity', label: `Activity & Submissions (${enrichedSessions.length})`, icon: Trophy }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -2225,18 +2225,65 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
                 }}>
                   
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      {editingQuestionId ? (
-                        <>
-                          <Pencil size={18} style={{ color: 'var(--accent-hover)' }} /> Edit Question
-                        </>
-                      ) : (
-                        <>
-                          <PlusCircle size={18} style={{ color: 'var(--accent)' }} /> Add Question
-                        </>
-                      )}
-                    </h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {/* Mode Toggle Pills */}
+                    <div style={{
+                      display: 'flex',
+                      backgroundColor: 'var(--surface-secondary)',
+                      borderRadius: '0.55rem',
+                      padding: '0.2rem',
+                      border: '1px solid var(--border-light)',
+                      gap: '0.2rem'
+                    }}>
+                      <button
+                        type="button"
+                        onClick={() => setBuilderMode("single")}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          padding: '0.35rem 0.75rem',
+                          borderRadius: '0.45rem',
+                          border: 'none',
+                          backgroundColor: builderMode === "single" ? 'var(--accent)' : 'transparent',
+                          color: builderMode === "single" ? '#fff' : 'var(--text-secondary)',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {editingQuestionId ? <Pencil size={13} /> : <PlusCircle size={13} />}
+                        <span>{editingQuestionId ? "Edit Question" : "Single Question"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBuilderMode("bulk");
+                          setBulkEdition(selectedEdition);
+                          setBulkRound(activeTargetRound);
+                          if (editingQuestionId) handleCancelEdit();
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          padding: '0.35rem 0.75rem',
+                          borderRadius: '0.45rem',
+                          border: 'none',
+                          backgroundColor: builderMode === "bulk" ? 'var(--accent)' : 'transparent',
+                          color: builderMode === "bulk" ? '#fff' : 'var(--text-secondary)',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <Upload size={13} />
+                        <span>Bulk Import</span>
+                      </button>
+                    </div>
 
                     {editingQuestionId && (
                       <button
@@ -2278,152 +2325,288 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     <span style={{ color: 'var(--text-secondary)' }}>{selectedEdition}</span>
                   </div>
 
-                  <form onSubmit={(e) => {
-                    // Inject activeTargetRound and selectedEdition into form before submit
-                    questionForm.round = activeTargetRound;
-                    questionForm.edition = selectedEdition;
-                    handleFormSubmit(e);
-                  }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                        Question Prompt
-                      </label>
+                  {builderMode === "single" ? (
+                    <form onSubmit={(e) => {
+                      // Inject activeTargetRound and selectedEdition into form before submit
+                      questionForm.round = activeTargetRound;
+                      questionForm.edition = selectedEdition;
+                      handleFormSubmit(e);
+                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                          Question Prompt
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={questionForm.question}
+                          onChange={(e) => setQuestionForm(prev => ({ ...prev, question: e.target.value }))}
+                          placeholder="Enter the question text..."
+                          required
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem 0.9rem',
+                            backgroundColor: 'var(--surface-secondary)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '0.5rem',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.9rem',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            resize: 'vertical'
+                          }}
+                        />
+                      </div>
+
+                      {/* 4 Options with Radio Select */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                          Options & Correct Answer (Click radio dot):
+                        </label>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {[1, 2, 3, 4].map(num => {
+                            const isCorrect = questionForm.correctAnswer === questionForm[`option${num}`] && questionForm[`option${num}`] !== "";
+
+                            return (
+                              <div 
+                                key={num} 
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.65rem',
+                                  backgroundColor: isCorrect ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-secondary)',
+                                  border: `1px solid ${isCorrect ? 'var(--success)' : 'var(--border)'}`,
+                                  borderRadius: '0.5rem',
+                                  padding: '0.35rem 0.65rem',
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="correctAnswerOption"
+                                  checked={isCorrect}
+                                  onChange={() => {
+                                    if (questionForm[`option${num}`]) {
+                                      setQuestionForm(prev => ({ ...prev, correctAnswer: prev[`option${num}`] }));
+                                    }
+                                  }}
+                                  style={{ cursor: 'pointer', transform: 'scale(1.15)' }}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder={`Option ${num}`}
+                                  value={questionForm[`option${num}`]}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setQuestionForm(prev => {
+                                      const updated = { ...prev, [`option${num}`]: val };
+                                      if (prev.correctAnswer === prev[`option${num}`]) {
+                                        updated.correctAnswer = val;
+                                      }
+                                      return updated;
+                                    });
+                                  }}
+                                  required
+                                  style={{
+                                    flex: 1,
+                                    backgroundColor: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '0.88rem',
+                                    outline: 'none'
+                                  }}
+                                />
+                                {isCorrect && (
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700 }}>
+                                    ✓ Correct
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          style={{
+                            flex: 1,
+                            padding: '0.85rem',
+                            background: editingQuestionId ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '0.6rem',
+                            fontSize: '0.95rem',
+                            fontWeight: '700',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          {editingQuestionId ? <Save size={16} /> : <PlusCircle size={16} />}
+                          <span>{editingQuestionId ? "Update Question" : `Add Question to ${activeTargetRound}`}</span>
+                        </button>
+
+                        {editingQuestionId && (
+                          <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            style={{
+                              padding: '0.85rem 1rem',
+                              backgroundColor: 'var(--surface-secondary)',
+                              color: 'var(--text-secondary)',
+                              border: '1px solid var(--border-light)',
+                              borderRadius: '0.6rem',
+                              fontSize: '0.9rem',
+                              fontWeight: '600',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      {/* Sample format loader buttons */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleBulkTextChange(sampleQABlock)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            padding: '0.35rem 0.65rem',
+                            backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                            border: '1px solid rgba(37, 99, 235, 0.3)',
+                            borderRadius: '0.4rem',
+                            color: 'var(--accent-hover)',
+                            fontSize: '0.78rem',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <FileText size={13} /> Sample Q&A
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleBulkTextChange(sampleTableBlock)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            padding: '0.35rem 0.65rem',
+                            backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            borderRadius: '0.4rem',
+                            color: '#34D399',
+                            fontSize: '0.78rem',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <ListOrdered size={13} /> Sample Table
+                        </button>
+
+                        {bulkText && (
+                          <button
+                            type="button"
+                            onClick={() => handleBulkTextChange("")}
+                            style={{
+                              padding: '0.35rem 0.65rem',
+                              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid var(--border-light)',
+                              borderRadius: '0.4rem',
+                              color: 'var(--text-secondary)',
+                              fontSize: '0.78rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Textarea */}
                       <textarea
-                        rows={3}
-                        value={questionForm.question}
-                        onChange={(e) => setQuestionForm(prev => ({ ...prev, question: e.target.value }))}
-                        placeholder="Enter the question text..."
-                        required
+                        rows={10}
+                        value={bulkText}
+                        onChange={(e) => handleBulkTextChange(e.target.value)}
+                        placeholder={`Paste questions document for ${activeTargetRound} here...\n\nExample:\n1. Who was the first king of Israel?\nA. David\nB. Saul\nC. Solomon\nD. Samuel\nAnswer: B`}
                         style={{
                           width: '100%',
-                          padding: '0.75rem 0.9rem',
+                          padding: '0.85rem',
                           backgroundColor: 'var(--surface-secondary)',
                           border: '1px solid var(--border)',
-                          borderRadius: '0.5rem',
+                          borderRadius: '0.65rem',
                           color: 'var(--text-primary)',
-                          fontSize: '0.9rem',
+                          fontSize: '0.85rem',
+                          fontFamily: 'monospace',
+                          lineHeight: '1.45',
                           outline: 'none',
                           boxSizing: 'border-box',
                           resize: 'vertical'
                         }}
                       />
-                    </div>
 
-                    {/* 4 Options with Radio Select */}
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                        Options & Correct Answer (Click radio dot):
-                      </label>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {[1, 2, 3, 4].map(num => {
-                          const isCorrect = questionForm.correctAnswer === questionForm[`option${num}`] && questionForm[`option${num}`] !== "";
+                      {/* Realtime parse result & action */}
+                      {bulkText.trim() && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.65rem 0.85rem',
+                            borderRadius: '0.5rem',
+                            backgroundColor: parsedBulk.questions.length > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                            border: `1px solid ${parsedBulk.questions.length > 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                          }}>
+                            <span style={{ fontSize: '0.84rem', fontWeight: 700, color: parsedBulk.questions.length > 0 ? '#34D399' : '#F87171' }}>
+                              {parsedBulk.questions.length > 0 
+                                ? `✓ ${parsedBulk.questions.length} Question${parsedBulk.questions.length > 1 ? 's' : ''} detected for ${activeTargetRound}` 
+                                : "No valid questions detected."}
+                            </span>
 
-                          return (
-                            <div 
-                              key={num} 
+                            <button
+                              type="button"
+                              disabled={parsedBulk.questions.length === 0 || bulkImporting}
+                              onClick={async () => {
+                                setBulkEdition(selectedEdition);
+                                setBulkRound(activeTargetRound);
+                                await handleExecuteBulkImport();
+                              }}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '0.65rem',
-                                backgroundColor: isCorrect ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface-secondary)',
-                                border: `1px solid ${isCorrect ? 'var(--success)' : 'var(--border)'}`,
-                                borderRadius: '0.5rem',
-                                padding: '0.35rem 0.65rem',
-                                transition: 'all 0.2s ease'
+                                gap: '0.35rem',
+                                padding: '0.5rem 1rem',
+                                backgroundColor: 'var(--success)',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '0.45rem',
+                                fontSize: '0.84rem',
+                                fontWeight: '700',
+                                cursor: parsedBulk.questions.length === 0 || bulkImporting ? 'not-allowed' : 'pointer',
+                                opacity: parsedBulk.questions.length === 0 || bulkImporting ? 0.6 : 1,
+                                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)'
                               }}
                             >
-                              <input
-                                type="radio"
-                                name="correctAnswerOption"
-                                checked={isCorrect}
-                                onChange={() => {
-                                  if (questionForm[`option${num}`]) {
-                                    setQuestionForm(prev => ({ ...prev, correctAnswer: prev[`option${num}`] }));
-                                  }
-                                }}
-                                style={{ cursor: 'pointer', transform: 'scale(1.15)' }}
-                              />
-                              <input
-                                type="text"
-                                placeholder={`Option ${num}`}
-                                value={questionForm[`option${num}`]}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setQuestionForm(prev => {
-                                    const updated = { ...prev, [`option${num}`]: val };
-                                    if (prev.correctAnswer === prev[`option${num}`]) {
-                                      updated.correctAnswer = val;
-                                    }
-                                    return updated;
-                                  });
-                                }}
-                                required
-                                style={{
-                                  flex: 1,
-                                  backgroundColor: 'transparent',
-                                  border: 'none',
-                                  color: 'var(--text-primary)',
-                                  fontSize: '0.88rem',
-                                  outline: 'none'
-                                }}
-                              />
-                              {isCorrect && (
-                                <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700 }}>
-                                  ✓ Correct
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                          flex: 1,
-                          padding: '0.85rem',
-                          background: editingQuestionId ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '0.6rem',
-                          fontSize: '0.95rem',
-                          fontWeight: '700',
-                          cursor: loading ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.5rem'
-                        }}
-                      >
-                        {editingQuestionId ? <Save size={16} /> : <PlusCircle size={16} />}
-                        <span>{editingQuestionId ? "Update Question" : `Add Question to ${activeTargetRound}`}</span>
-                      </button>
-
-                      {editingQuestionId && (
-                        <button
-                          type="button"
-                          onClick={handleCancelEdit}
-                          style={{
-                            padding: '0.85rem 1rem',
-                            backgroundColor: 'var(--surface-secondary)',
-                            color: 'var(--text-secondary)',
-                            border: '1px solid var(--border-light)',
-                            borderRadius: '0.6rem',
-                            fontSize: '0.9rem',
-                            fontWeight: '600',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Cancel
-                        </button>
+                              <Upload size={14} />
+                              <span>{bulkImporting ? "Importing..." : `Import All (${parsedBulk.questions.length})`}</span>
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </form>
+                  )}
                 </div>
 
                 {/* Persistent Round Question Bank Column */}
@@ -2570,290 +2753,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
         })()}
 
 
-        {/* TAB 3: BULK IMPORTER */}
-        {activeTab === 'bulk' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '850px', margin: '0 auto' }}>
-            
-            <div style={{
-              backgroundColor: 'var(--surface)',
-              borderRadius: '1rem',
-              border: '1px solid var(--border)',
-              padding: '1.5rem',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
-            }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Upload size={20} style={{ color: 'var(--accent)' }} />
-                  <div>
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0 }}>Bulk Import Questions</h3>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                      Paste questions directly from your Word document, WhatsApp, or notes
-                    </span>
-                  </div>
-                </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-                  {/* Target Edition Selector */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Track:</span>
-                    <select
-                      value={bulkEdition}
-                      onChange={(e) => handleBulkEditionChange(e.target.value)}
-                      style={{
-                        padding: '0.45rem 0.65rem',
-                        backgroundColor: 'var(--surface-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.5rem',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.82rem',
-                        fontWeight: '600',
-                        outline: 'none',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {availableEditions.map(ed => (
-                        <option key={ed} value={ed}>{ed}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Target Round Selector */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Round:</span>
-                    <input
-                      type="text"
-                      value={bulkRound}
-                      onChange={(e) => handleBulkRoundChange(e.target.value)}
-                      placeholder="e.g. Round 8"
-                      style={{
-                        width: '100px',
-                        padding: '0.45rem 0.65rem',
-                        backgroundColor: 'var(--surface-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.5rem',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.85rem',
-                        fontWeight: '700',
-                        outline: 'none'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Sample Format Quick Buttons */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => handleBulkTextChange(sampleQABlock)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    padding: '0.4rem 0.75rem',
-                    backgroundColor: 'rgba(37, 99, 235, 0.12)',
-                    border: '1px solid rgba(37, 99, 235, 0.3)',
-                    borderRadius: '0.4rem',
-                    color: 'var(--accent-hover)',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <FileText size={14} /> Load Sample Q&A Text
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleBulkTextChange(sampleTableBlock)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    padding: '0.4rem 0.75rem',
-                    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    borderRadius: '0.4rem',
-                    color: '#34D399',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <ListOrdered size={14} /> Load Sample Table
-                </button>
-
-                {bulkText && (
-                  <button
-                    type="button"
-                    onClick={() => handleBulkTextChange("")}
-                    style={{
-                      padding: '0.4rem 0.75rem',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid var(--border-light)',
-                      borderRadius: '0.4rem',
-                      color: 'var(--text-secondary)',
-                      fontSize: '0.8rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Clear Text
-                  </button>
-                )}
-              </div>
-
-              {/* Paste Textarea */}
-              <textarea
-                rows={12}
-                value={bulkText}
-                onChange={(e) => handleBulkTextChange(e.target.value)}
-                placeholder={`Paste your questions document here...\n\nExample:\n1. Who was the first king of Israel?\nA. David\nB. Saul\nC. Solomon\nD. Samuel\nAnswer: B`}
-                style={{
-                  width: '100%',
-                  padding: '1rem',
-                  backgroundColor: 'var(--surface-secondary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '0.75rem',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.9rem',
-                  fontFamily: 'monospace',
-                  lineHeight: '1.55',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  resize: 'vertical'
-                }}
-              />
-
-              {/* Real-time Parser Results Bar */}
-              {bulkText.trim() && (
-                <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  
-                  <div className="quiz-bulk-status-bar" style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '0.6rem',
-                    backgroundColor: parsedBulk.questions.length > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                    border: `1px solid ${parsedBulk.questions.length > 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-                  }}>
-                    <span style={{ fontSize: '0.92rem', fontWeight: 700, color: parsedBulk.questions.length > 0 ? '#34D399' : '#F87171' }}>
-                      {parsedBulk.questions.length > 0 
-                        ? `✓ ${parsedBulk.questions.length} Question${parsedBulk.questions.length > 1 ? 's' : ''} successfully parsed for ${bulkRound}` 
-                        : "No valid questions detected in the pasted text."}
-                    </span>
-
-                    <button
-                      type="button"
-                      disabled={parsedBulk.questions.length === 0 || bulkImporting}
-                      onClick={handleExecuteBulkImport}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.45rem',
-                        padding: '0.65rem 1.25rem',
-                        backgroundColor: 'var(--success)',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.92rem',
-                        fontWeight: '700',
-                        cursor: parsedBulk.questions.length === 0 || bulkImporting ? 'not-allowed' : 'pointer',
-                        opacity: parsedBulk.questions.length === 0 || bulkImporting ? 0.6 : 1,
-                        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)'
-                      }}
-                    >
-                      <Upload size={16} />
-                      <span>{bulkImporting ? "Importing..." : `Import All (${parsedBulk.questions.length})`}</span>
-                    </button>
-                  </div>
-
-                  {parsedBulk.errors.length > 0 && (
-                    <div style={{
-                      padding: '0.75rem 1rem',
-                      borderRadius: '0.6rem',
-                      backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                      border: '1px solid rgba(245, 158, 11, 0.3)',
-                      fontSize: '0.82rem',
-                      color: '#FCD34D'
-                    }}>
-                      <strong>Notice:</strong>
-                      <ul style={{ margin: '0.35rem 0 0 1rem', padding: 0 }}>
-                        {parsedBulk.errors.map((err, i) => (
-                          <li key={i}>{err}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Live Parsed Preview Cards */}
-                  {parsedBulk.questions.length > 0 && (
-                    <div style={{ marginTop: '0.75rem' }}>
-                      <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.6rem 0', color: 'var(--text-secondary)' }}>
-                        Live Import Preview ({parsedBulk.questions.length} cards):
-                      </h4>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '420px', overflowY: 'auto', paddingRight: '0.35rem' }}>
-                        {parsedBulk.questions.map((q, idx) => (
-                          <div 
-                            key={idx}
-                            style={{
-                              backgroundColor: 'var(--surface-secondary)',
-                              border: '1px solid var(--border-light)',
-                              borderRadius: '0.65rem',
-                              padding: '0.85rem 1rem'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                              <span style={{ fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'var(--accent-light)', color: 'var(--accent-hover)', padding: '0.15rem 0.45rem', borderRadius: '0.3rem' }}>
-                                #{idx + 1} • {q.round}
-                              </span>
-                            </div>
-
-                            <p style={{ margin: '0 0 0.6rem 0', fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                              {q.question}
-                            </p>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.4rem' }}>
-                              {[
-                                { label: 'A', val: q.option1 },
-                                { label: 'B', val: q.option2 },
-                                { label: 'C', val: q.option3 },
-                                { label: 'D', val: q.option4 }
-                              ].filter(o => Boolean(o.val)).map((opt, i) => {
-                                const isAns = opt.val === q.correctAnswer;
-                                return (
-                                  <div
-                                    key={i}
-                                    style={{
-                                      fontSize: '0.8rem',
-                                      padding: '0.35rem 0.6rem',
-                                      borderRadius: '0.35rem',
-                                      backgroundColor: isAns ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.03)',
-                                      color: isAns ? '#34D399' : 'var(--text-secondary)',
-                                      border: `1px solid ${isAns ? 'var(--success)' : 'transparent'}`,
-                                      fontWeight: isAns ? 700 : 400
-                                    }}
-                                  >
-                                    <strong>{opt.label}.</strong> {opt.val} {isAns ? '✓' : ''}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-              )}
-
-            </div>
-
-          </div>
-        )}
 
         {/* TAB 4: ✨ AI QUESTION GENERATOR */}
         {activeTab === 'ai' && (
@@ -3410,8 +3310,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
           </div>
         )}
 
-        {/* TAB 5: LIVE QUIZ LOGS & SESSIONS */}
-        {activeTab === 'logs' && (
+        {/* TAB 4: ACTIVITY & SUBMISSIONS (Unified View with Submissions Leaderboard & Live Session Logs) */}
+        {(activeTab === 'activity' || activeTab === 'logs' || activeTab === 'leaderboard') && (
           <div style={{
             backgroundColor: 'var(--surface)',
             borderRadius: '1rem',
@@ -3422,46 +3322,113 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
             margin: '0 auto'
           }}>
             
-            {/* Header & Refresh */}
+            {/* Header: Title + Sub-View Toggle + Refresh */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Clock size={20} style={{ color: '#3B82F6' }} /> Live Activity & Session Logs ({filteredSessions.length})
+                  {activityView === 'submissions' ? (
+                    <>
+                      <Trophy size={20} style={{ color: '#F59E0B' }} /> Quiz Submissions & Leaderboard
+                    </>
+                  ) : (
+                    <>
+                      <Clock size={20} style={{ color: '#3B82F6' }} /> Live Candidate Activity Logs
+                    </>
+                  )}
                 </h3>
                 <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  Track who started the quiz, monitor time used, and grant individual time extensions.
+                  {activityView === 'submissions'
+                    ? `Official scores, times taken, and rankings for ${selectedEdition}.`
+                    : `Live sessions, progress countdowns, and instant time extensions for ${selectedEdition}.`}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={fetchWorkspaceData}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  padding: '0.45rem 0.85rem',
-                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '0.5rem',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.8rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)'; }}
-                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)'; }}
-              >
-                <RefreshCw size={13} />
-                <span>Refresh Live Logs</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                {/* Sub-view switcher toggle */}
+                <div style={{
+                  display: 'flex',
+                  backgroundColor: 'var(--surface-secondary)',
+                  borderRadius: '0.55rem',
+                  padding: '0.2rem',
+                  border: '1px solid var(--border-light)',
+                  gap: '0.2rem'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setActivityView("submissions")}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '0.45rem',
+                      border: 'none',
+                      backgroundColor: activityView === "submissions" ? 'var(--accent)' : 'transparent',
+                      color: activityView === "submissions" ? '#fff' : 'var(--text-secondary)',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Trophy size={14} />
+                    <span>Submissions ({sortedResults.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActivityView("logs")}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '0.45rem',
+                      border: 'none',
+                      backgroundColor: activityView === "logs" ? 'var(--accent)' : 'transparent',
+                      color: activityView === "logs" ? '#fff' : 'var(--text-secondary)',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Clock size={14} />
+                    <span>Live Logs ({filteredSessions.length})</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fetchWorkspaceData}
+                  title="Refresh activity data"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.45rem 0.75rem',
+                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.5rem',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.8rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)'; }}
+                >
+                  <RefreshCw size={13} />
+                  <span>Refresh</span>
+                </button>
+              </div>
             </div>
 
             {/* Metric Summary Cards */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
               gap: '0.75rem',
               marginBottom: '1.25rem'
             }}>
@@ -3469,12 +3436,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 backgroundColor: 'rgba(59, 130, 246, 0.08)',
                 border: '1px solid rgba(59, 130, 246, 0.25)',
                 borderRadius: '0.75rem',
-                padding: '0.85rem 1rem'
+                padding: '0.75rem 1rem'
               }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
                   Total Started
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#60A5FA', marginTop: '0.15rem' }}>
+                <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#60A5FA', marginTop: '0.15rem' }}>
                   {enrichedSessions.length}
                 </div>
               </div>
@@ -3483,12 +3450,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 backgroundColor: 'rgba(245, 158, 11, 0.08)',
                 border: '1px solid rgba(245, 158, 11, 0.25)',
                 borderRadius: '0.75rem',
-                padding: '0.85rem 1rem'
+                padding: '0.75rem 1rem'
               }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
                   🟢 In Progress
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#FBBF24', marginTop: '0.15rem' }}>
+                <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#FBBF24', marginTop: '0.15rem' }}>
                   {activeSessionsCount}
                 </div>
               </div>
@@ -3497,12 +3464,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 backgroundColor: 'rgba(16, 185, 129, 0.08)',
                 border: '1px solid rgba(16, 185, 129, 0.25)',
                 borderRadius: '0.75rem',
-                padding: '0.85rem 1rem'
+                padding: '0.75rem 1rem'
               }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
-                  ✅ Completed
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
+                  ✅ Submissions
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#34D399', marginTop: '0.15rem' }}>
+                <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#34D399', marginTop: '0.15rem' }}>
                   {completedSessionsCount}
                 </div>
               </div>
@@ -3511,629 +3478,566 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 backgroundColor: 'rgba(239, 68, 68, 0.08)',
                 border: '1px solid rgba(239, 68, 68, 0.25)',
                 borderRadius: '0.75rem',
-                padding: '0.85rem 1rem'
+                padding: '0.75rem 1rem'
               }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
                   ⚠️ Expired / Stalled
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#F87171', marginTop: '0.15rem' }}>
+                <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#F87171', marginTop: '0.15rem' }}>
                   {expiredSessionsCount}
                 </div>
               </div>
             </div>
 
-            {/* Filter Bar */}
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
-              {/* Status Filter */}
-              <CustomDropdown
-                icon={Activity}
-                value={selectedSessionStatusFilter}
-                accent={true}
-                minWidth="150px"
-                isOpen={openDropdown === 'session_status'}
-                onToggle={() => setOpenDropdown(prev => prev === 'session_status' ? null : 'session_status')}
-                onClose={() => setOpenDropdown(null)}
-                onChange={(val) => setSelectedSessionStatusFilter(val)}
-                options={[
-                  { value: 'All', label: 'All Statuses' },
-                  { value: 'active', label: '🟢 In Progress' },
-                  { value: 'completed', label: '✅ Completed' },
-                  { value: 'expired', label: '⚠️ Expired' }
-                ]}
-              />
+            {/* VIEW 1: SUBMISSIONS & LEADERBOARD */}
+            {activityView === "submissions" ? (
+              <div>
+                {/* Submissions Filter Toolbar */}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
+                  {/* Custom Sort By Dropdown */}
+                  <CustomDropdown
+                    icon={Sliders}
+                    value={`${resultSortBy}_${resultSortOrder}`}
+                    accent={true}
+                    minWidth="175px"
+                    isOpen={openDropdown === 'sort'}
+                    onToggle={() => setOpenDropdown(prev => prev === 'sort' ? null : 'sort')}
+                    onClose={() => setOpenDropdown(null)}
+                    onChange={(val) => {
+                      const [by, order] = val.split('_');
+                      setResultSortBy(by);
+                      setResultSortOrder(order);
+                    }}
+                    options={[
+                      { value: 'date_desc', label: '⏱️ Date: Newest First' },
+                      { value: 'date_asc', label: '⏱️ Date: Oldest First' },
+                      { value: 'time_asc', label: '⚡ Time: Fastest First' },
+                      { value: 'time_desc', label: '⏳ Time: Slowest First' },
+                      { value: 'score_desc', label: '🏆 Score: Highest First' },
+                      { value: 'score_asc', label: '📉 Score: Lowest First' }
+                    ]}
+                  />
 
-              {/* Round Filter */}
-              <CustomDropdown
-                icon={Filter}
-                value={selectedSessionRoundFilter}
-                minWidth="140px"
-                isOpen={openDropdown === 'session_round'}
-                onToggle={() => setOpenDropdown(prev => prev === 'session_round' ? null : 'session_round')}
-                onClose={() => setOpenDropdown(null)}
-                onChange={(val) => setSelectedSessionRoundFilter(val)}
-                options={[
-                  { value: 'All', label: 'All Rounds' },
-                  ...uniqueRoundsInEdition.map(r => ({ value: r, label: r }))
-                ]}
-              />
+                  {/* Custom Round Filter */}
+                  <CustomDropdown
+                    icon={Filter}
+                    value={selectedRoundFilter}
+                    minWidth="140px"
+                    isOpen={openDropdown === 'round'}
+                    onToggle={() => setOpenDropdown(prev => prev === 'round' ? null : 'round')}
+                    onClose={() => setOpenDropdown(null)}
+                    onChange={(val) => setSelectedRoundFilter(val)}
+                    options={[
+                      { value: 'All', label: 'All Rounds' },
+                      ...uniqueRoundsInEdition.map(r => ({ value: r, label: r }))
+                    ]}
+                  />
 
-              {/* Team Filter */}
-              <CustomDropdown
-                icon={Users}
-                value={selectedSessionTeamFilter}
-                minWidth="150px"
-                isOpen={openDropdown === 'session_team'}
-                onToggle={() => setOpenDropdown(prev => prev === 'session_team' ? null : 'session_team')}
-                onClose={() => setOpenDropdown(null)}
-                onChange={(val) => setSelectedSessionTeamFilter(val)}
-                options={[
-                  { value: 'All', label: 'All Teams' },
-                  ...uniqueSessionTeams.map(t => ({ value: t, label: `Team ${t}` }))
-                ]}
-              />
-            </div>
+                  {/* Custom Team Filter */}
+                  <CustomDropdown
+                    icon={Users}
+                    value={selectedTeamFilter}
+                    minWidth="150px"
+                    isOpen={openDropdown === 'team'}
+                    onToggle={() => setOpenDropdown(prev => prev === 'team' ? null : 'team')}
+                    onClose={() => setOpenDropdown(null)}
+                    onChange={(val) => setSelectedTeamFilter(val)}
+                    options={[
+                      { value: 'All', label: 'All Teams' },
+                      ...uniqueTeams.map(t => ({ value: t, label: `Team ${t}` }))
+                    ]}
+                  />
+                </div>
 
-            {/* Sessions Table */}
-            <div style={{ width: '100%', overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    <th style={{ padding: '0.55rem 0.6rem', width: '36px', textAlign: 'center' }}>#</th>
-                    <th style={{ padding: '0.55rem 0.6rem' }}>Candidate</th>
-                    <th style={{ padding: '0.55rem 0.6rem' }}>Team & Round</th>
-                    <th style={{ padding: '0.55rem 0.6rem' }}>Started At</th>
-                    <th style={{ padding: '0.55rem 0.6rem' }}>Status & Timing</th>
-                    <th style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>Extend / Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSessions.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                        No candidate activity logs recorded yet for the selected filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredSessions.map((s, i) => {
-                      const rawTeam = String(s.team || '').trim();
-                      const displayTeam = !rawTeam || rawTeam.toLowerCase() === 'unassigned'
-                        ? 'Unassigned'
-                        : (rawTeam.toLowerCase().startsWith('team ') ? rawTeam : `Team ${rawTeam}`);
-                      const isUnassigned = displayTeam === 'Unassigned';
-
-                      return (
-                        <tr 
-                          key={i}
-                          style={{ borderBottom: '1px solid var(--border-light)', transition: 'background-color 0.15s ease' }}
-                          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'; }}
-                          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                {/* Submissions Table */}
+                <div style={{ width: '100%', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <th style={{ padding: '0.55rem 0.6rem', width: '36px', textAlign: 'center' }}>{resultSortBy === "score" ? "Rank" : "#"}</th>
+                        <th style={{ padding: '0.55rem 0.6rem' }}>Candidate</th>
+                        <th style={{ padding: '0.55rem 0.6rem' }}>Team & Round</th>
+                        <th
+                          style={{ padding: '0.55rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "score" ? '#60A5FA' : undefined }}
+                          onClick={() => toggleSort("score")}
+                          title="Click to sort by score / rank"
                         >
-                          {/* Index */}
-                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: '700', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                            #{i + 1}
-                          </td>
-
-                          {/* Candidate */}
-                          <td style={{ padding: '0.55rem 0.6rem' }}>
-                            <div style={{ fontWeight: '700', color: 'var(--text-primary)', fontSize: '0.88rem', lineHeight: '1.25' }}>
-                              {s.fullName}
-                            </div>
-                            <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', fontFamily: 'monospace', marginTop: '0.15rem' }}>
-                              {s.whatsApp || "—"}
-                            </div>
-                          </td>
-
-                          {/* Team & Round */}
-                          <td style={{ padding: '0.55rem 0.6rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                              <span style={{
-                                backgroundColor: isUnassigned ? 'rgba(255, 255, 255, 0.06)' : 'var(--accent-light)',
-                                color: isUnassigned ? 'var(--text-secondary)' : 'var(--accent-hover)',
-                                padding: '0.15rem 0.5rem',
-                                borderRadius: '0.35rem',
-                                fontSize: '0.75rem',
-                                fontWeight: '700',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                {displayTeam}
-                              </span>
-                              <span style={{
-                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                color: 'var(--text-primary)',
-                                padding: '0.15rem 0.45rem',
-                                borderRadius: '0.35rem',
-                                fontSize: '0.73rem',
-                                fontWeight: '600',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                {s.round}
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Start Time */}
-                          <td style={{ padding: '0.55rem 0.6rem', color: 'var(--text-secondary)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-                            {s.startTimestamp ? new Date(s.startTimestamp).toLocaleString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            }) : 'N/A'}
-                          </td>
-
-                          {/* Status & Timing */}
-                          <td style={{ padding: '0.55rem 0.6rem' }}>
-                            {s.status === 'completed' && (
-                              <div>
-                                <span style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                                  color: '#10B981',
-                                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                                  padding: '0.2rem 0.55rem',
-                                  borderRadius: '0.4rem',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '700'
-                                }}>
-                                  <CheckCircle2 size={12} /> Submitted ({s.matchingResult?.score || 0}/{s.matchingResult?.totalQuestions || 10})
-                                </span>
-                                <div style={{ fontSize: '0.73rem', color: '#60A5FA', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '600' }}>
-                                  <Clock size={11} /> Time used: {s.formattedTimeSpent || '—'}
-                                </div>
-                              </div>
-                            )}
-
-                            {s.status === 'active' && (
-                              <div>
-                                <span style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                                  color: '#F59E0B',
-                                  border: '1px solid rgba(245, 158, 11, 0.3)',
-                                  padding: '0.2rem 0.55rem',
-                                  borderRadius: '0.4rem',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '700'
-                                }}>
-                                  <Timer size={12} /> In Progress
-                                </span>
-                                <div style={{ fontSize: '0.73rem', color: '#FCD34D', marginTop: '0.2rem', fontWeight: '600' }}>
-                                  ⏱️ {s.timeRemainingStr}
-                                </div>
-                              </div>
-                            )}
-
-                            {s.status === 'expired' && (
-                              <div>
-                                <span style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                                  color: '#F87171',
-                                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                                  padding: '0.2rem 0.55rem',
-                                  borderRadius: '0.4rem',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '700'
-                                }}>
-                                  <AlertCircle size={12} /> Time Expired
-                                </span>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                                  Not submitted yet
-                                </div>
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Quick Extend & Reset Actions */}
-                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                            <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
-                              {/* +5m Extension Button */}
-                              <button
-                                type="button"
-                                onClick={() => handleExtendSession(s, 5)}
-                                title={`Extend time limit by +5 minutes for ${s.fullName}`}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.2rem',
-                                  padding: '0.3rem 0.55rem',
-                                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
-                                  color: '#60A5FA',
-                                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                                  borderRadius: '0.4rem',
-                                  fontSize: '0.74rem',
-                                  fontWeight: '700',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease'
-                                }}
-                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.25)'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.12)'; }}
-                              >
-                                <Clock size={12} />
-                                <span>+5m</span>
-                              </button>
-
-                              {/* +10m Extension Button */}
-                              <button
-                                type="button"
-                                onClick={() => handleExtendSession(s, 10)}
-                                title={`Extend time limit by +10 minutes for ${s.fullName}`}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.2rem',
-                                  padding: '0.3rem 0.55rem',
-                                  backgroundColor: 'rgba(147, 51, 234, 0.12)',
-                                  color: '#C084FC',
-                                  border: '1px solid rgba(147, 51, 234, 0.3)',
-                                  borderRadius: '0.4rem',
-                                  fontSize: '0.74rem',
-                                  fontWeight: '700',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease'
-                                }}
-                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(147, 51, 234, 0.25)'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(147, 51, 234, 0.12)'; }}
-                              >
-                                <Clock size={12} />
-                                <span>+10m</span>
-                              </button>
-
-                              {/* Reset Session Button */}
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteSubmission(s)}
-                                title={`Reset session & timer to let ${s.fullName} retake the quiz`}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.2rem',
-                                  padding: '0.3rem 0.55rem',
-                                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                  color: '#F87171',
-                                  border: '1px solid rgba(239, 68, 68, 0.25)',
-                                  borderRadius: '0.4rem',
-                                  fontSize: '0.74rem',
-                                  fontWeight: '600',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease'
-                                }}
-                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
-                              >
-                                <RotateCcw size={12} />
-                                <span>Reset</span>
-                              </button>
-                            </div>
+                          Score {resultSortBy === "score" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
+                        </th>
+                        <th
+                          style={{ padding: '0.55rem 0.6rem', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "time" ? '#60A5FA' : undefined }}
+                          onClick={() => toggleSort("time")}
+                          title="Click to sort by time taken"
+                        >
+                          Time Taken {resultSortBy === "time" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
+                        </th>
+                        <th
+                          style={{ padding: '0.55rem 0.6rem', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "date" ? '#60A5FA' : undefined }}
+                          onClick={() => toggleSort("date")}
+                          title="Click to sort by submission date"
+                        >
+                          Submitted {resultSortBy === "date" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
+                        </th>
+                        <th style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedResults.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                            No quiz submissions recorded yet for this reading track.
                           </td>
                         </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      ) : (
+                        sortedResults.map((r, i) => {
+                          const total = r.totalQuestions || 10;
+                          const pct = total > 0 ? (r.score / total) : 0;
+                          const isHigh = pct >= 0.7;
 
-          </div>
-        )}
+                          const rawTeam = String(r.team || '').trim();
+                          const displayTeam = !rawTeam || rawTeam.toLowerCase() === 'unassigned'
+                            ? 'Unassigned'
+                            : (rawTeam.toLowerCase().startsWith('team ') ? rawTeam : `Team ${rawTeam}`);
+                          const isUnassigned = displayTeam === 'Unassigned';
 
-        {/* TAB 6: SUBMISSIONS LEADERBOARD */}
-        {activeTab === 'leaderboard' && (
-          <div style={{
-            backgroundColor: 'var(--surface)',
-            borderRadius: '1rem',
-            border: '1px solid var(--border)',
-            padding: '1.5rem',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-            maxWidth: '1050px',
-            margin: '0 auto'
-          }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Trophy size={20} style={{ color: '#F59E0B' }} /> Submissions ({sortedResults.length})
-              </h3>
+                          return (
+                            <tr 
+                              key={i}
+                              style={{ borderBottom: '1px solid var(--border-light)', transition: 'background-color 0.15s ease' }}
+                              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                              {/* Index / Rank */}
+                              <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: '800', fontSize: '0.8rem', color: (resultSortBy === 'score' && i < 3) ? '#F59E0B' : 'var(--text-secondary)' }}>
+                                #{i + 1}
+                              </td>
 
-              <div className="quiz-leaderboard-filters" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                
-                {/* Custom Sort By Dropdown */}
-                <CustomDropdown
-                  icon={Sliders}
-                  value={`${resultSortBy}_${resultSortOrder}`}
-                  accent={true}
-                  minWidth="175px"
-                  isOpen={openDropdown === 'sort'}
-                  onToggle={() => setOpenDropdown(prev => prev === 'sort' ? null : 'sort')}
-                  onClose={() => setOpenDropdown(null)}
-                  onChange={(val) => {
-                    const [by, order] = val.split('_');
-                    setResultSortBy(by);
-                    setResultSortOrder(order);
-                  }}
-                  options={[
-                    { value: 'date_desc', label: '⏱️ Newest First' },
-                    { value: 'date_asc', label: '⏱️ Oldest First' },
-                    { value: 'score_desc', label: '🏆 Highest Score' },
-                    { value: 'score_asc', label: '📉 Lowest Score' }
-                  ]}
-                />
+                              {/* Candidate (Name + Phone) */}
+                              <td style={{ padding: '0.55rem 0.6rem' }}>
+                                <div style={{ fontWeight: '700', color: 'var(--text-primary)', fontSize: '0.88rem', lineHeight: '1.25' }}>
+                                  {r.fullName}
+                                </div>
+                                <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', fontFamily: 'monospace', marginTop: '0.15rem' }}>
+                                  {r.whatsApp || r.whatsapp || "—"}
+                                </div>
+                              </td>
 
-                {/* Custom Sort By Dropdown */}
-                <CustomDropdown
-                  icon={Sliders}
-                  value={`${resultSortBy}_${resultSortOrder}`}
-                  accent={true}
-                  minWidth="175px"
-                  isOpen={openDropdown === 'sort'}
-                  onToggle={() => setOpenDropdown(prev => prev === 'sort' ? null : 'sort')}
-                  onClose={() => setOpenDropdown(null)}
-                  onChange={(val) => {
-                    const [by, order] = val.split('_');
-                    setResultSortBy(by);
-                    setResultSortOrder(order);
-                  }}
-                  options={[
-                    { value: 'date_desc', label: '⏱️ Date: Newest First' },
-                    { value: 'date_asc', label: '⏱️ Date: Oldest First' },
-                    { value: 'time_asc', label: '⚡ Time: Fastest First' },
-                    { value: 'time_desc', label: '⏳ Time: Slowest First' },
-                    { value: 'score_desc', label: '🏆 Score: Highest First' },
-                    { value: 'score_asc', label: '📉 Score: Lowest First' }
-                  ]}
-                />
+                              {/* Team & Round */}
+                              <td style={{ padding: '0.55rem 0.6rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                  <span style={{
+                                    backgroundColor: isUnassigned ? 'rgba(255, 255, 255, 0.06)' : 'var(--accent-light)',
+                                    color: isUnassigned ? 'var(--text-secondary)' : 'var(--accent-hover)',
+                                    padding: '0.15rem 0.5rem',
+                                    borderRadius: '0.35rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '700',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {displayTeam}
+                                  </span>
+                                  <span style={{
+                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                    color: 'var(--text-primary)',
+                                    padding: '0.15rem 0.45rem',
+                                    borderRadius: '0.35rem',
+                                    fontSize: '0.73rem',
+                                    fontWeight: '600',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {r.round}
+                                  </span>
+                                </div>
+                              </td>
 
-                {/* Custom Round Filter */}
-                <CustomDropdown
-                  icon={Filter}
-                  value={selectedRoundFilter}
-                  minWidth="140px"
-                  isOpen={openDropdown === 'round'}
-                  onToggle={() => setOpenDropdown(prev => prev === 'round' ? null : 'round')}
-                  onClose={() => setOpenDropdown(null)}
-                  onChange={(val) => setSelectedRoundFilter(val)}
-                  options={[
-                    { value: 'All', label: 'All Rounds' },
-                    ...uniqueRoundsInEdition.map(r => ({ value: r, label: r }))
-                  ]}
-                />
+                              {/* Score Badge */}
+                              <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'baseline',
+                                  gap: '2px',
+                                  padding: '0.2rem 0.55rem',
+                                  borderRadius: '0.4rem',
+                                  backgroundColor: isHigh ? 'rgba(52, 211, 153, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+                                  border: isHigh ? '1px solid rgba(52, 211, 153, 0.3)' : '1px solid var(--border-light)'
+                                }}>
+                                  <strong style={{ fontSize: '0.9rem', color: isHigh ? '#34D399' : 'var(--text-primary)' }}>{r.score}</strong>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>/{total}</span>
+                                </span>
+                              </td>
 
-                {/* Custom Team Filter */}
-                <CustomDropdown
-                  icon={Users}
-                  value={selectedTeamFilter}
-                  minWidth="150px"
-                  isOpen={openDropdown === 'team'}
-                  onToggle={() => setOpenDropdown(prev => prev === 'team' ? null : 'team')}
-                  onClose={() => setOpenDropdown(null)}
-                  onChange={(val) => setSelectedTeamFilter(val)}
-                  options={[
-                    { value: 'All', label: 'All Teams' },
-                    ...uniqueTeams.map(t => ({ value: t, label: `Team ${t}` }))
-                  ]}
-                />
-
-              </div>
-            </div>
-
-            {/* Compact Table */}
-            <div style={{ width: '100%', overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    <th style={{ padding: '0.55rem 0.6rem', width: '36px', textAlign: 'center' }}>{resultSortBy === "score" ? "Rank" : "#"}</th>
-                    <th style={{ padding: '0.55rem 0.6rem' }}>Candidate</th>
-                    <th style={{ padding: '0.55rem 0.6rem' }}>Team & Round</th>
-                    <th
-                      style={{ padding: '0.55rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "score" ? '#60A5FA' : undefined }}
-                      onClick={() => toggleSort("score")}
-                      title="Click to sort by score / rank"
-                    >
-                      Score {resultSortBy === "score" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
-                    </th>
-                    <th
-                      style={{ padding: '0.55rem 0.6rem', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "time" ? '#60A5FA' : undefined }}
-                      onClick={() => toggleSort("time")}
-                      title="Click to sort by time taken"
-                    >
-                      Time Taken {resultSortBy === "time" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
-                    </th>
-                    <th
-                      style={{ padding: '0.55rem 0.6rem', cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', color: resultSortBy === "date" ? '#60A5FA' : undefined }}
-                      onClick={() => toggleSort("date")}
-                      title="Click to sort by submission date"
-                    >
-                      Submitted {resultSortBy === "date" ? (resultSortOrder === "desc" ? "↓" : "↑") : <span style={{ opacity: 0.35 }}>↕</span>}
-                    </th>
-                    <th style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedResults.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                        No quiz submissions recorded yet for this reading track.
-                      </td>
-                    </tr>
-                  ) : (
-                    sortedResults.map((r, i) => {
-                      const total = r.totalQuestions || 10;
-                      const pct = total > 0 ? (r.score / total) : 0;
-                      const isHigh = pct >= 0.7;
-
-                      const rawTeam = String(r.team || '').trim();
-                      const displayTeam = !rawTeam || rawTeam.toLowerCase() === 'unassigned'
-                        ? 'Unassigned'
-                        : (rawTeam.toLowerCase().startsWith('team ') ? rawTeam : `Team ${rawTeam}`);
-                      const isUnassigned = displayTeam === 'Unassigned';
-
-                      return (
-                        <tr 
-                          key={i}
-                          style={{ borderBottom: '1px solid var(--border-light)', transition: 'background-color 0.15s ease' }}
-                          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'; }}
-                          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                        >
-                          {/* Index / Rank */}
-                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: '800', fontSize: '0.8rem', color: (resultSortBy === 'score' && i < 3) ? '#F59E0B' : 'var(--text-secondary)' }}>
-                            #{i + 1}
-                          </td>
-
-                          {/* Candidate (Name + Phone) */}
-                          <td style={{ padding: '0.55rem 0.6rem' }}>
-                            <div style={{ fontWeight: '700', color: 'var(--text-primary)', fontSize: '0.88rem', lineHeight: '1.25' }}>
-                              {r.fullName}
-                            </div>
-                            <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', fontFamily: 'monospace', marginTop: '0.15rem' }}>
-                              {r.whatsApp || r.whatsapp || "—"}
-                            </div>
-                          </td>
-
-                          {/* Team & Round */}
-                          <td style={{ padding: '0.55rem 0.6rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                              <span style={{
-                                backgroundColor: isUnassigned ? 'rgba(255, 255, 255, 0.06)' : 'var(--accent-light)',
-                                color: isUnassigned ? 'var(--text-secondary)' : 'var(--accent-hover)',
-                                padding: '0.15rem 0.5rem',
-                                borderRadius: '0.35rem',
-                                fontSize: '0.75rem',
-                                fontWeight: '700',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                {displayTeam}
-                              </span>
-                              <span style={{
-                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                color: 'var(--text-primary)',
-                                padding: '0.15rem 0.45rem',
-                                borderRadius: '0.35rem',
-                                fontSize: '0.73rem',
-                                fontWeight: '600',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                {r.round}
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Score Badge */}
-                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>
-                            <span style={{
-                              display: 'inline-flex',
-                              alignItems: 'baseline',
-                              gap: '2px',
-                              padding: '0.2rem 0.55rem',
-                              borderRadius: '0.4rem',
-                              backgroundColor: isHigh ? 'rgba(52, 211, 153, 0.12)' : 'rgba(255, 255, 255, 0.05)',
-                              border: isHigh ? '1px solid rgba(52, 211, 153, 0.3)' : '1px solid var(--border-light)'
-                            }}>
-                              <strong style={{ fontSize: '0.9rem', color: isHigh ? '#34D399' : 'var(--text-primary)' }}>{r.score}</strong>
-                              <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>/{total}</span>
-                            </span>
-                          </td>
-
-                          {/* Time Taken */}
-                          <td style={{ padding: '0.55rem 0.6rem', whiteSpace: 'nowrap' }}>
-                            {(() => {
-                              let timeSpent = r.timeSpentSeconds;
-                              if ((timeSpent === null || timeSpent === undefined) && r.timestamp) {
-                                const sRound = String(r.round || "").trim().toLowerCase();
-                                const sMatch = sessions.find(s => isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp) && String(s.round || "").trim().toLowerCase() === sRound) ||
-                                               sessions.find(s => isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp));
-                                if (sMatch && sMatch.startTimestamp) {
-                                  const diff = Math.round((new Date(r.timestamp).getTime() - Number(sMatch.startTimestamp)) / 1000);
-                                  if (diff > 0 && diff < 86400) {
-                                    timeSpent = diff;
+                              {/* Time Taken */}
+                              <td style={{ padding: '0.55rem 0.6rem', whiteSpace: 'nowrap' }}>
+                                {(() => {
+                                  let timeSpent = r.timeSpentSeconds;
+                                  if ((timeSpent === null || timeSpent === undefined) && r.timestamp) {
+                                    const sRound = String(r.round || "").trim().toLowerCase();
+                                    const sMatch = sessions.find(s => isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp) && String(s.round || "").trim().toLowerCase() === sRound) ||
+                                                   sessions.find(s => isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp));
+                                    if (sMatch && sMatch.startTimestamp) {
+                                      const diff = Math.round((new Date(r.timestamp).getTime() - Number(sMatch.startTimestamp)) / 1000);
+                                      if (diff > 0 && diff < 86400) {
+                                        timeSpent = diff;
+                                      }
+                                    }
                                   }
-                                }
-                              }
-                              const formattedTime = formatTimeSpent(timeSpent);
-                              return (
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontWeight: '700', fontSize: '0.8rem', color: formattedTime ? '#60A5FA' : 'var(--text-secondary)' }}>
-                                  <Clock size={12} style={{ color: '#60A5FA', flexShrink: 0 }} />
-                                  <span>{formattedTime || '—'}</span>
+                                  const formattedTime = formatTimeSpent(timeSpent);
+                                  return (
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontWeight: '700', fontSize: '0.8rem', color: formattedTime ? '#60A5FA' : 'var(--text-secondary)' }}>
+                                      <Clock size={12} style={{ color: '#60A5FA', flexShrink: 0 }} />
+                                      <span>{formattedTime || '—'}</span>
+                                    </div>
+                                  );
+                                })()}
+                              </td>
+
+                              {/* Submission Date */}
+                              <td style={{ padding: '0.55rem 0.6rem', color: 'var(--text-secondary)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                                {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }) : 'N/A'}
+                              </td>
+
+                              {/* Actions */}
+                              <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleExtendSession(r, 5)}
+                                    title={`Grant +5 minutes extension to ${r.fullName || 'candidate'}`}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.2rem',
+                                      padding: '0.28rem 0.5rem',
+                                      backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                                      color: '#60A5FA',
+                                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                                      borderRadius: '0.4rem',
+                                      fontSize: '0.73rem',
+                                      fontWeight: '700',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.25)'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.12)'; }}
+                                  >
+                                    <Clock size={11} />
+                                    <span>+5m</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSubmission(r)}
+                                    title={`Reset submission and allow ${r.fullName || 'candidate'} to retake`}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.2rem',
+                                      padding: '0.28rem 0.5rem',
+                                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                      color: '#F87171',
+                                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                                      borderRadius: '0.4rem',
+                                      fontSize: '0.73rem',
+                                      fontWeight: '600',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
+                                  >
+                                    <Trash2 size={11} />
+                                    <span>Reset</span>
+                                  </button>
                                 </div>
-                              );
-                            })()}
-                          </td>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              /* VIEW 2: LIVE SESSION LOGS */
+              <div>
+                {/* Live Logs Filter Toolbar */}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
+                  {/* Status Filter */}
+                  <CustomDropdown
+                    icon={Activity}
+                    value={selectedSessionStatusFilter}
+                    minWidth="140px"
+                    isOpen={openDropdown === 'session_status'}
+                    onToggle={() => setOpenDropdown(prev => prev === 'session_status' ? null : 'session_status')}
+                    onClose={() => setOpenDropdown(null)}
+                    onChange={(val) => setSelectedSessionStatusFilter(val)}
+                    options={[
+                      { value: 'All', label: 'All Statuses' },
+                      { value: 'active', label: '🟢 In Progress' },
+                      { value: 'completed', label: '✅ Completed' },
+                      { value: 'expired', label: '⚠️ Expired' }
+                    ]}
+                  />
 
-                          {/* Submission Date */}
-                          <td style={{ padding: '0.55rem 0.6rem', color: 'var(--text-secondary)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-                            {r.timestamp ? new Date(r.timestamp).toLocaleString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            }) : 'N/A'}
-                          </td>
+                  {/* Round Filter */}
+                  <CustomDropdown
+                    icon={Filter}
+                    value={selectedSessionRoundFilter}
+                    minWidth="140px"
+                    isOpen={openDropdown === 'session_round'}
+                    onToggle={() => setOpenDropdown(prev => prev === 'session_round' ? null : 'session_round')}
+                    onClose={() => setOpenDropdown(null)}
+                    onChange={(val) => setSelectedSessionRoundFilter(val)}
+                    options={[
+                      { value: 'All', label: 'All Rounds' },
+                      ...uniqueRoundsInEdition.map(r => ({ value: r, label: r }))
+                    ]}
+                  />
 
-                          {/* Actions */}
-                          <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                            <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
-                              <button
-                                type="button"
-                                onClick={() => handleExtendSession(r, 5)}
-                                title={`Grant +5 minutes extension to ${r.fullName || 'candidate'}`}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.2rem',
-                                  padding: '0.28rem 0.5rem',
-                                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
-                                  color: '#60A5FA',
-                                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                                  borderRadius: '0.4rem',
-                                  fontSize: '0.73rem',
-                                  fontWeight: '700',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease'
-                                }}
-                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.25)'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.12)'; }}
-                              >
-                                <Clock size={11} />
-                                <span>+5m</span>
-                              </button>
+                  {/* Team Filter */}
+                  <CustomDropdown
+                    icon={Users}
+                    value={selectedSessionTeamFilter}
+                    minWidth="150px"
+                    isOpen={openDropdown === 'session_team'}
+                    onToggle={() => setOpenDropdown(prev => prev === 'session_team' ? null : 'session_team')}
+                    onClose={() => setOpenDropdown(null)}
+                    onChange={(val) => setSelectedSessionTeamFilter(val)}
+                    options={[
+                      { value: 'All', label: 'All Teams' },
+                      ...uniqueSessionTeams.map(t => ({ value: t, label: `Team ${t}` }))
+                    ]}
+                  />
+                </div>
 
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteSubmission(r)}
-                                title={`Reset submission and allow ${r.fullName || 'candidate'} to retake`}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.2rem',
-                                  padding: '0.28rem 0.5rem',
-                                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                  color: '#F87171',
-                                  border: '1px solid rgba(239, 68, 68, 0.25)',
-                                  borderRadius: '0.4rem',
-                                  fontSize: '0.73rem',
-                                  fontWeight: '600',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease'
-                                }}
-                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
-                              >
-                                <Trash2 size={11} />
-                                <span>Reset</span>
-                              </button>
-                            </div>
+                {/* Sessions Table */}
+                <div style={{ width: '100%', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <th style={{ padding: '0.55rem 0.6rem', width: '36px', textAlign: 'center' }}>#</th>
+                        <th style={{ padding: '0.55rem 0.6rem' }}>Candidate</th>
+                        <th style={{ padding: '0.55rem 0.6rem' }}>Team & Round</th>
+                        <th style={{ padding: '0.55rem 0.6rem' }}>Started At</th>
+                        <th style={{ padding: '0.55rem 0.6rem' }}>Status & Timing</th>
+                        <th style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>Extend / Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSessions.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                            No candidate activity logs recorded yet for this reading track.
                           </td>
                         </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      ) : (
+                        filteredSessions.map((s, i) => {
+                          const rawTeam = String(s.team || '').trim();
+                          const displayTeam = !rawTeam || rawTeam.toLowerCase() === 'unassigned'
+                            ? 'Unassigned'
+                            : (rawTeam.toLowerCase().startsWith('team ') ? rawTeam : `Team ${rawTeam}`);
+                          const isUnassigned = displayTeam === 'Unassigned';
+
+                          return (
+                            <tr 
+                              key={i}
+                              style={{ borderBottom: '1px solid var(--border-light)', transition: 'background-color 0.15s ease' }}
+                              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                              {/* Index */}
+                              <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: '700', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                #{i + 1}
+                              </td>
+
+                              {/* Candidate */}
+                              <td style={{ padding: '0.55rem 0.6rem' }}>
+                                <div style={{ fontWeight: '700', color: 'var(--text-primary)', fontSize: '0.88rem', lineHeight: '1.25' }}>
+                                  {s.fullName}
+                                </div>
+                                <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', fontFamily: 'monospace', marginTop: '0.15rem' }}>
+                                  {s.whatsApp || "—"}
+                                </div>
+                              </td>
+
+                              {/* Team & Round */}
+                              <td style={{ padding: '0.55rem 0.6rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                  <span style={{
+                                    backgroundColor: isUnassigned ? 'rgba(255, 255, 255, 0.06)' : 'var(--accent-light)',
+                                    color: isUnassigned ? 'var(--text-secondary)' : 'var(--accent-hover)',
+                                    padding: '0.15rem 0.5rem',
+                                    borderRadius: '0.35rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '700',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {displayTeam}
+                                  </span>
+                                  <span style={{
+                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                    color: 'var(--text-primary)',
+                                    padding: '0.15rem 0.45rem',
+                                    borderRadius: '0.35rem',
+                                    fontSize: '0.73rem',
+                                    fontWeight: '600',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {s.round}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Started At */}
+                              <td style={{ padding: '0.55rem 0.6rem', color: 'var(--text-secondary)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                                {s.startTimestamp ? new Date(s.startTimestamp).toLocaleString(undefined, {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }) : 'N/A'}
+                              </td>
+
+                              {/* Status & Timing */}
+                              <td style={{ padding: '0.55rem 0.6rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.3rem',
+                                    padding: '0.15rem 0.45rem',
+                                    borderRadius: '0.35rem',
+                                    fontSize: '0.73rem',
+                                    fontWeight: '700',
+                                    width: 'fit-content',
+                                    backgroundColor: s.status === 'active' 
+                                      ? 'rgba(16, 185, 129, 0.15)' 
+                                      : (s.status === 'completed' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(239, 68, 68, 0.12)'),
+                                    color: s.status === 'active' 
+                                      ? '#34D399' 
+                                      : (s.status === 'completed' ? '#60A5FA' : '#F87171'),
+                                    border: `1px solid ${s.status === 'active' 
+                                      ? 'rgba(16, 185, 129, 0.3)' 
+                                      : (s.status === 'completed' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(239, 68, 68, 0.3)')}`
+                                  }}>
+                                    <span style={{
+                                      width: '5px',
+                                      height: '5px',
+                                      borderRadius: '50%',
+                                      backgroundColor: s.status === 'active' ? '#10B981' : (s.status === 'completed' ? '#3B82F6' : '#EF4444')
+                                    }}></span>
+                                    {s.statusLabel}
+                                  </span>
+
+                                  {s.status === 'active' && s.timeRemainingStr && (
+                                    <span style={{ fontSize: '0.72rem', color: '#FBBF24', fontWeight: '700' }}>
+                                      ⏱️ {s.timeRemainingStr}
+                                    </span>
+                                  )}
+
+                                  {s.status === 'completed' && s.formattedTimeSpent && (
+                                    <span style={{ fontSize: '0.72rem', color: '#60A5FA', fontWeight: '600' }}>
+                                      ⚡ Used {s.formattedTimeSpent}
+                                      {s.matchingResult && ` (Score: ${s.matchingResult.score}/${s.matchingResult.totalQuestions || 10})`}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Extend / Action */}
+                              <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleExtendSession(s, 5)}
+                                    title={`Grant +5 minutes extension to ${s.fullName}`}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.2rem',
+                                      padding: '0.28rem 0.5rem',
+                                      backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                                      color: '#60A5FA',
+                                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                                      borderRadius: '0.4rem',
+                                      fontSize: '0.73rem',
+                                      fontWeight: '700',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.25)'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.12)'; }}
+                                  >
+                                    <Clock size={11} />
+                                    <span>+5m</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleExtendSession(s, 10)}
+                                    title={`Grant +10 minutes extension to ${s.fullName}`}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.2rem',
+                                      padding: '0.28rem 0.5rem',
+                                      backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                                      color: '#34D399',
+                                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                                      borderRadius: '0.4rem',
+                                      fontSize: '0.73rem',
+                                      fontWeight: '700',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.25)'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.12)'; }}
+                                  >
+                                    <Timer size={11} />
+                                    <span>+10m</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSubmission(s)}
+                                    title={`Reset session to allow ${s.fullName} to start fresh`}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.2rem',
+                                      padding: '0.28rem 0.5rem',
+                                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                      color: '#F87171',
+                                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                                      borderRadius: '0.4rem',
+                                      fontSize: '0.73rem',
+                                      fontWeight: '600',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
+                                  >
+                                    <RotateCcw size={11} />
+                                    <span>Reset</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
           </div>
         )}
