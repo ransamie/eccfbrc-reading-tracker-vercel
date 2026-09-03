@@ -143,6 +143,7 @@ export default function AdminDashboard({ onLogout }) {
   const [pdfScope, setPdfScope] = useState('general'); // 'general' | 'team'
   const [selectedPdfTeam, setSelectedPdfTeam] = useState('');
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [isReadingCompleted, setIsReadingCompleted] = useState(false);
 
   const handleGeneratePdf = async () => {
     setPdfGenerating(true);
@@ -203,6 +204,12 @@ export default function AdminDashboard({ onLogout }) {
         const diffTime = Math.abs(today - startDate);
         let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
         const totalDays = parseInt(d.settings?.Total_Days || 0);
+
+        const isCompleted = (totalDays > 0 && diffDays >= totalDays) ||
+                            String(d.settings?.Is_Completed || '').toUpperCase() === 'TRUE' ||
+                            String(d.settings?.Status || '').toLowerCase() === 'completed';
+        setIsReadingCompleted(isCompleted);
+
         if (totalDays > 0 && diffDays > totalDays) {
           diffDays = totalDays;
         }
@@ -594,13 +601,6 @@ export default function AdminDashboard({ onLogout }) {
           <span>Admin Command Center</span>
         </div>
         <div className="tracker-header-actions">
-          <button
-            onClick={() => setShowPdfModal(true)}
-            title="Download PDF Reports"
-            className="tracker-btn-pdf"
-          >
-            <FileDown size={16} /> <span>PDF Reports</span>
-          </button>
           <a
             href="/admin/quiz"
             title="Open Quiz Control Center"
@@ -649,13 +649,24 @@ export default function AdminDashboard({ onLogout }) {
       {activeTab === 'leaders' && (
         <div className="card">
 
-          <div style={{ marginBottom: '1.25rem' }}>
-            <h3 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
-              Mark Daily Updates for Team Leaders
-            </h3>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
-              Tap on each leader's card to record reading progress for the day.
-            </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+                Mark Daily Updates for Team Leaders
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
+                Tap on each leader's card to record reading progress for the day.
+              </p>
+            </div>
+            {isReadingCompleted && (
+              <button
+                onClick={() => setShowPdfModal(true)}
+                className="tracker-btn-pdf"
+                title="Download PDF Reports"
+              >
+                <FileDown size={16} /> <span>PDF Reports</span>
+              </button>
+            )}
           </div>
           
           {/* Modern Date Stepper Card */}
@@ -1038,13 +1049,15 @@ export default function AdminDashboard({ onLogout }) {
                   Real-time statistics, completion progress, and publication-ready executive reports
                 </p>
               </div>
-              <button
-                onClick={() => setShowPdfModal(true)}
-                className="tracker-btn-pdf"
-                title="Download PDF Reports"
-              >
-                <FileDown size={16} /> <span>PDF Reports</span>
-              </button>
+              {isReadingCompleted && (
+                <button
+                  onClick={() => setShowPdfModal(true)}
+                  className="tracker-btn-pdf"
+                  title="Download PDF Reports"
+                >
+                  <FileDown size={16} /> <span>PDF Reports</span>
+                </button>
+              )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
@@ -1443,7 +1456,7 @@ export default function AdminDashboard({ onLogout }) {
             )}
           </div>
 
-          <div className="st-expander">
+          <div className="st-expander mb-3">
             <button className="st-expander-header" onClick={() => setExpandBulkUpload(!expandBulkUpload)}>
               <span>📤 Bulk Onboard Members</span>
               <span>{expandBulkUpload ? '▼' : '▶'}</span>
@@ -1455,6 +1468,17 @@ export default function AdminDashboard({ onLogout }) {
                 <button className="btn-primary" onClick={handleBulkUpload} disabled={saving || !csvFile}>{saving ? 'Uploading...' : 'Upload to Database'}</button>
               </div>
             )}
+          </div>
+
+          <div className="st-expander">
+            <button 
+              className="st-expander-header" 
+              onClick={() => setShowPdfModal(true)}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <span>📑 Generate Executive PDF Reports</span>
+              <FileDown size={16} />
+            </button>
           </div>
         </div>
       )}
