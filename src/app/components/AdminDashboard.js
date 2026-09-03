@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
+import { generateGeneralPdfReport, generateTeamPdfReport } from "@/lib/pdfReportGenerator";
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 
@@ -136,6 +137,46 @@ export default function AdminDashboard({ onLogout }) {
   const [renameTeam, setRenameTeam] = useState({ oldName: '', newName: '' });
 
   const [csvFile, setCsvFile] = useState(null);
+
+  // PDF Report Export States
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfScope, setPdfScope] = useState('general'); // 'general' | 'team'
+  const [selectedPdfTeam, setSelectedPdfTeam] = useState('');
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+
+  const handleGeneratePdf = async () => {
+    setPdfGenerating(true);
+    try {
+      if (pdfScope === 'general') {
+        const filename = await generateGeneralPdfReport({
+          trackerData: data?.trackerData || [],
+          settings: data?.settings || {},
+          leadersData: data?.leadersData || [],
+          validTeams: data?.validTeams || []
+        });
+        showToast(`Downloaded: ${filename}`);
+      } else {
+        if (!selectedPdfTeam) {
+          showToast("Please select a team to generate report.", "error");
+          setPdfGenerating(false);
+          return;
+        }
+        const filename = await generateTeamPdfReport({
+          teamName: selectedPdfTeam,
+          trackerData: data?.trackerData || [],
+          settings: data?.settings || {},
+          leadersData: data?.leadersData || []
+        });
+        showToast(`Downloaded: ${filename}`);
+      }
+      setShowPdfModal(false);
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      showToast("Failed to generate PDF report", "error");
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
 
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const showToast = (message, type = 'success') => {
@@ -547,6 +588,19 @@ export default function AdminDashboard({ onLogout }) {
           <span>Admin Command Center</span>
         </div>
         <div className="tracker-header-actions">
+          <button
+            onClick={() => setShowPdfModal(true)}
+            title="Generate Official PDF Executive Reports"
+            className="tracker-btn-quiz"
+            style={{
+              background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+              borderColor: '#059669',
+              boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+              cursor: 'pointer'
+            }}
+          >
+            <FileDown size={16} /> <span>PDF Reports</span>
+          </button>
           <a
             href="/admin/quiz"
             title="Open Quiz Control Center"
@@ -977,6 +1031,30 @@ export default function AdminDashboard({ onLogout }) {
 
         return (
           <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '800' }}>📊 Challenge Analytics & Reports</h2>
+                <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  Real-time statistics, completion progress, and publication-ready executive reports
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPdfModal(true)}
+                className="tracker-btn-quiz"
+                style={{
+                  background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                  borderColor: '#059669',
+                  boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)',
+                  padding: '0.55rem 1.1rem',
+                  fontSize: '0.88rem',
+                  cursor: 'pointer'
+                }}
+                title="Generate Official PDF Executive Reports"
+              >
+                <FileDown size={16} /> <span>Export Official PDF Report</span>
+              </button>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
               <div style={{ padding: '1rem', background: 'var(--surface)', border: '1px solid var(--border-light)', borderRadius: '0.5rem', textAlign: 'center' }}><p style={{fontSize:'0.9rem', color:'var(--text-secondary)', margin:0}}>Total Assigned</p><h2 style={{margin:'5px 0 0 0', fontSize:'2rem'}}>{totalMembers}</h2></div>
               <div style={{ padding: '1rem', background: 'var(--surface)', border: '1px solid var(--border-light)', borderRadius: '0.5rem', textAlign: 'center' }}><p style={{fontSize:'0.9rem', color:'var(--text-secondary)', margin:0}}>Active Readers</p><h2 style={{margin:'5px 0 0 0', fontSize:'2rem'}}>{activeMembers}</h2></div>
@@ -1570,6 +1648,205 @@ export default function AdminDashboard({ onLogout }) {
           </div>
         );
       })()}
+
+      {/* Executive PDF Report Generator Modal */}
+      {showPdfModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem',
+          zIndex: 9999
+        }}>
+          <div style={{
+            backgroundColor: '#0f172a',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: '1rem',
+            maxWidth: '520px',
+            width: '100%',
+            padding: '1.75rem',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
+            position: 'relative',
+            boxSizing: 'border-box'
+          }}>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  width: '42px', height: '42px', borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
+                  flexShrink: 0
+                }}>
+                  <FileText size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)' }}>
+                    Export Executive PDF Report
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    Official challenge report with logo, stats & honor rolls
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowPdfModal(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.2rem' }}
+                title="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scope Selector */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>
+                Select Report Scope
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setPdfScope('general')}
+                  style={{
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    border: `1.5px solid ${pdfScope === 'general' ? 'var(--accent)' : 'var(--border-light)'}`,
+                    backgroundColor: pdfScope === 'general' ? 'rgba(59, 130, 246, 0.12)' : 'var(--surface-secondary)',
+                    color: pdfScope === 'general' ? '#60A5FA' : 'var(--text-primary)',
+                    fontWeight: '700',
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span>🌐 General Global</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>All Teams Combined</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPdfScope('team')}
+                  style={{
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    border: `1.5px solid ${pdfScope === 'team' ? 'var(--accent)' : 'var(--border-light)'}`,
+                    backgroundColor: pdfScope === 'team' ? 'rgba(59, 130, 246, 0.12)' : 'var(--surface-secondary)',
+                    color: pdfScope === 'team' ? '#60A5FA' : 'var(--text-primary)',
+                    fontWeight: '700',
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span>👥 Specific Team</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>Single Team Roster</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Team Dropdown Selector (if team scope) */}
+            {pdfScope === 'team' && (
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>
+                  Choose Team
+                </label>
+                <select
+                  className="input-field"
+                  value={selectedPdfTeam}
+                  onChange={(e) => setSelectedPdfTeam(e.target.value)}
+                  style={{ marginBottom: 0 }}
+                >
+                  <option value="">-- Select Team --</option>
+                  {data?.validTeams?.filter(t => t.toLowerCase() !== 'admin').map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Live Data Preview */}
+            <div style={{
+              backgroundColor: 'var(--surface-secondary)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '0.65rem',
+              padding: '0.85rem 1rem',
+              marginBottom: '1.5rem',
+              fontSize: '0.85rem'
+            }}>
+              <div style={{ fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span>📊 Document Preview:</span>
+              </div>
+              <p style={{ margin: '0 0 0.4rem 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                {pdfScope === 'general' 
+                  ? `Includes all ${data?.validTeams?.length || 0} teams, executive statistics, team breakdown table, and honor roll list of 100% completers.`
+                  : selectedPdfTeam
+                    ? `Generates report for Team ${selectedPdfTeam} with assigned leaders, member progress breakdown (e.g. 87/87 days), and final status.`
+                    : `Select a team above to preview summary.`
+                }
+              </p>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '0.78rem' }}>
+                <span>Duration: <strong style={{ color: 'var(--text-primary)' }}>{data?.settings?.Total_Days || 87} Days</strong></span>
+                <span>Total Members: <strong style={{ color: 'var(--text-primary)' }}>{data?.trackerData?.length || 0}</strong></span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowPdfModal(false)}
+                style={{
+                  padding: '0.65rem 1.25rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid var(--border-light)',
+                  backgroundColor: 'var(--surface)',
+                  color: 'var(--text-secondary)',
+                  fontWeight: '600',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleGeneratePdf}
+                disabled={pdfGenerating || (pdfScope === 'team' && !selectedPdfTeam)}
+                style={{
+                  padding: '0.65rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                  color: '#ffffff',
+                  fontWeight: '700',
+                  fontSize: '0.9rem',
+                  cursor: (pdfGenerating || (pdfScope === 'team' && !selectedPdfTeam)) ? 'not-allowed' : 'pointer',
+                  opacity: (pdfGenerating || (pdfScope === 'team' && !selectedPdfTeam)) ? 0.6 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
+                }}
+              >
+                <FileDown size={17} />
+                <span>{pdfGenerating ? 'Generating PDF...' : 'Download Official PDF'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
