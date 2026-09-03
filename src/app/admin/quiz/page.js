@@ -316,6 +316,23 @@ export default function AdminQuizPage() {
       setQuizUrl(`${window.location.origin}/quiz`);
       const savedAiKey = sessionStorage.getItem("admin_gemini_api_key") || "";
       if (savedAiKey) setAiApiKey(savedAiKey);
+
+      // Verify Admin Session
+      const sessionStr = localStorage.getItem("eccf_session");
+      let isAdmin = false;
+      if (sessionStr) {
+        try {
+          const sess = JSON.parse(sessionStr);
+          if (sess.role === "admin") {
+            isAdmin = true;
+          }
+        } catch (e) {}
+      }
+
+      if (!isAdmin) {
+        router.replace("/");
+        return;
+      }
     }
 
     fetchWorkspaceData();
