@@ -119,3 +119,198 @@ export async function fetchLeadersData() {
   leadersCache.timestamp = Date.now();
   return leadersCache.data;
 }
+
+export async function getOrCreateArchivesSheet(db) {
+  if (db.sheetsByTitle["Challenge_Archives"]) {
+    return db.sheetsByTitle["Challenge_Archives"];
+  }
+  try {
+    const newSheet = await db.addSheet({
+      title: "Challenge_Archives",
+      headerValues: ["id", "name", "edition", "startDate", "totalDays", "totalMembers", "trackerSheetTitle", "leadersSheetTitle", "archivedAt"]
+    });
+    return newSheet;
+  } catch (err) {
+    await db.loadInfo();
+    return db.sheetsByTitle["Challenge_Archives"];
+  }
+}
+
+export async function fetchEditionsRegistry() {
+  const db = await getDatabase();
+  const archivesSheet = await getOrCreateArchivesSheet(db);
+  await archivesSheet.loadHeaderRow();
+  const rows = await archivesSheet.getRows();
+  
+  const archives = rows.map(r => ({
+    id: String(r.get('id') || '').trim(),
+    name: String(r.get('name') || '').trim(),
+    edition: String(r.get('edition') || '').trim(),
+    startDate: String(r.get('startDate') || '').trim(),
+    totalDays: String(r.get('totalDays') || '').trim(),
+    totalMembers: String(r.get('totalMembers') || '').trim(),
+    trackerSheetTitle: String(r.get('trackerSheetTitle') || '').trim(),
+    leadersSheetTitle: String(r.get('leadersSheetTitle') || '').trim(),
+    archivedAt: String(r.get('archivedAt') || '').trim()
+  })).filter(a => a.id && a.trackerSheetTitle);
+
+  return archives.reverse(); // Newest archives first
+}
+
+export async function fetchArchivedEditionData(archiveId) {
+  const db = await getDatabase();
+  const archives = await fetchEditionsRegistry();
+  const targetArchive = archives.find(a => a.id === archiveId);
+
+  if (!targetArchive) {
+    throw new Error(`Archived edition with ID "${archiveId}" not found.`);
+  }
+
+  await db.loadInfo();
+  const trackerSheet = db.sheetsByTitle[targetArchive.trackerSheetTitle];
+  const leadersSheet = targetArchive.leadersSheetTitle ? db.sheetsByTitle[targetArchive.leadersSheetTitle] : null;
+
+  if (!trackerSheet) {
+    throw new Error(`Archived tracker sheet "${targetArchive.trackerSheetTitle}" was not found.`);
+  }
+
+  await trackerSheet.loadHeaderRow();
+  const [trackerRows, leadersRows] = await Promise.all([
+    trackerSheet.getRows(),
+    leadersSheet ? (async () => { await leadersSheet.loadHeaderRow(); return leadersSheet.getRows(); })() : Promise.resolve([])
+  ]);
+
+  const trackerData = trackerRows.map(row => row.toObject());
+  const leadersData = leadersRows ? leadersRows.map(row => row.toObject()) : [];
+
+  const validTeams = Array.from(new Set(
+    trackerData.map(r => String(r.Team_Name || r.Team || '').trim()).filter(Boolean)
+  ));
+
+  const archiveSettings = {
+    Challenge_Name: targetArchive.name || "ECCF Bible Reading Challenge Tracker",
+    Challenge_Edition: targetArchive.edition || "Archived Challenge",
+    Start_Date: targetArchive.startDate || "",
+    Total_Days: targetArchive.totalDays || "",
+    Current_Round: "Completed",
+    Is_Completed: "TRUE",
+    Status: "Completed"
+  };
+
+  return {
+    isArchive: true,
+    archiveInfo: targetArchive,
+    settings: archiveSettings,
+    trackerData,
+    leadersData,
+    validTeams,
+    teamReflection: ""
+  };
+}
+
+export async function archiveAndResetChallenge({ newChallengeName, newEdition, newStartDate, newTotalDays }) {
+  const db = await getDatabase();
+  await db.loadInfo();
+
+  const settingsSheet = db.sheetsByTitle["Global_Settings"];
+  const trackerSheet = db.sheetsByTitle["Tracker_Data"];
+  const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
+  const credentialsSheet = db.sheetsByTitle["Team_Credentials"];
+
+  if (!settingsSheet || !trackerSheet || !leadersSheet) {
+    throw new Error("Core sheets missing from Google Spreadsheet.");
+  }
+
+  // 1. Read Current Challenge Settings & Stats
+  const settingsRows = await settingsSheet.getRows();
+  const currentSettings = {};
+  settingsRows.forEach(r => {
+    if (r.get('Setting_Key')) currentSettings[r.get('Setting_Key')] = r.get('Setting_Value');
+  });
+
+  await trackerSheet.loadHeaderRow();
+  const currentTrackerRows = await trackerSheet.getRows();
+  const totalMembers = currentTrackerRows.length;
+
+  const currentEditionName = currentSettings['Challenge_Edition'] || currentSettings['Challenge_Name'] || 'Challenge';
+  const cleanEditionSlug = String(currentEditionName).replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 30) || 'Edition';
+  const timestampStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  const randomSuffix = Math.floor(100 + Math.random() * 900);
+
+  const trackerArchiveTitle = `Archive_Tracker_${cleanEditionSlug}_${timestampStr}_${randomSuffix}`.slice(0, 95);
+  const leadersArchiveTitle = `Archive_Leaders_${cleanEditionSlug}_${timestampStr}_${randomSuffix}`.slice(0, 95);
+
+  // 2. Duplicate Active Sheets for Permanent Archive
+  await trackerSheet.duplicate({ title: trackerArchiveTitle });
+  await leadersSheet.duplicate({ title: leadersArchiveTitle });
+
+  // 3. Register in Challenge_Archives sheet
+  const archivesSheet = await getOrCreateArchivesSheet(db);
+  const archiveId = `arch_${Date.now()}`;
+  await archivesSheet.addRow({
+    id: archiveId,
+    name: currentSettings['Challenge_Name'] || "ECCF Bible Reading Challenge Tracker",
+    edition: currentEditionName,
+    startDate: currentSettings['Start_Date'] || "",
+    totalDays: currentSettings['Total_Days'] || "",
+    totalMembers: String(totalMembers),
+    trackerSheetTitle: trackerArchiveTitle,
+    leadersSheetTitle: leadersArchiveTitle,
+    archivedAt: new Date().toISOString()
+  });
+
+  // 4. Reset Active Tracker_Data to Clean Slate
+  await trackerSheet.clearRows();
+  await trackerSheet.setHeaderRow(['Team_Name', 'Member_Name', 'WhatsApp_Number', 'Status']);
+
+  // 5. Reset Active Leaders_Tracker_Data to Clean Slate
+  await leadersSheet.clearRows();
+  await leadersSheet.setHeaderRow(['Team Leader', 'Status', 'Team']);
+
+  // 6. Reset Team Credentials Reflections
+  if (credentialsSheet) {
+    const credsRows = await credentialsSheet.getRows();
+    for (const row of credsRows) {
+      if (row.get('Current_Reflection')) {
+        row.set('Current_Reflection', '');
+        await row.save();
+      }
+    }
+  }
+
+  // 7. Update Global Settings for the New Edition
+  const newSettingsMap = {
+    'Challenge_Name': newChallengeName || currentSettings['Challenge_Name'] || "ECCF Bible Reading Challenge Tracker",
+    'Challenge_Edition': newEdition || "📖 New Reading Edition",
+    'Start_Date': newStartDate || new Date().toISOString().split('T')[0],
+    'Total_Days': String(newTotalDays || "90"),
+    'Current_Round': '1',
+    'Admin_Reflection': '',
+    'Is_Completed': 'FALSE',
+    'Status': 'Active'
+  };
+
+  const foundKeys = new Set();
+  for (const row of settingsRows) {
+    const key = row.get('Setting_Key');
+    if (newSettingsMap[key] !== undefined) {
+      row.set('Setting_Value', newSettingsMap[key]);
+      await row.save();
+      foundKeys.add(key);
+    }
+  }
+  for (const [key, val] of Object.entries(newSettingsMap)) {
+    if (!foundKeys.has(key)) {
+      await settingsSheet.addRow({ Setting_Key: key, Setting_Value: val });
+    }
+  }
+
+  invalidateCache();
+  return {
+    success: true,
+    archiveId,
+    trackerArchiveTitle,
+    leadersArchiveTitle,
+    newEdition
+  };
+}

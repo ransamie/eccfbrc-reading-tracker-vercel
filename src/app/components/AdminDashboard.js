@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { generateGeneralPdfReport, generateTeamPdfReport, generateLeadersPdfReport } from "@/lib/pdfReportGenerator";
 import { AgGridReact } from 'ag-grid-react';
@@ -139,6 +139,19 @@ export default function AdminDashboard({ onLogout }) {
 
   const [csvFile, setCsvFile] = useState(null);
 
+  // Challenge Edition Switcher & Archiving States
+  const [selectedEdition, setSelectedEdition] = useState('live');
+  const [editionsList, setEditionsList] = useState([]);
+  const [expandArchiveSection, setExpandArchiveSection] = useState(false);
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [newEditionForm, setNewEditionForm] = useState({
+    challengeName: '',
+    challengeEdition: '',
+    startDate: '',
+    totalDays: '90'
+  });
+  const [archiving, setArchiving] = useState(false);
+
   // PDF Report Export States
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfScope, setPdfScope] = useState('general'); // 'general' | 'team'
@@ -192,13 +205,16 @@ export default function AdminDashboard({ onLogout }) {
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  const loadData = (isManualRefresh = false) => {
+  const loadData = (isManualRefresh = false, editionOverride = null) => {
     setLoading(true);
-    return fetch(`/api/data?type=admin&t=${Date.now()}`, { cache: 'no-store' })
+    const editionParam = editionOverride !== null ? editionOverride : selectedEdition;
+    return fetch(`/api/data?type=admin&edition=${encodeURIComponent(editionParam)}&t=${Date.now()}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(d => {
         setData(d);
+        if (d.editionsList) setEditionsList(d.editionsList);
         
+        const isArch = d.isArchive === true;
         const startDateStr = d.settings?.Start_Date || new Date().toISOString().split('T')[0];
         const [sYear, sMonth, sDay] = startDateStr.split('-').map(Number);
         const startDate = sYear ? new Date(sYear, sMonth - 1, sDay) : new Date(startDateStr);
@@ -212,13 +228,13 @@ export default function AdminDashboard({ onLogout }) {
 
         const totalDays = parseInt(d.settings?.Total_Days || 0);
 
-        // Challenge is completed once today's date reaches or passes the end date (elapsedDays >= totalDays)
-        const isCompleted = (totalDays > 0 && elapsedDays >= totalDays) ||
+        // Challenge is completed once today's date reaches or passes the end date (or if in archive mode)
+        const isCompleted = isArch || (totalDays > 0 && elapsedDays >= totalDays) ||
                             String(d.settings?.Is_Completed || '').toUpperCase() === 'TRUE' ||
                             String(d.settings?.Status || '').toLowerCase() === 'completed';
         setIsReadingCompleted(isCompleted);
 
-        let activeDay = elapsedDays;
+        let activeDay = isArch && totalDays > 0 ? totalDays : elapsedDays;
         if (totalDays > 0 && activeDay > totalDays) {
           activeDay = totalDays;
         }
@@ -226,21 +242,23 @@ export default function AdminDashboard({ onLogout }) {
 
         setCurrentDayNum(activeDay);
         setCurrentDayStr(calcCurrentDay);
-        if (!adminSelectedDay) setAdminSelectedDay(calcCurrentDay);
+        if (!adminSelectedDay || isArch) setAdminSelectedDay(calcCurrentDay);
         setReflection(d.teamReflection || "");
 
-        setSettingsForm({ 
-          currentRound: parseInt(d.settings?.Current_Round || 1), 
-          evictionThreshold: parseInt(d.settings?.Eviction_Threshold || 5),
-          challengeName: d.settings?.Challenge_Name || "ECCF Bible Reading Challenge Tracker",
-          challengeEdition: d.settings?.Challenge_Edition || "📖 June-August NT Edition",
-          totalDays: d.settings?.Total_Days || "",
-          startDate: d.settings?.Start_Date || "",
-          mornStart: parse12to24(d.settings?.Morning_Window_Start || "04:00 AM"),
-          mornEnd: parse12to24(d.settings?.Morning_Window_End || "11:00 AM"),
-          eveStart: parse12to24(d.settings?.Evening_Window_Start || "06:00 PM"),
-          eveEnd: parse12to24(d.settings?.Evening_Window_End || "11:00 PM")
-        });
+        if (!isArch) {
+          setSettingsForm({ 
+            currentRound: parseInt(d.settings?.Current_Round || 1), 
+            evictionThreshold: parseInt(d.settings?.Eviction_Threshold || 5),
+            challengeName: d.settings?.Challenge_Name || "ECCF Bible Reading Challenge Tracker",
+            challengeEdition: d.settings?.Challenge_Edition || "📖 June-August NT Edition",
+            totalDays: d.settings?.Total_Days || "",
+            startDate: d.settings?.Start_Date || "",
+            mornStart: parse12to24(d.settings?.Morning_Window_Start || "04:00 AM"),
+            mornEnd: parse12to24(d.settings?.Morning_Window_End || "11:00 AM"),
+            eveStart: parse12to24(d.settings?.Evening_Window_Start || "06:00 PM"),
+            eveEnd: parse12to24(d.settings?.Evening_Window_End || "11:00 PM")
+          });
+        }
 
         const initialUpdates = {};
         if (d.leadersData) {
@@ -259,6 +277,40 @@ export default function AdminDashboard({ onLogout }) {
         setLoading(false);
         if (isManualRefresh === true) showToast("Error refreshing data", "error");
       });
+  };
+
+  const handleArchiveChallenge = async () => {
+    if (!newEditionForm.challengeEdition || !newEditionForm.startDate) {
+      return showToast("Please provide the New Edition Subtitle and Start Date.", "error");
+    }
+    setArchiving(true);
+    try {
+      const res = await fetch('/api/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'admin_archive_challenge',
+          payload: {
+            newChallengeName: newEditionForm.challengeName || data?.settings?.Challenge_Name,
+            newEdition: newEditionForm.challengeEdition,
+            newStartDate: newEditionForm.startDate,
+            newTotalDays: newEditionForm.totalDays || "90"
+          }
+        })
+      });
+      const resData = await res.json();
+      if (!res.ok || !resData.success) throw new Error(resData.message || "Failed to archive challenge");
+      
+      showToast(`Challenge archived successfully! Blank slate ready for ${newEditionForm.challengeEdition}`);
+      setArchiveModalOpen(false);
+      setSelectedEdition('live');
+      await loadData(false, 'live');
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || "Error archiving challenge", "error");
+    } finally {
+      setArchiving(false);
+    }
   };
 
   useEffect(() => { loadData(); }, []);
@@ -1053,6 +1105,70 @@ export default function AdminDashboard({ onLogout }) {
 
         return (
           <div className="card">
+            {/* Edition Switcher Bar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem', paddingBottom: '0.85rem', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  Edition:
+                </span>
+                <select
+                  value={selectedEdition}
+                  onChange={(e) => {
+                    const newEdition = e.target.value;
+                    setSelectedEdition(newEdition);
+                    loadData(false, newEdition);
+                  }}
+                  className="tracker-edition-select"
+                >
+                  <option value="live">
+                    🟢 Active: {data?.isArchive ? "Current Live Challenge" : (data?.settings?.Challenge_Edition || "Active Challenge")}
+                  </option>
+                  {editionsList && editionsList.map(arch => (
+                    <option key={arch.id} value={arch.id}>
+                      📁 Archive: {arch.edition} ({arch.startDate || 'Past'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {data?.isArchive && (
+                <button 
+                  onClick={() => {
+                    setSelectedEdition('live');
+                    loadData(false, 'live');
+                  }}
+                  className="tracker-btn-archive-return"
+                  title="Return to live tracking"
+                >
+                  ↩ Return to Live Challenge
+                </button>
+              )}
+            </div>
+
+            {/* Archive Notice Banner */}
+            {data?.isArchive && (
+              <div className="tracker-archive-banner">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <Archive size={20} color="#F59E0B" />
+                  <div>
+                    <strong style={{ color: '#FEF3C7', fontSize: '0.95rem' }}>Viewing Historical Archive: {data?.settings?.Challenge_Edition}</strong>
+                    <div style={{ fontSize: '0.8rem', color: '#FDE68A', opacity: 0.9 }}>
+                      Archived snapshot • {data?.trackerData?.length || 0} total participants • Read-only historical review
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    setSelectedEdition('live');
+                    loadData(false, 'live');
+                  }}
+                  style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(245, 158, 11, 0.5)', color: '#FBBF24', padding: '0.35rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontWeight: '700', fontSize: '0.8rem' }}
+                >
+                  Exit Archive
+                </button>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '800' }}>📊 Challenge Analytics & Reports</h2>
@@ -1494,6 +1610,38 @@ export default function AdminDashboard({ onLogout }) {
             )}
           </div>
 
+          <div className="st-expander mb-3" style={{ border: '1px solid rgba(239, 68, 68, 0.35)', background: 'rgba(239, 68, 68, 0.03)' }}>
+            <button className="st-expander-header" onClick={() => setExpandArchiveSection(!expandArchiveSection)} style={{ color: '#F87171' }}>
+              <span>🚀 Archive Current Challenge & Launch New Edition</span>
+              <span>{expandArchiveSection ? '▼' : '▶'}</span>
+            </button>
+            {expandArchiveSection && (
+              <div className="st-expander-content">
+                <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '0.5rem', padding: '0.85rem', marginBottom: '1rem' }}>
+                  <p style={{ margin: 0, fontSize: '0.88rem', color: '#FCA5A5', lineHeight: '1.5' }}>
+                    <strong>📦 Safe Automatic Archiving:</strong> Starting a new challenge will permanently duplicate and save the current challenge's readings, leader progress, and roster into a dedicated archive tab in Google Sheets. It will then reset the active tracking sheets to a clean Day 1 blank slate ready for your new roster.
+                  </p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setNewEditionForm({
+                      challengeName: data?.settings?.Challenge_Name || "ECCF Bible Reading Challenge Tracker",
+                      challengeEdition: "",
+                      startDate: new Date().toISOString().split('T')[0],
+                      totalDays: "90"
+                    });
+                    setArchiveModalOpen(true);
+                  }}
+                  style={{ width: '100%', padding: '0.75rem', fontSize: '0.95rem', fontWeight: '800', borderRadius: '0.5rem', background: '#DC2626', color: '#FFFFFF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                >
+                  <Archive size={18} />
+                  <span>Archive Current & Launch New Edition</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="st-expander">
             <button 
               className="st-expander-header" 
@@ -1917,6 +2065,166 @@ export default function AdminDashboard({ onLogout }) {
               >
                 <FileDown size={16} />
                 <span>{pdfGenerating ? 'Generating PDF...' : 'Download PDF'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Archive & Start New Challenge Modal */}
+      {archiveModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--surface)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: '0.85rem',
+            maxWidth: '560px',
+            width: '100%',
+            padding: '1.5rem',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)',
+            color: 'var(--text-primary)',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Archive size={20} color="#EF4444" />
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#F87171' }}>
+                  Archive Current & Launch New Edition
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => !archiving && setArchiveModalOpen(false)}
+                disabled={archiving}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: archiving ? 'not-allowed' : 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Current Edition Backup Info */}
+            <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '0.5rem', padding: '0.85rem', marginBottom: '1.25rem' }}>
+              <div style={{ fontWeight: '700', color: '#FBBF24', fontSize: '0.88rem', marginBottom: '0.2rem' }}>
+                📁 What will be archived:
+              </div>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: '#FEF3C7', lineHeight: '1.4' }}>
+                Current edition <strong>"{data?.settings?.Challenge_Edition || 'Active Challenge'}"</strong> with all its daily reading checkmarks, leaderboard scores, and member records will be duplicated into a permanent Google Sheets archive tab. You can navigate back to view it anytime via the Edition Switcher.
+              </p>
+            </div>
+
+            {/* New Edition Inputs */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: '700', margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>
+                ✨ Configure New Edition:
+              </h4>
+
+              <div style={{ marginBottom: '0.85rem' }}>
+                <label className="label">Reading Challenge Title</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  placeholder="e.g., ECCF Bible Reading Challenge Tracker" 
+                  value={newEditionForm.challengeName} 
+                  onChange={(e) => setNewEditionForm({...newEditionForm, challengeName: e.target.value})} 
+                />
+              </div>
+
+              <div style={{ marginBottom: '0.85rem' }}>
+                <label className="label">New Edition Subtitle (e.g. Season / Book name) *</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  placeholder="e.g., 📖 September - December Epistles Edition" 
+                  value={newEditionForm.challengeEdition} 
+                  onChange={(e) => setNewEditionForm({...newEditionForm, challengeEdition: e.target.value})} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.85rem' }}>
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <label className="label">Start Date (Day 1 Kickoff) *</label>
+                  <input 
+                    type="date" 
+                    className="input-field" 
+                    value={newEditionForm.startDate} 
+                    onChange={(e) => setNewEditionForm({...newEditionForm, startDate: e.target.value})} 
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <label className="label">Total Reading Days</label>
+                  <input 
+                    type="number" 
+                    className="input-field" 
+                    placeholder="e.g., 87 or 90" 
+                    value={newEditionForm.totalDays} 
+                    onChange={(e) => setNewEditionForm({...newEditionForm, totalDays: e.target.value})} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Warning Message */}
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1.25rem' }}>
+              <p style={{ margin: 0, fontSize: '0.8rem', color: '#FCA5A5', lineHeight: '1.4' }}>
+                ⚠️ <strong>Blank Slate Confirmation:</strong> Active tracking sheets will be wiped clean for Day 1. Make sure you are ready to onboard new participants.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setArchiveModalOpen(false)}
+                disabled={archiving}
+                style={{
+                  padding: '0.6rem 1.1rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid var(--border-light)',
+                  backgroundColor: 'var(--surface-secondary)',
+                  color: 'var(--text-secondary)',
+                  fontWeight: '600',
+                  fontSize: '0.85rem',
+                  cursor: archiving ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleArchiveChallenge}
+                disabled={archiving || !newEditionForm.challengeEdition || !newEditionForm.startDate}
+                style={{
+                  padding: '0.6rem 1.4rem',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  fontWeight: '700',
+                  fontSize: '0.85rem',
+                  cursor: (archiving || !newEditionForm.challengeEdition || !newEditionForm.startDate) ? 'not-allowed' : 'pointer',
+                  opacity: (archiving || !newEditionForm.challengeEdition || !newEditionForm.startDate) ? 0.6 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem'
+                }}
+              >
+                <Archive size={16} />
+                <span>{archiving ? 'Archiving & Launching...' : 'Confirm Archive & Launch'}</span>
               </button>
             </div>
           </div>

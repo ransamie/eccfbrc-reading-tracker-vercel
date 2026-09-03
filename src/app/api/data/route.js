@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchGlobalData, fetchLeadersData } from '@/lib/googleSheets';
+import { fetchGlobalData, fetchLeadersData, fetchEditionsRegistry, fetchArchivedEditionData } from '@/lib/googleSheets';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -11,19 +11,32 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const team = searchParams.get('team');
+    const edition = searchParams.get('edition');
 
     if (type === 'admin') {
+      const editionsList = await fetchEditionsRegistry().catch(() => []);
+
+      if (edition && edition !== 'live') {
+        const archivedData = await fetchArchivedEditionData(edition);
+        return NextResponse.json({
+          ...archivedData,
+          editionsList
+        });
+      }
+
       const [globalData, leadersData] = await Promise.all([
         fetchGlobalData(),
         fetchLeadersData()
       ]);
       return NextResponse.json({
+        isArchive: false,
         settings: globalData.settings,
         trackerData: globalData.trackerData,
         credentialsData: globalData.credentialsData,
         validTeams: globalData.validTeams,
         leadersData: leadersData,
-        teamReflection: globalData.settings['Admin_Reflection'] || ""
+        teamReflection: globalData.settings['Admin_Reflection'] || "",
+        editionsList
       });
     }
 

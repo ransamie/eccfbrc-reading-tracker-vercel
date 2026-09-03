@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, fetchGlobalData, invalidateCache } from '@/lib/googleSheets';
+import { getDatabase, fetchGlobalData, invalidateCache, archiveAndResetChallenge } from '@/lib/googleSheets';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -424,6 +424,17 @@ export async function POST(request) {
       await trackerSheet.addRows(newRows);
       invalidateCache();
       return NextResponse.json({ success: true });
+    }
+
+    if (action === 'admin_archive_challenge') {
+      const { newChallengeName, newEdition, newStartDate, newTotalDays } = payload;
+      const result = await archiveAndResetChallenge({
+        newChallengeName,
+        newEdition,
+        newStartDate,
+        newTotalDays
+      });
+      return NextResponse.json(result);
     }
 
     return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
