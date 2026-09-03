@@ -199,23 +199,31 @@ export default function AdminDashboard({ onLogout }) {
         setData(d);
         
         const startDateStr = d.settings?.Start_Date || new Date().toISOString().split('T')[0];
-        const startDate = new Date(startDateStr);
-        const today = new Date();
-        const diffTime = Math.abs(today - startDate);
-        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        const [sYear, sMonth, sDay] = startDateStr.split('-').map(Number);
+        const startDate = sYear ? new Date(sYear, sMonth - 1, sDay) : new Date(startDateStr);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        startDate.setHours(0, 0, 0, 0);
+
+        const diffMs = today.getTime() - startDate.getTime();
+        let elapsedDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+        if (elapsedDays < 1) elapsedDays = 1;
+
         const totalDays = parseInt(d.settings?.Total_Days || 0);
 
-        const isCompleted = (totalDays > 0 && diffDays >= totalDays) ||
+        // Challenge is completed once today's date reaches or passes the end date (elapsedDays >= totalDays)
+        const isCompleted = (totalDays > 0 && elapsedDays >= totalDays) ||
                             String(d.settings?.Is_Completed || '').toUpperCase() === 'TRUE' ||
                             String(d.settings?.Status || '').toLowerCase() === 'completed';
         setIsReadingCompleted(isCompleted);
 
-        if (totalDays > 0 && diffDays > totalDays) {
-          diffDays = totalDays;
+        let activeDay = elapsedDays;
+        if (totalDays > 0 && activeDay > totalDays) {
+          activeDay = totalDays;
         }
-        const calcCurrentDay = `Day_${diffDays}`;
+        const calcCurrentDay = `Day_${activeDay}`;
 
-        setCurrentDayNum(diffDays);
+        setCurrentDayNum(activeDay);
         setCurrentDayStr(calcCurrentDay);
         if (!adminSelectedDay) setAdminSelectedDay(calcCurrentDay);
         setReflection(d.teamReflection || "");
