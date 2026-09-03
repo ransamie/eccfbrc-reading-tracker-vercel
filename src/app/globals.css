@@ -687,22 +687,26 @@ select option {
   .tracker-header-wrap {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 0.85rem !important;
+    gap: 0.75rem !important;
+  }
+
+  .tracker-header-title {
+    font-size: 1.25rem !important;
   }
 
   .tracker-header-actions {
     width: 100% !important;
-    display: flex !important;
-    justify-content: space-between !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr auto auto !important;
     gap: 0.4rem !important;
   }
 
   .tracker-header-actions > * {
-    flex: 1 1 auto !important;
     justify-content: center !important;
     text-align: center !important;
-    padding: 0.45rem 0.55rem !important;
+    padding: 0 0.5rem !important;
     font-size: 0.78rem !important;
+    height: 2.25rem !important;
   }
 
   .tracker-tabs-bar {
@@ -738,7 +742,6 @@ select option {
 /* Main Header */
 .tracker-header-wrap {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
@@ -748,110 +751,118 @@ select option {
 .tracker-header-title {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  font-size: 1.5rem;
-  font-weight: 700;
+  gap: 0.75rem;
+  font-size: 1.35rem;
+  font-weight: 800;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .tracker-header-title img {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   background-color: #000;
-  padding: 6px;
-  border-radius: 12px;
+  padding: 5px;
+  border-radius: 10px;
   object-fit: contain;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
 }
 
 .tracker-header-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
 }
 
 .tracker-btn-quiz {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.45rem;
-  background: linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
-  color: #FFFFFF !important;
-  padding: 0 0.95rem;
-  height: 2.5rem;
+  background: var(--surface-secondary);
+  color: #60A5FA !important;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  padding: 0 0.85rem;
+  height: 2.35rem;
   border-radius: 0.55rem;
-  font-weight: 700;
-  font-size: 0.85rem;
+  font-weight: 600;
+  font-size: 0.82rem;
   text-decoration: none;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .tracker-btn-quiz:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #60A5FA;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
 .tracker-btn-pdf {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.45rem;
   background: var(--surface-secondary);
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border-light);
-  padding: 0 0.95rem;
-  height: 2.5rem;
+  color: #34D399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 0 0.85rem;
+  height: 2.35rem;
   border-radius: 0.55rem;
-  font-weight: 700;
-  font-size: 0.85rem;
+  font-weight: 600;
+  font-size: 0.82rem;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .tracker-btn-pdf:hover {
-  background: var(--surface);
-  border-color: rgba(16, 185, 129, 0.5);
-  color: #34D399 !important;
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #34D399;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
 }
 
 .tracker-btn-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.35rem;
+  height: 2.35rem;
   background: var(--surface-secondary);
-  color: var(--text-primary);
+  color: var(--text-secondary);
   border: 1px solid var(--border-light);
   border-radius: 0.55rem;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   cursor: pointer;
 }
 
 .tracker-btn-icon:hover {
   background: var(--surface);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--text-primary);
+  transform: translateY(-1px);
 }
 
 .tracker-btn-logout {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  background: transparent;
-  color: #EF4444;
+  justify-content: center;
+  gap: 0.4rem;
+  background: var(--surface-secondary);
+  color: #EF4444 !important;
   border: 1px solid rgba(239, 68, 68, 0.35);
-  padding: 0 0.95rem;
-  height: 2.5rem;
+  padding: 0 0.85rem;
+  height: 2.35rem;
   border-radius: 0.55rem;
-  font-weight: 700;
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 0.82rem;
+  transition: all 0.15s ease;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -859,6 +870,7 @@ select option {
 .tracker-btn-logout:hover {
   background: rgba(239, 68, 68, 0.15);
   border-color: #EF4444;
+  transform: translateY(-1px);
 }
 
 /* Modern Segmented Navigation Tabs */
