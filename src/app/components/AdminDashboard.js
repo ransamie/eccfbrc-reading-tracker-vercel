@@ -125,6 +125,7 @@ export default function AdminDashboard({ onLogout }) {
     challengeName: "",
     challengeEdition: "",
     totalDays: "",
+    startDate: "",
     mornStart: "",
     mornEnd: "",
     eveStart: "",
@@ -234,6 +235,7 @@ export default function AdminDashboard({ onLogout }) {
           challengeName: d.settings?.Challenge_Name || "ECCF Bible Reading Challenge Tracker",
           challengeEdition: d.settings?.Challenge_Edition || "📖 June-August NT Edition",
           totalDays: d.settings?.Total_Days || "",
+          startDate: d.settings?.Start_Date || "",
           mornStart: parse12to24(d.settings?.Morning_Window_Start || "04:00 AM"),
           mornEnd: parse12to24(d.settings?.Morning_Window_End || "11:00 AM"),
           eveStart: parse12to24(d.settings?.Evening_Window_Start || "06:00 PM"),
@@ -468,6 +470,7 @@ export default function AdminDashboard({ onLogout }) {
         Challenge_Name: settingsForm.challengeName,
         Challenge_Edition: settingsForm.challengeEdition,
         Total_Days: settingsForm.totalDays,
+        Start_Date: settingsForm.startDate,
         Morning_Window_Start: parse24to12(settingsForm.mornStart),
         Morning_Window_End: parse24to12(settingsForm.mornEnd),
         Evening_Window_Start: parse24to12(settingsForm.eveStart),
@@ -1353,6 +1356,19 @@ export default function AdminDashboard({ onLogout }) {
                   value={settingsForm.challengeEdition || ""} 
                   onChange={(e) => setSettingsForm({...settingsForm, challengeEdition: e.target.value})} 
                 />
+              </div>
+
+              <div className="mb-3">
+                <label className="label">Challenge Start Date</label>
+                <input 
+                  type="date" 
+                  className="input-field" 
+                  value={settingsForm.startDate || ""} 
+                  onChange={(e) => setSettingsForm({...settingsForm, startDate: e.target.value})} 
+                />
+                <small style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block', marginTop: '0.25rem' }}>
+                  The official kickoff date for Day 1 of this reading edition.
+                </small>
               </div>
 
               <div className="mb-3">

@@ -292,7 +292,8 @@ export async function POST(request) {
         Evening_Window_End,
         Challenge_Name,
         Challenge_Edition,
-        Total_Days
+        Total_Days,
+        Start_Date
       } = payload;
       const settingsSheet = db.sheetsByTitle["Global_Settings"];
       const rows = await settingsSheet.getRows();
@@ -306,7 +307,8 @@ export async function POST(request) {
         'Evening_Window_End': Evening_Window_End,
         'Challenge_Name': Challenge_Name,
         'Challenge_Edition': Challenge_Edition,
-        'Total_Days': Total_Days
+        'Total_Days': Total_Days,
+        'Start_Date': Start_Date
       };
 
       const foundKeys = new Set();
