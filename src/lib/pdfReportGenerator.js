@@ -1,16 +1,36 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Convert image URL to Base64 Data URL for jsPDF
-async function getLogoBase64(url = '/eccfbrclogo.png') {
+// Clean all emojis and non-standard characters that break standard PDF fonts
+function cleanText(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    // Strip emojis and miscellaneous symbols
+    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}\u{FE00}-\u{FE0F}\u{1F1E6}-\u{1F1FF}]/gu, '')
+    // Strip non-printable or non-ASCII characters
+    .replace(/[^\x20-\x7E\t\n\r]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Convert and resize image to compact Base64 for clean and lightweight PDF rendering
+async function getCompressedLogoBase64(url = '/eccfbrclogo.png') {
   try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.src = url;
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
     });
+
+    const canvas = document.createElement('canvas');
+    const size = 160;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, size, size);
+    return canvas.toDataURL('image/png');
   } catch (e) {
     console.error('Failed to load logo for PDF:', e);
     return null;
@@ -18,7 +38,7 @@ async function getLogoBase64(url = '/eccfbrclogo.png') {
 }
 
 function normalizeTeam(name) {
-  return String(name || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+  return cleanText(name).toLowerCase();
 }
 
 function getLeaderNames(teamName, leadersData = []) {
@@ -27,8 +47,8 @@ function getLeaderNames(teamName, leadersData = []) {
     const lTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'];
     return normalizeTeam(lTeam) === norm;
   });
-  const leader = teamLeaders[0]?.Member_Name || teamLeaders[0]?.Name || teamLeaders[0]?.['Team Leader'] || 'N/A';
-  const asst = teamLeaders[1]?.Member_Name || teamLeaders[1]?.Name || teamLeaders[1]?.['Team Leader'] || '';
+  const leader = cleanText(teamLeaders[0]?.Member_Name || teamLeaders[0]?.Name || teamLeaders[0]?.['Team Leader'] || 'N/A');
+  const asst = cleanText(teamLeaders[1]?.Member_Name || teamLeaders[1]?.Name || teamLeaders[1]?.['Team Leader'] || '');
   return asst ? `${leader} & ${asst}` : leader;
 }
 
@@ -45,7 +65,7 @@ function calculateMemberProgress(member, totalDays) {
 }
 
 // -------------------------------------------------------------
-// GENERAL GLOBAL CHALLENGE REPORT (ALL TEAMS)
+// 1. GENERAL CHALLENGE REPORT (ALL TEAMS COMBINED)
 // -------------------------------------------------------------
 export async function generateGeneralPdfReport({ trackerData = [], settings = {}, leadersData = [], validTeams = [] }) {
   const doc = new jsPDF({
@@ -57,18 +77,18 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 36;
-  const contentWidth = pageWidth - (margin * 2);
+  const contentWidth = pageWidth - (margin * 2); // 523.28 pt
 
   const totalDays = parseInt(settings.Total_Days || 87, 10);
-  const challengeTitle = settings.Challenge_Name || 'ECCF Bible Reading Challenge';
-  const challengeEdition = settings.Challenge_Edition || 'June-August NT Edition';
+  const challengeTitle = cleanText(settings.Challenge_Name || 'ECCF Bible Reading Challenge');
+  const challengeEdition = cleanText(settings.Challenge_Edition || 'Reading Challenge');
   const dateStr = new Intl.DateTimeFormat('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit', hour12: true,
     timeZone: 'Africa/Lagos'
   }).format(new Date()) + ' (WAT)';
 
-  // Calculate Global Statistics
+  // Calculate Numbers
   let totalAssigned = trackerData.length;
   let totalActive = 0;
   let totalEvicted = 0;
@@ -78,7 +98,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
   const completersList = [];
 
   trackerData.forEach(m => {
-    const status = String(m.Status || '').trim().toLowerCase();
+    const status = cleanText(m.Status || '').toLowerCase();
     const { completedDays, is100Percent } = calculateMemberProgress(m, totalDays);
 
     if (status === 'active') {
@@ -86,9 +106,9 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
       if (is100Percent) {
         totalCompleted100++;
         completersList.push({
-          name: String(m.Member_Name || '').trim(),
-          team: m.Team_Name || 'Unassigned',
-          phone: m.WhatsApp_Number || m.Whatsapp_Number || m.Phone || 'N/A',
+          name: cleanText(m.Member_Name || 'Participant'),
+          team: cleanText(m.Team_Name || 'Unassigned'),
+          phone: cleanText(m.WhatsApp_Number || m.Whatsapp_Number || m.Phone || 'N/A'),
           completedDays
         });
       }
@@ -102,10 +122,11 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
   const overallRetentionRate = totalAssigned > 0 ? ((totalActive / totalAssigned) * 100).toFixed(1) : '0.0';
   const overallCompletionRate = totalAssigned > 0 ? ((totalCompleted100 / totalAssigned) * 100).toFixed(1) : '0.0';
 
-  // Calculate Per-Team Breakdown
+  // Calculate Team Breakdown
   const teamsMap = {};
   trackerData.forEach(m => {
-    const team = m.Team_Name || 'Unassigned';
+    const rawTeam = m.Team_Name || 'Unassigned';
+    const team = cleanText(rawTeam);
     if (!teamsMap[team]) {
       teamsMap[team] = {
         team,
@@ -118,7 +139,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
       };
     }
     teamsMap[team].assigned++;
-    const status = String(m.Status || '').trim().toLowerCase();
+    const status = cleanText(m.Status || '').toLowerCase();
     const { is100Percent } = calculateMemberProgress(m, totalDays);
 
     if (status === 'active') {
@@ -137,92 +158,85 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     retentionRate: t.assigned > 0 ? ((t.active / t.assigned) * 100).toFixed(1) + '%' : '0.0%'
   })).sort((a, b) => b.completed100 - a.completed100 || b.active - a.active);
 
-  // Load Logo
-  const logoBase64 = await getLogoBase64();
+  const logoBase64 = await getCompressedLogoBase64();
 
   // --- HEADER SECTION ---
   doc.setFillColor(15, 23, 42); // Slate 900
-  doc.rect(0, 0, pageWidth, 90, 'F');
+  doc.rect(0, 0, pageWidth, 80, 'F');
 
   if (logoBase64) {
-    doc.addImage(logoBase64, 'PNG', margin, 15, 60, 60);
+    doc.addImage(logoBase64, 'PNG', margin, 12, 56, 56);
   }
 
-  const textStartX = logoBase64 ? margin + 72 : margin;
+  const textStartX = logoBase64 ? margin + 68 : margin;
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(challengeTitle.toUpperCase(), textStartX, 38);
+  doc.setFontSize(14);
+  doc.text(challengeTitle.toUpperCase(), textStartX, 32);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10.5);
-  doc.setTextColor(147, 197, 253); // Blue 300
-  doc.text(`${challengeEdition} • Total Challenge Duration: ${totalDays} Days`, textStartX, 54);
+  doc.setFontSize(9.5);
+  doc.setTextColor(147, 197, 253);
+  doc.text(`${challengeEdition}  |  Total Reading Days: ${totalDays} Days`, textStartX, 46);
 
-  doc.setFontSize(8.5);
-  doc.setTextColor(203, 213, 225); // Slate 300
-  doc.text(`Official Executive Summary Report • Generated: ${dateStr}`, textStartX, 68);
+  doc.setFontSize(8);
+  doc.setTextColor(203, 213, 225);
+  doc.text(`General Report  |  Date: ${dateStr}`, textStartX, 60);
 
-  let currentY = 110;
+  let currentY = 98;
 
-  // --- EXECUTIVE SUMMARY METRICS BANNER ---
+  // --- SUMMARY OVERVIEW CARDS ---
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(10.5);
   doc.setTextColor(15, 23, 42);
-  doc.text('EXECUTIVE OVERVIEW', margin, currentY);
-  currentY += 12;
+  doc.text('SUMMARY OVERVIEW', margin, currentY);
+  currentY += 8;
 
-  // Metric Cards
   const cards = [
-    { label: 'TOTAL ASSIGNED', value: totalAssigned.toString(), color: [30, 41, 59], sub: 'Registered Members' },
-    { label: 'ACTIVE / COMMITTED', value: totalActive.toString(), color: [37, 99, 235], sub: `${overallRetentionRate}% Retention` },
-    { label: 'COMPLETED 100%', value: totalCompleted100.toString(), color: [16, 185, 129], sub: `${overallCompletionRate}% Finished All Days` },
-    { label: 'TOTAL EVICTED', value: totalEvicted.toString(), color: [239, 68, 68], sub: `Behind Threshold` },
-    { label: 'LEFT / DECLINED', value: totalDeclined.toString(), color: [245, 158, 11], sub: `Voluntary / Exited` },
+    { label: 'REGISTERED', value: totalAssigned.toString(), color: [30, 41, 59], sub: 'Total Participants' },
+    { label: 'ACTIVE READERS', value: totalActive.toString(), color: [37, 99, 235], sub: `${overallRetentionRate}% Active` },
+    { label: 'COMPLETED 100%', value: totalCompleted100.toString(), color: [16, 185, 129], sub: `${overallCompletionRate}% Finished All` },
+    { label: 'EVICTED', value: totalEvicted.toString(), color: [239, 68, 68], sub: 'Missed Threshold' },
+    { label: 'DECLINED / LEFT', value: totalDeclined.toString(), color: [245, 158, 11], sub: 'Exited Reading' },
   ];
 
   const cardGap = 8;
   const cardWidth = (contentWidth - (cardGap * 4)) / 5;
-  const cardHeight = 52;
+  const cardHeight = 44;
 
   cards.forEach((c, idx) => {
     const x = margin + (idx * (cardWidth + cardGap));
     
-    // Background
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(x, currentY, cardWidth, cardHeight, 4, 4, 'FD');
+    doc.roundedRect(x, currentY, cardWidth, cardHeight, 3, 3, 'FD');
 
-    // Accent Top Line
     doc.setFillColor(c.color[0], c.color[1], c.color[2]);
-    doc.rect(x, currentY, cardWidth, 3, 'F');
+    doc.rect(x, currentY, cardWidth, 2.5, 'F');
 
-    // Value
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
+    doc.setFontSize(11);
     doc.setTextColor(c.color[0], c.color[1], c.color[2]);
-    doc.text(c.value, x + (cardWidth / 2), currentY + 22, { align: 'center' });
+    doc.text(c.value, x + (cardWidth / 2), currentY + 18, { align: 'center' });
 
-    // Label
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(6.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(c.label, x + (cardWidth / 2), currentY + 34, { align: 'center' });
+    doc.text(c.label, x + (cardWidth / 2), currentY + 28, { align: 'center' });
 
-    // Subtext
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(5.8);
+    doc.setFontSize(5.5);
     doc.setTextColor(148, 163, 184);
-    doc.text(c.sub, x + (cardWidth / 2), currentY + 44, { align: 'center' });
+    doc.text(c.sub, x + (cardWidth / 2), currentY + 37, { align: 'center' });
   });
 
-  currentY += cardHeight + 22;
+  currentY += cardHeight + 16;
 
   // --- TEAM PERFORMANCE BREAKDOWN TABLE ---
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(10.5);
   doc.setTextColor(15, 23, 42);
-  doc.text('TEAM PERFORMANCE & RETENTION BREAKDOWN', margin, currentY);
+  doc.text('TEAM PERFORMANCE BREAKDOWN', margin, currentY);
   currentY += 8;
 
   const tableRows = teamBreakdown.map((t, index) => [
@@ -240,8 +254,9 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
   autoTable(doc, {
     startY: currentY,
     margin: { left: margin, right: margin },
+    tableWidth: contentWidth,
     head: [[
-      'Rank', 'Team Name', 'Team Leaders', 'Assigned', 'Active', '100% Done', 'Evicted', 'Declined', 'Success Rate'
+      'Rank', 'Team Name', 'Team Leaders', 'Registered', 'Active', 'Completed', 'Evicted', 'Declined', 'Success Rate'
     ]],
     body: tableRows,
     theme: 'grid',
@@ -249,57 +264,59 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
       fillColor: [15, 23, 42],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8,
+      fontSize: 7.5,
       halign: 'center',
       valign: 'middle'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 32 },
+      0: { halign: 'center', cellWidth: 30 },
       1: { halign: 'left', fontStyle: 'bold', cellWidth: 85 },
-      2: { halign: 'left', fontSize: 7.5, cellWidth: 105 },
-      3: { halign: 'center', cellWidth: 46 },
-      4: { halign: 'center', cellWidth: 42, fontStyle: 'bold', textColor: [37, 99, 235] },
+      2: { halign: 'left', fontSize: 7, cellWidth: 120 },
+      3: { halign: 'center', cellWidth: 45 },
+      4: { halign: 'center', cellWidth: 40, fontStyle: 'bold', textColor: [37, 99, 235] },
       5: { halign: 'center', cellWidth: 55, fontStyle: 'bold', textColor: [16, 185, 129] },
-      6: { halign: 'center', cellWidth: 42, textColor: [239, 68, 68] },
-      7: { halign: 'center', cellWidth: 44, textColor: [245, 158, 11] },
-      8: { halign: 'center', cellWidth: 62, fontStyle: 'bold', textColor: [15, 23, 42] }
+      6: { halign: 'center', cellWidth: 40, textColor: [239, 68, 68] },
+      7: { halign: 'center', cellWidth: 40, textColor: [245, 158, 11] },
+      8: { halign: 'center', cellWidth: 68, fontStyle: 'bold', textColor: [15, 23, 42] }
     },
     styles: {
+      font: 'helvetica',
       fontSize: 7.5,
-      cellPadding: 4.5,
+      cellPadding: 3.5,
       lineColor: [226, 232, 240],
-      lineWidth: 0.5
+      lineWidth: 0.5,
+      overflow: 'linebreak'
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252]
     }
   });
 
-  // --- HONOR ROLL OF 100% COMPLETERS (PAGE BREAK) ---
+  // --- LIST OF SUCCESSFUL COMPLETED PARTICIPANTS (PAGE BREAK) ---
   if (completersList.length > 0) {
     doc.addPage();
     
-    // Mini Top Banner on subsequent pages
+    // Mini Top Banner
     doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.rect(0, 0, pageWidth, 32, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text(`${challengeTitle} • HONOR ROLL OF 100% READING FINISHERS`, margin, 25);
+    doc.setFontSize(9.5);
+    doc.text(`${challengeTitle.toUpperCase()}  |  LIST OF SUCCESSFUL COMPLETED PARTICIPANTS`, margin, 20);
 
-    currentY = 60;
+    currentY = 50;
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(16, 185, 129); // Green
-    doc.text(`🏆 CHALLENGE COMPLETION HONOR ROLL (${completersList.length} Members)`, margin, currentY);
-    currentY += 6;
+    doc.setFontSize(11);
+    doc.setTextColor(5, 150, 105);
+    doc.text(`List of Successful Completed Participants (${completersList.length} Members)`, margin, currentY);
+    currentY += 4;
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
-    doc.text(`The following faithful participants successfully completed all ${totalDays} reading days without missing a single day!`, margin, currentY + 8);
-    currentY += 18;
+    doc.text(`Participants who successfully completed all ${totalDays} reading days.`, margin, currentY + 8);
+    currentY += 16;
 
     const completersRows = completersList
       .sort((a, b) => a.team.localeCompare(b.team) || a.name.localeCompare(b.name))
@@ -308,39 +325,42 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
         c.name,
         c.team,
         c.phone,
-        `${c.completedDays}/${totalDays} Days (100%)`,
-        'COMPLETED 🏆'
+        `${c.completedDays}/${totalDays} Days`,
+        'Completed'
       ]);
 
     autoTable(doc, {
       startY: currentY,
       margin: { left: margin, right: margin },
-      head: [['#', 'Participant Name', 'Team', 'WhatsApp Number', 'Progress', 'Status']],
+      tableWidth: contentWidth,
+      head: [['#', 'Participant Name', 'Team', 'WhatsApp Number', 'Reading Record', 'Status']],
       body: completersRows,
       theme: 'grid',
       headStyles: {
-        fillColor: [5, 150, 105], // Emerald 600
+        fillColor: [5, 150, 105],
         textColor: [255, 255, 255],
         fontStyle: 'bold',
-        fontSize: 8.5,
+        fontSize: 8,
         halign: 'center'
       },
       columnStyles: {
         0: { halign: 'center', cellWidth: 30 },
-        1: { halign: 'left', fontStyle: 'bold' },
-        2: { halign: 'left' },
-        3: { halign: 'center' },
-        4: { halign: 'center', fontStyle: 'bold', textColor: [5, 150, 105] },
-        5: { halign: 'center', fontStyle: 'bold', textColor: [16, 185, 129] }
+        1: { halign: 'left', fontStyle: 'bold', cellWidth: 145 },
+        2: { halign: 'left', cellWidth: 100 },
+        3: { halign: 'center', cellWidth: 95 },
+        4: { halign: 'center', fontStyle: 'bold', textColor: [5, 150, 105], cellWidth: 75 },
+        5: { halign: 'center', fontStyle: 'bold', textColor: [16, 185, 129], cellWidth: 78 }
       },
       styles: {
-        fontSize: 8,
-        cellPadding: 4,
+        font: 'helvetica',
+        fontSize: 7.5,
+        cellPadding: 3.5,
         lineColor: [226, 232, 240],
-        lineWidth: 0.5
+        lineWidth: 0.5,
+        overflow: 'linebreak'
       },
       alternateRowStyles: {
-        fillColor: [240, 253, 244] // Emerald 50
+        fillColor: [240, 253, 244]
       }
     });
   }
@@ -353,26 +373,21 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     doc.setFontSize(7.5);
     doc.setTextColor(148, 163, 184);
 
-    // Footer line
     doc.setDrawColor(226, 232, 240);
-    doc.line(margin, pageHeight - 25, pageWidth - margin, pageHeight - 25);
+    doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
 
-    // Left: Branding
-    doc.text('ECCF Bible Reading Club • Official Executive Report', margin, pageHeight - 14);
-
-    // Right: Page Numbers
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 14, { align: 'right' });
+    doc.text('ECCF Bible Reading Club  |  General Challenge Report', margin, pageHeight - 10);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
   }
 
-  // Save / Download
-  const filename = `ECCF_Challenge_Report_Global_${new Date().toISOString().split('T')[0]}.pdf`;
+  const filename = `ECCF_General_Report_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(filename);
   return filename;
 }
 
 
 // -------------------------------------------------------------
-// INDIVIDUAL SINGLE TEAM REPORT
+// 2. INDIVIDUAL SINGLE TEAM REPORT
 // -------------------------------------------------------------
 export async function generateTeamPdfReport({ teamName, trackerData = [], settings = {}, leadersData = [] }) {
   const doc = new jsPDF({
@@ -384,23 +399,23 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 36;
-  const contentWidth = pageWidth - (margin * 2);
+  const contentWidth = pageWidth - (margin * 2); // 523.28 pt
 
+  const cleanTeam = cleanText(teamName);
   const totalDays = parseInt(settings.Total_Days || 87, 10);
-  const challengeTitle = settings.Challenge_Name || 'ECCF Bible Reading Challenge';
-  const challengeEdition = settings.Challenge_Edition || 'June-August NT Edition';
+  const challengeTitle = cleanText(settings.Challenge_Name || 'ECCF Bible Reading Challenge');
+  const challengeEdition = cleanText(settings.Challenge_Edition || 'Reading Challenge');
   const dateStr = new Intl.DateTimeFormat('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit', hour12: true,
     timeZone: 'Africa/Lagos'
   }).format(new Date()) + ' (WAT)';
 
-  // Filter Members for this team
+  // Filter Members
   const normTeam = normalizeTeam(teamName);
   const teamMembers = trackerData.filter(m => normalizeTeam(m.Team_Name) === normTeam);
   const leaderNames = getLeaderNames(teamName, leadersData);
 
-  // Statistics
   let assigned = teamMembers.length;
   let active = 0;
   let evicted = 0;
@@ -410,7 +425,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   const rosterList = [];
 
   teamMembers.forEach(m => {
-    const status = String(m.Status || '').trim().toLowerCase();
+    const status = cleanText(m.Status || '').toLowerCase();
     const { completedDays, is100Percent } = calculateMemberProgress(m, totalDays);
     const progressPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
@@ -419,21 +434,21 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
       active++;
       if (is100Percent) {
         completed100++;
-        finalBadge = 'Completed 🏆';
+        finalBadge = 'Completed';
       } else {
         finalBadge = 'Active';
       }
     } else if (status === 'evicted') {
       evicted++;
-      finalBadge = 'Evicted 🚨';
+      finalBadge = 'Evicted';
     } else if (status === 'declined' || status === 'left') {
       declined++;
       finalBadge = 'Left / Declined';
     }
 
     rosterList.push({
-      name: String(m.Member_Name || '').trim(),
-      phone: m.WhatsApp_Number || m.Whatsapp_Number || m.Phone || 'N/A',
+      name: cleanText(m.Member_Name || 'Member'),
+      phone: cleanText(m.WhatsApp_Number || m.Whatsapp_Number || m.Phone || 'N/A'),
       completedDays,
       progressPct,
       finalBadge,
@@ -445,94 +460,87 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   const completionRate = assigned > 0 ? ((completed100 / assigned) * 100).toFixed(1) : '0.0';
   const retentionRate = assigned > 0 ? ((active / assigned) * 100).toFixed(1) : '0.0';
 
-  // Load Logo
-  const logoBase64 = await getLogoBase64();
+  const logoBase64 = await getCompressedLogoBase64();
 
   // --- HEADER BANNER ---
-  doc.setFillColor(15, 23, 42); // Slate 900
-  doc.rect(0, 0, pageWidth, 90, 'F');
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pageWidth, 80, 'F');
 
   if (logoBase64) {
-    doc.addImage(logoBase64, 'PNG', margin, 15, 60, 60);
+    doc.addImage(logoBase64, 'PNG', margin, 12, 56, 56);
   }
 
-  const textStartX = logoBase64 ? margin + 72 : margin;
+  const textStartX = logoBase64 ? margin + 68 : margin;
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(`TEAM REPORT: ${teamName.toUpperCase()}`, textStartX, 36);
+  doc.setFontSize(14);
+  doc.text(`TEAM REPORT: ${cleanTeam.toUpperCase()}`, textStartX, 32);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10.5);
+  doc.setFontSize(9.5);
   doc.setTextColor(147, 197, 253);
-  doc.text(`${challengeTitle} • ${challengeEdition}`, textStartX, 52);
+  doc.text(`${challengeTitle}  |  ${challengeEdition}`, textStartX, 46);
 
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(203, 213, 225);
-  doc.text(`Team Leaders: ${leaderNames} • Generated: ${dateStr}`, textStartX, 68);
+  doc.text(`Team Leaders: ${leaderNames}  |  Date: ${dateStr}`, textStartX, 60);
 
-  let currentY = 110;
+  let currentY = 98;
 
-  // --- TEAM METRIC TILES ---
+  // --- TEAM SUMMARY CARDS ---
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(10.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(`TEAM ${teamName.toUpperCase()} PERFORMANCE SUMMARY`, margin, currentY);
-  currentY += 12;
+  doc.text(`TEAM ${cleanTeam.toUpperCase()} SUMMARY`, margin, currentY);
+  currentY += 8;
 
   const cards = [
-    { label: 'TOTAL ASSIGNED', value: assigned.toString(), color: [30, 41, 59], sub: 'Team Members' },
-    { label: 'COMMITTED / ACTIVE', value: active.toString(), color: [37, 99, 235], sub: `${retentionRate}% Retention` },
-    { label: '100% COMPLETERS', value: completed100.toString(), color: [16, 185, 129], sub: `${completionRate}% Finished All` },
-    { label: 'TOTAL EVICTED', value: evicted.toString(), color: [239, 68, 68], sub: 'Behind Eviction Rule' },
-    { label: 'LEFT / DECLINED', value: declined.toString(), color: [245, 158, 11], sub: 'Exited Challenge' },
+    { label: 'REGISTERED', value: assigned.toString(), color: [30, 41, 59], sub: 'Team Members' },
+    { label: 'ACTIVE READERS', value: active.toString(), color: [37, 99, 235], sub: `${retentionRate}% Active` },
+    { label: 'COMPLETED 100%', value: completed100.toString(), color: [16, 185, 129], sub: `${completionRate}% Finished All` },
+    { label: 'EVICTED', value: evicted.toString(), color: [239, 68, 68], sub: 'Missed Threshold' },
+    { label: 'DECLINED / LEFT', value: declined.toString(), color: [245, 158, 11], sub: 'Exited Reading' },
   ];
 
   const cardGap = 8;
   const cardWidth = (contentWidth - (cardGap * 4)) / 5;
-  const cardHeight = 52;
+  const cardHeight = 44;
 
   cards.forEach((c, idx) => {
     const x = margin + (idx * (cardWidth + cardGap));
     
-    // Background
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(x, currentY, cardWidth, cardHeight, 4, 4, 'FD');
+    doc.roundedRect(x, currentY, cardWidth, cardHeight, 3, 3, 'FD');
 
-    // Accent Line
     doc.setFillColor(c.color[0], c.color[1], c.color[2]);
-    doc.rect(x, currentY, cardWidth, 3, 'F');
+    doc.rect(x, currentY, cardWidth, 2.5, 'F');
 
-    // Value
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
+    doc.setFontSize(11);
     doc.setTextColor(c.color[0], c.color[1], c.color[2]);
-    doc.text(c.value, x + (cardWidth / 2), currentY + 22, { align: 'center' });
+    doc.text(c.value, x + (cardWidth / 2), currentY + 18, { align: 'center' });
 
-    // Label
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(6.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(c.label, x + (cardWidth / 2), currentY + 34, { align: 'center' });
+    doc.text(c.label, x + (cardWidth / 2), currentY + 28, { align: 'center' });
 
-    // Subtext
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(5.8);
+    doc.setFontSize(5.5);
     doc.setTextColor(148, 163, 184);
-    doc.text(c.sub, x + (cardWidth / 2), currentY + 44, { align: 'center' });
+    doc.text(c.sub, x + (cardWidth / 2), currentY + 37, { align: 'center' });
   });
 
-  currentY += cardHeight + 22;
+  currentY += cardHeight + 16;
 
   // --- TEAM MEMBER ROSTER TABLE ---
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(10.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(`COMPLETE MEMBER ROSTER & READING PROGRESS`, margin, currentY);
+  doc.text('MEMBER ROSTER & READING PROGRESS', margin, currentY);
   currentY += 8;
 
-  // Sort by progress descending, then name
   const sortedRoster = [...rosterList].sort((a, b) => b.completedDays - a.completedDays || a.name.localeCompare(b.name));
 
   const tableRows = sortedRoster.map((m, index) => [
@@ -547,25 +555,26 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   autoTable(doc, {
     startY: currentY,
     margin: { left: margin, right: margin },
+    tableWidth: contentWidth,
     head: [[
-      '#', 'Participant Name', 'WhatsApp Number', 'Reading Record', 'Progress %', 'Final Status'
+      '#', 'Participant Name', 'WhatsApp Number', 'Reading Record', 'Progress', 'Status'
     ]],
     body: tableRows,
     theme: 'grid',
     headStyles: {
-      fillColor: [30, 58, 138], // Indigo 900
+      fillColor: [30, 58, 138],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8.5,
+      fontSize: 8,
       halign: 'center'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 32 },
-      1: { halign: 'left', fontStyle: 'bold', cellWidth: 150 },
-      2: { halign: 'center', cellWidth: 110 },
-      3: { halign: 'center', cellWidth: 90, fontStyle: 'bold' },
+      0: { halign: 'center', cellWidth: 30 },
+      1: { halign: 'left', fontStyle: 'bold', cellWidth: 155 },
+      2: { halign: 'center', cellWidth: 105 },
+      3: { halign: 'center', cellWidth: 85, fontStyle: 'bold' },
       4: { halign: 'center', cellWidth: 65, fontStyle: 'bold' },
-      5: { halign: 'center', cellWidth: 85, fontStyle: 'bold' }
+      5: { halign: 'center', cellWidth: 83, fontStyle: 'bold' }
     },
     didParseCell: function(data) {
       if (data.section === 'body' && data.column.index === 5) {
@@ -582,10 +591,12 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
       }
     },
     styles: {
-      fontSize: 8,
-      cellPadding: 4.5,
+      font: 'helvetica',
+      fontSize: 7.5,
+      cellPadding: 3.5,
       lineColor: [226, 232, 240],
-      lineWidth: 0.5
+      lineWidth: 0.5,
+      overflow: 'linebreak'
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252]
@@ -601,15 +612,242 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
     doc.setTextColor(148, 163, 184);
 
     doc.setDrawColor(226, 232, 240);
-    doc.line(margin, pageHeight - 25, pageWidth - margin, pageHeight - 25);
+    doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
 
-    doc.text(`ECCF Bible Reading Club • Team ${teamName} Official Report`, margin, pageHeight - 14);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 14, { align: 'right' });
+    doc.text(`ECCF Bible Reading Club  |  Team ${cleanTeam} Report`, margin, pageHeight - 10);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
   }
 
-  // Save / Download
-  const cleanTeamName = teamName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const filename = `ECCF_Report_Team_${cleanTeamName}_${new Date().toISOString().split('T')[0]}.pdf`;
+  const cleanFileTeam = cleanTeam.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const filename = `ECCF_Report_Team_${cleanFileTeam}_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(filename);
+  return filename;
+}
+
+
+// -------------------------------------------------------------
+// 3. TEAM LEADERS REPORT
+// -------------------------------------------------------------
+export async function generateLeadersPdfReport({ leadersData = [], settings = {} }) {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: 'a4'
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 36;
+  const contentWidth = pageWidth - (margin * 2); // 523.28 pt
+
+  const totalDays = parseInt(settings.Total_Days || 87, 10);
+  const challengeTitle = cleanText(settings.Challenge_Name || 'ECCF Bible Reading Challenge');
+  const challengeEdition = cleanText(settings.Challenge_Edition || 'Reading Challenge');
+  const dateStr = new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+    timeZone: 'Africa/Lagos'
+  }).format(new Date()) + ' (WAT)';
+
+  let totalLeaders = leadersData.length;
+  let completedLeadersCount = 0;
+  let activeLeadersCount = 0;
+  let evictedLeadersCount = 0;
+
+  const leadersList = [];
+
+  leadersData.forEach(l => {
+    const rawName = l.Member_Name || l.Name || l['Team Leader'] || 'Leader';
+    const name = cleanText(rawName);
+    const team = cleanText(l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'] || 'Assigned Team');
+    const status = cleanText(l.Status || 'Active');
+    const { completedDays, is100Percent } = calculateMemberProgress(l, totalDays);
+    const progressPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
+
+    let finalBadge = 'Active';
+    if (status.toLowerCase() === 'active') {
+      activeLeadersCount++;
+      if (is100Percent) {
+        completedLeadersCount++;
+        finalBadge = 'Completed';
+      } else {
+        finalBadge = 'Active';
+      }
+    } else if (status.toLowerCase() === 'evicted') {
+      evictedLeadersCount++;
+      finalBadge = 'Evicted';
+    } else {
+      finalBadge = status || 'Active';
+    }
+
+    leadersList.push({
+      name,
+      team,
+      completedDays,
+      progressPct,
+      finalBadge
+    });
+  });
+
+  const leaderCompletionRate = totalLeaders > 0 ? ((completedLeadersCount / totalLeaders) * 100).toFixed(1) : '0.0';
+  const leaderRetentionRate = totalLeaders > 0 ? ((activeLeadersCount / totalLeaders) * 100).toFixed(1) : '0.0';
+
+  const logoBase64 = await getCompressedLogoBase64();
+
+  // --- HEADER SECTION ---
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pageWidth, 80, 'F');
+
+  if (logoBase64) {
+    doc.addImage(logoBase64, 'PNG', margin, 12, 56, 56);
+  }
+
+  const textStartX = logoBase64 ? margin + 68 : margin;
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('TEAM LEADERS READING REPORT', textStartX, 32);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(147, 197, 253);
+  doc.text(`${challengeTitle}  |  ${challengeEdition}`, textStartX, 46);
+
+  doc.setFontSize(8);
+  doc.setTextColor(203, 213, 225);
+  doc.text(`Team Leaders Reading Summary  |  Date: ${dateStr}`, textStartX, 60);
+
+  let currentY = 98;
+
+  // --- LEADERS SUMMARY CARDS ---
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text('LEADERS SUMMARY', margin, currentY);
+  currentY += 8;
+
+  const cards = [
+    { label: 'TOTAL LEADERS', value: totalLeaders.toString(), color: [30, 41, 59], sub: 'Team Leaders & Assistants' },
+    { label: 'ACTIVE LEADERS', value: activeLeadersCount.toString(), color: [37, 99, 235], sub: `${leaderRetentionRate}% Active` },
+    { label: 'COMPLETED 100%', value: completedLeadersCount.toString(), color: [16, 185, 129], sub: `${leaderCompletionRate}% Finished All` },
+    { label: 'EVICTED / INACTIVE', value: evictedLeadersCount.toString(), color: [239, 68, 68], sub: 'Missed Threshold' }
+  ];
+
+  const cardGap = 10;
+  const cardWidth = (contentWidth - (cardGap * 3)) / 4;
+  const cardHeight = 44;
+
+  cards.forEach((c, idx) => {
+    const x = margin + (idx * (cardWidth + cardGap));
+    
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(x, currentY, cardWidth, cardHeight, 3, 3, 'FD');
+
+    doc.setFillColor(c.color[0], c.color[1], c.color[2]);
+    doc.rect(x, currentY, cardWidth, 2.5, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(c.color[0], c.color[1], c.color[2]);
+    doc.text(c.value, x + (cardWidth / 2), currentY + 18, { align: 'center' });
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(c.label, x + (cardWidth / 2), currentY + 28, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(5.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text(c.sub, x + (cardWidth / 2), currentY + 37, { align: 'center' });
+  });
+
+  currentY += cardHeight + 16;
+
+  // --- LEADERS ROSTER TABLE ---
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text('TEAM LEADERS READING PROGRESS', margin, currentY);
+  currentY += 8;
+
+  const sortedLeaders = [...leadersList].sort((a, b) => b.completedDays - a.completedDays || a.team.localeCompare(b.team) || a.name.localeCompare(b.name));
+
+  const tableRows = sortedLeaders.map((l, index) => [
+    `#${index + 1}`,
+    l.name,
+    l.team,
+    `${l.completedDays} / ${totalDays} Days`,
+    `${l.progressPct}%`,
+    l.finalBadge
+  ]);
+
+  autoTable(doc, {
+    startY: currentY,
+    margin: { left: margin, right: margin },
+    tableWidth: contentWidth,
+    head: [[
+      '#', 'Team Leader Name', 'Assigned Team', 'Reading Record', 'Progress', 'Status'
+    ]],
+    body: tableRows,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [79, 70, 229],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 8,
+      halign: 'center'
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 30 },
+      1: { halign: 'left', fontStyle: 'bold', cellWidth: 160 },
+      2: { halign: 'left', cellWidth: 120 },
+      3: { halign: 'center', cellWidth: 85, fontStyle: 'bold' },
+      4: { halign: 'center', cellWidth: 60, fontStyle: 'bold' },
+      5: { halign: 'center', cellWidth: 68, fontStyle: 'bold' }
+    },
+    didParseCell: function(data) {
+      if (data.section === 'body' && data.column.index === 5) {
+        const text = String(data.cell.raw || '');
+        if (text.includes('Completed')) {
+          data.cell.styles.textColor = [5, 150, 105];
+        } else if (text.includes('Evicted')) {
+          data.cell.styles.textColor = [239, 68, 68];
+        } else {
+          data.cell.styles.textColor = [37, 99, 235];
+        }
+      }
+    },
+    styles: {
+      font: 'helvetica',
+      fontSize: 7.5,
+      cellPadding: 3.5,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.5,
+      overflow: 'linebreak'
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
+    }
+  });
+
+  // --- FOOTER & PAGE NUMBERING ---
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+
+    doc.text('ECCF Bible Reading Club  |  Team Leaders Report', margin, pageHeight - 10);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+  }
+
+  const filename = `ECCF_Team_Leaders_Report_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(filename);
   return filename;
 }
