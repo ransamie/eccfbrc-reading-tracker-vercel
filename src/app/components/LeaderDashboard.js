@@ -412,26 +412,6 @@ export default function LeaderDashboard({ team, onLogout }) {
           </div>
         </div>
         <div className="tracker-header-actions">
-          {(isReadingCompleted || data?.isArchive) && (
-            <button 
-              onClick={handleDownloadTeamPdf}
-              disabled={pdfGenerating}
-              title="Download Official Team PDF Report"
-              className="tracker-btn-icon"
-              style={{ 
-                background: 'rgba(16, 185, 129, 0.15)',
-                color: 'var(--success)',
-                border: '1px solid rgba(16, 185, 129, 0.4)',
-                width: 'auto',
-                padding: '0 0.75rem',
-                gap: '0.4rem',
-                cursor: pdfGenerating ? 'not-allowed' : 'pointer'
-              }}
-            >
-              <FileDown size={16} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{pdfGenerating ? 'Generating...' : 'Team PDF'}</span>
-            </button>
-          )}
           <button 
             onClick={handleCopyQuizLink}
             title="Copy Quiz Link to share with team"
@@ -484,13 +464,38 @@ export default function LeaderDashboard({ team, onLogout }) {
       {activeTab === 'report' && (
         <div className="card">
           
-          <div style={{ marginBottom: '1.25rem' }}>
-            <h3 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
-              Mark Daily Updates for Your Team
-            </h3>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
-              Tap each member's card to record daily reading progress for any day.
-            </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+                Mark Daily Updates for Your Team
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
+                Tap each member's card to record daily reading progress for any day.
+              </p>
+            </div>
+            {(isReadingCompleted || data?.isArchive) && (
+              <button 
+                onClick={handleDownloadTeamPdf}
+                disabled={pdfGenerating}
+                title="Download Official Team PDF Report"
+                className="tracker-btn-icon"
+                style={{ 
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  color: 'var(--success)',
+                  border: '1px solid rgba(16, 185, 129, 0.4)',
+                  width: 'auto',
+                  padding: '0.5rem 0.9rem',
+                  gap: '0.45rem',
+                  borderRadius: '0.55rem',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: pdfGenerating ? 'not-allowed' : 'pointer'
+                }}
+              >
+                <FileDown size={16} />
+                <span>{pdfGenerating ? 'Generating PDF...' : 'Download Team PDF Report'}</span>
+              </button>
+            )}
           </div>
           
           {/* Modern Date Stepper Card */}
