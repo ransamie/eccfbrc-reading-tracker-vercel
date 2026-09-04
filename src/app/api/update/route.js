@@ -33,10 +33,39 @@ export async function POST(request) {
       return NextResponse.json({ success: true, activeEditionId: editionId || 'live' });
     }
 
+    if (action === 'admin_toggle_leader_reporting') {
+      const { allowLeaderReporting } = payload;
+      const settingsSheet = db.sheetsByTitle["Global_Settings"];
+      const rows = await settingsSheet.getRows();
+      const valToSave = String(allowLeaderReporting).toUpperCase() === 'TRUE' || allowLeaderReporting === true ? 'TRUE' : 'FALSE';
+      let found = false;
+      for (const row of rows) {
+        if (row.get('Setting_Key') === 'Allow_Leader_Reporting') {
+          row.set('Setting_Value', valToSave);
+          await row.save();
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        await settingsSheet.addRow({ Setting_Key: 'Allow_Leader_Reporting', Setting_Value: valToSave });
+      }
+      invalidateCache();
+      return NextResponse.json({ success: true, allowLeaderReporting: valToSave });
+    }
+
     if (action === 'leader_report') {
       const { team, day, updates, reflection, currentDayNum, evictionThreshold } = payload;
       
       const globalData = await fetchGlobalData();
+      const allowLeaderReporting = String(globalData.settings?.['Allow_Leader_Reporting'] ?? 'TRUE').trim().toUpperCase() !== 'FALSE';
+      if (!allowLeaderReporting) {
+        return NextResponse.json({ 
+          success: false, 
+          error: "Team leader reporting has been paused by the Global Administrator. You cannot submit or save updates at this time." 
+        }, { status: 403 });
+      }
+
       const mornStart = globalData.settings['Morning_Window_Start'] || "04:00 AM";
       const mornEnd = globalData.settings['Morning_Window_End'] || "11:00 AM";
       const eveStart = globalData.settings['Evening_Window_Start'] || "06:00 PM";
@@ -362,7 +391,8 @@ export async function POST(request) {
         Challenge_Name,
         Challenge_Edition,
         Total_Days,
-        Start_Date
+        Start_Date,
+        Allow_Leader_Reporting
       } = payload;
       const settingsSheet = db.sheetsByTitle["Global_Settings"];
       const rows = await settingsSheet.getRows();
@@ -377,7 +407,8 @@ export async function POST(request) {
         'Challenge_Name': Challenge_Name,
         'Challenge_Edition': Challenge_Edition,
         'Total_Days': Total_Days,
-        'Start_Date': Start_Date
+        'Start_Date': Start_Date,
+        ...(Allow_Leader_Reporting !== undefined ? { 'Allow_Leader_Reporting': String(Allow_Leader_Reporting).toUpperCase() === 'TRUE' || Allow_Leader_Reporting === true ? 'TRUE' : 'FALSE' } : {})
       };
 
       const foundKeys = new Set();

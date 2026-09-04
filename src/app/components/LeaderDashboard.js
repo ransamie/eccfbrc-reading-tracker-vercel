@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { generateTeamPdfReport } from "@/lib/pdfReportGenerator";
 
@@ -163,6 +163,7 @@ export default function LeaderDashboard({ team, onLogout }) {
   const mornEnd = data?.settings?.Morning_Window_End || "11:00 AM";
   const eveStart = data?.settings?.Evening_Window_Start || "06:00 PM";
   const eveEnd = data?.settings?.Evening_Window_End || "11:00 PM";
+  const isReportingAllowed = String(data?.settings?.Allow_Leader_Reporting ?? 'TRUE').trim().toUpperCase() !== 'FALSE';
 
   const now = new Date();
   const watOptions = { timeZone: 'Africa/Lagos', hour: '2-digit', minute: '2-digit', hour12: false };
@@ -175,6 +176,11 @@ export default function LeaderDashboard({ team, onLogout }) {
   const closedMessage = `Reporting is closed. The daily windows are ${mornStart} - ${mornEnd} and ${eveStart} - ${eveEnd}.`;
 
   const handleSaveReport = async (generateReport = false) => {
+    if (!isReportingAllowed) {
+      showToast("Team leader reporting has been temporarily paused by the Global Administrator.", "error");
+      return;
+    }
+
     const isHistorical = selectedDay !== currentDay || data?.isArchive;
     if (!isHistorical && !isReportingWindow) {
       showToast(closedMessage, "error");
@@ -683,11 +689,18 @@ export default function LeaderDashboard({ team, onLogout }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
               {(() => {
                 const isHistorical = selectedDay !== currentDay || data?.isArchive;
-                const canSave = isHistorical || isReportingWindow;
+                const canSave = (isHistorical || isReportingWindow) && isReportingAllowed;
 
                 return (
                   <>
-                    {!canSave && (
+                    {!isReportingAllowed && (
+                      <div style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#FCA5A5', padding: '0.75rem 1rem', borderRadius: '0.65rem', marginBottom: '0.5rem', border: '1px solid rgba(239, 68, 68, 0.25)', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <Lock size={18} color="#F87171" style={{ flexShrink: 0 }} />
+                        <span>Team Leader reporting has been temporarily paused by the Global Administrator. You cannot submit or save updates at this time.</span>
+                      </div>
+                    )}
+
+                    {isReportingAllowed && !canSave && (
                       <div style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#FCA5A5', padding: '0.75rem 1rem', borderRadius: '0.65rem', marginBottom: '0.5rem', border: '1px solid rgba(239, 68, 68, 0.25)', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                         <span>⚠️</span>
                         <span>{closedMessage} You cannot submit today's live updates at this time.</span>
@@ -698,9 +711,12 @@ export default function LeaderDashboard({ team, onLogout }) {
                       onClick={() => handleSaveReport(false)} 
                       disabled={saving || !canSave} 
                       className="tracker-btn-save"
+                      title={!isReportingAllowed ? "Reporting deactivated by Global Admin" : !canSave ? "Reporting window closed" : `Save ${selectedDay.replace('_', ' ')} updates`}
                       style={{ opacity: (saving || !canSave) ? 0.5 : 1, cursor: (saving || !canSave) ? 'not-allowed' : 'pointer' }}
                     >
-                      <span>{saving ? 'Saving...' : `💾 Save ${selectedDay.replace('_', ' ')} Updates`}</span>
+                      <span>
+                        {saving ? 'Saving...' : !isReportingAllowed ? '🔒 Reporting Paused by Admin' : `💾 Save ${selectedDay.replace('_', ' ')} Updates`}
+                      </span>
                     </button>
                     
                     {selectedDay === currentDay && (
@@ -708,6 +724,7 @@ export default function LeaderDashboard({ team, onLogout }) {
                         onClick={() => handleSaveReport(true)} 
                         disabled={saving || !canSave} 
                         className="tracker-btn-report"
+                        title={!isReportingAllowed ? "Reporting deactivated by Global Admin" : !canSave ? "Reporting window closed" : "Generate WhatsApp Report"}
                         style={{ opacity: (saving || !canSave) ? 0.5 : 1, cursor: (saving || !canSave) ? 'not-allowed' : 'pointer' }}
                       >
                         <span>📋 Generate WhatsApp Report</span>

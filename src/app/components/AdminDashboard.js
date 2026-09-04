@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2, Power, Lock, Unlock } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { generateGeneralPdfReport, generateTeamPdfReport, generateLeadersPdfReport } from "@/lib/pdfReportGenerator";
 import { AgGridReact } from 'ag-grid-react';
@@ -130,7 +130,8 @@ export default function AdminDashboard({ onLogout }) {
     mornStart: "",
     mornEnd: "",
     eveStart: "",
-    eveEnd: ""
+    eveEnd: "",
+    allowLeaderReporting: true
   });
 
   const [newTeam, setNewTeam] = useState({ name: '', pin: '' });
@@ -257,7 +258,8 @@ export default function AdminDashboard({ onLogout }) {
             mornStart: parse12to24(d.settings?.Morning_Window_Start || "04:00 AM"),
             mornEnd: parse12to24(d.settings?.Morning_Window_End || "11:00 AM"),
             eveStart: parse12to24(d.settings?.Evening_Window_Start || "06:00 PM"),
-            eveEnd: parse12to24(d.settings?.Evening_Window_End || "11:00 PM")
+            eveEnd: parse12to24(d.settings?.Evening_Window_End || "11:00 PM"),
+            allowLeaderReporting: String(d.settings?.Allow_Leader_Reporting ?? 'TRUE').trim().toUpperCase() !== 'FALSE'
           });
         }
 
@@ -538,6 +540,29 @@ export default function AdminDashboard({ onLogout }) {
     setReportText(text.replace(/\\n/g, '\n'));
   };
 
+  const handleToggleLeaderReporting = async (newState) => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'admin_toggle_leader_reporting',
+          payload: { allowLeaderReporting: newState ? 'TRUE' : 'FALSE' }
+        })
+      });
+      const resData = await res.json();
+      if (!res.ok || !resData.success) throw new Error(resData.error || resData.message || "Failed to update reporting status");
+      showToast(newState ? "Team Leader reporting is now ACTIVE (Enabled)!" : "Team Leader reporting is now PAUSED (Disabled)!");
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Error updating reporting status", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
@@ -551,7 +576,8 @@ export default function AdminDashboard({ onLogout }) {
         Morning_Window_Start: parse24to12(settingsForm.mornStart),
         Morning_Window_End: parse24to12(settingsForm.mornEnd),
         Evening_Window_Start: parse24to12(settingsForm.eveStart),
-        Evening_Window_End: parse24to12(settingsForm.eveEnd)
+        Evening_Window_End: parse24to12(settingsForm.eveEnd),
+        Allow_Leader_Reporting: settingsForm.allowLeaderReporting ? 'TRUE' : 'FALSE'
       };
       const res = await fetch('/api/update', {
         method: 'POST',
@@ -691,6 +717,7 @@ export default function AdminDashboard({ onLogout }) {
 
   const activeLeaders = data?.leadersData?.filter(m => String(m.Status || '').trim().toLowerCase() === 'active') || [];
   const daysList = Array.from({length: currentDayNum}, (_, i) => `Day_${i+1}`);
+  const isLeaderReportingAllowed = String(data?.settings?.Allow_Leader_Reporting ?? 'TRUE').trim().toUpperCase() !== 'FALSE';
 
   return (
     <div className="container">
@@ -755,7 +782,7 @@ export default function AdminDashboard({ onLogout }) {
         </button>
       </div>
 
-      {/* Global Edition Switcher Bar */}
+      {/* Global Edition & Quick Actions Switcher Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem', padding: '0.6rem 0.85rem', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -780,7 +807,34 @@ export default function AdminDashboard({ onLogout }) {
           </select>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => handleToggleLeaderReporting(!isLeaderReportingAllowed)}
+            disabled={saving}
+            title={isLeaderReportingAllowed ? "Leader reporting is currently ACTIVE. Click to Pause/Deactivate save buttons." : "Leader reporting is PAUSED. Click to Activate save buttons."}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.35rem 0.75rem',
+              borderRadius: '0.45rem',
+              fontSize: '0.8rem',
+              fontWeight: '700',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              border: isLeaderReportingAllowed 
+                ? '1px solid rgba(16, 185, 129, 0.4)' 
+                : '1px solid rgba(239, 68, 68, 0.4)',
+              background: isLeaderReportingAllowed 
+                ? 'rgba(16, 185, 129, 0.15)' 
+                : 'rgba(239, 68, 68, 0.15)',
+              color: isLeaderReportingAllowed ? '#34D399' : '#F87171',
+              transition: 'all 0.18s ease'
+            }}
+          >
+            <Power size={13} />
+            <span>{isLeaderReportingAllowed ? 'Leader Reporting: ON' : 'Leader Reporting: OFF'}</span>
+          </button>
+
           {isReadingCompleted && (
             <button
               onClick={() => setShowPdfModal(true)}
@@ -1580,6 +1634,44 @@ export default function AdminDashboard({ onLogout }) {
                   <input type="time" className="input-field" value={settingsForm.eveEnd || ""} onChange={(e) => setSettingsForm({...settingsForm, eveEnd: e.target.value})} />
                 </div>
               </div>
+              <div className="mb-3" style={{ padding: '0.85rem 1rem', background: 'var(--surface-secondary)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div>
+                  <label className="label" style={{ margin: 0, fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <Power size={16} color={settingsForm.allowLeaderReporting ? "#34D399" : "#F87171"} />
+                    <span>Allow Team Leaders to Report & Save Updates</span>
+                  </label>
+                  <small style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block', marginTop: '0.2rem' }}>
+                    When turned OFF, team leaders cannot submit daily reports and their Save buttons will be deactivated.
+                  </small>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setSettingsForm({ ...settingsForm, allowLeaderReporting: !settingsForm.allowLeaderReporting })}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      padding: '0.45rem 0.9rem',
+                      borderRadius: '0.45rem',
+                      fontSize: '0.82rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      border: settingsForm.allowLeaderReporting 
+                        ? '1px solid rgba(16, 185, 129, 0.4)' 
+                        : '1px solid rgba(239, 68, 68, 0.4)',
+                      background: settingsForm.allowLeaderReporting 
+                        ? 'rgba(16, 185, 129, 0.18)' 
+                        : 'rgba(239, 68, 68, 0.18)',
+                      color: settingsForm.allowLeaderReporting ? '#34D399' : '#F87171'
+                    }}
+                  >
+                    <Power size={14} />
+                    <span>{settingsForm.allowLeaderReporting ? 'Enabled (ON)' : 'Disabled (OFF)'}</span>
+                  </button>
+                </div>
+              </div>
+
               <button className="btn-primary" onClick={handleSaveSettings} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
                 <Save size={16} />
                 <span>{saving ? 'Saving...' : 'Save System Policies'}</span>
