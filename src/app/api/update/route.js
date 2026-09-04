@@ -416,12 +416,44 @@ export async function POST(request) {
       return NextResponse.json({ success: true });
     }
     
+    if (action === 'admin_delete_team') {
+      const { teamName } = payload;
+      const credsSheet = db.sheetsByTitle["Team_Credentials"];
+      if (credsSheet) {
+        const rows = await credsSheet.getRows();
+        for (const row of rows) {
+          if (normalizeTeamName(row.get('Team_Name')) === normalizeTeamName(teamName)) {
+            await row.delete();
+            break;
+          }
+        }
+      }
+      invalidateCache();
+      return NextResponse.json({ success: true });
+    }
+
     if (action === 'admin_bulk_upload') {
       const { members } = payload; // Array of { Team_Name, Member_Name, WhatsApp_Number }
       const trackerSheet = db.sheetsByTitle["Tracker_Data"];
       // Pre-fill Status as Active
       const newRows = members.map(m => ({ ...m, Status: 'Active' }));
       await trackerSheet.addRows(newRows);
+
+      // Auto-register any new teams in Team_Credentials if they don't already exist
+      const credsSheet = db.sheetsByTitle["Team_Credentials"];
+      if (credsSheet) {
+        const credRows = await credsSheet.getRows();
+        const existingTeams = new Set(credRows.map(r => normalizeTeamName(r.get('Team_Name'))));
+        const uniqueUploadedTeams = Array.from(new Set(members.map(m => String(m.Team_Name || '').trim()).filter(Boolean)));
+        
+        for (const t of uniqueUploadedTeams) {
+          if (!existingTeams.has(normalizeTeamName(t))) {
+            await credsSheet.addRow({ Team_Name: t.toUpperCase(), PIN: '1234', Current_Reflection: '' });
+            existingTeams.add(normalizeTeamName(t));
+          }
+        }
+      }
+
       invalidateCache();
       return NextResponse.json({ success: true });
     }

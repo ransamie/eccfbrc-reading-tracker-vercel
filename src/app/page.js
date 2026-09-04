@@ -169,18 +169,24 @@ export default function Home() {
                 {loginType === "Team Leader" && (
                   <div className="mb-3">
                     <label className="label" style={{ fontWeight: "700", fontSize: "1rem", marginBottom: "0.75rem" }}>Select Your Team:</label>
-                    <select
-                      className="input-field"
-                      value={selectedTeam}
-                      onChange={(e) => setSelectedTeam(e.target.value)}
-                      required
-                      style={{ marginBottom: 0 }}
-                    >
-                      <option value="" disabled>Tap to select your team...</option>
-                      {teams.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
+                    {teams.length === 0 ? (
+                      <div style={{ padding: '0.85rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '0.5rem', color: '#FCA5A5', fontSize: '0.875rem', lineHeight: '1.4' }}>
+                        No teams registered yet for this edition. Please have the Super Admin register teams in the Admin Settings or upload a member roster.
+                      </div>
+                    ) : (
+                      <select
+                        className="input-field"
+                        value={selectedTeam}
+                        onChange={(e) => setSelectedTeam(e.target.value)}
+                        required
+                        style={{ marginBottom: 0 }}
+                      >
+                        <option value="" disabled>Tap to select your team...</option>
+                        {teams.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 )}
 
@@ -222,7 +228,7 @@ export default function Home() {
 
                 <button 
                   type="submit" 
-                  disabled={loading} 
+                  disabled={loading || (loginType === "Team Leader" && teams.length === 0)} 
                   style={{ 
                     width: '100%', 
                     padding: '0.85rem', 

@@ -239,10 +239,14 @@ export async function archiveAndResetChallenge({ newChallengeName, newEdition, n
 
   const trackerArchiveTitle = `Archive_Tracker_${cleanEditionSlug}_${timestampStr}_${randomSuffix}`.slice(0, 95);
   const leadersArchiveTitle = `Archive_Leaders_${cleanEditionSlug}_${timestampStr}_${randomSuffix}`.slice(0, 95);
+  const credsArchiveTitle = `Archive_Creds_${cleanEditionSlug}_${timestampStr}_${randomSuffix}`.slice(0, 95);
 
   // 2. Duplicate Active Sheets for Permanent Archive
   await trackerSheet.duplicate({ title: trackerArchiveTitle });
   await leadersSheet.duplicate({ title: leadersArchiveTitle });
+  if (credentialsSheet) {
+    await credentialsSheet.duplicate({ title: credsArchiveTitle });
+  }
 
   // 3. Register in Challenge_Archives sheet
   const archivesSheet = await getOrCreateArchivesSheet(db);
@@ -267,15 +271,10 @@ export async function archiveAndResetChallenge({ newChallengeName, newEdition, n
   await leadersSheet.clearRows();
   await leadersSheet.setHeaderRow(['Team Leader', 'Status', 'Team']);
 
-  // 6. Reset Team Credentials Reflections
+  // 6. Reset Team Credentials to Clean Slate (Blank slate for new edition teams)
   if (credentialsSheet) {
-    const credsRows = await credentialsSheet.getRows();
-    for (const row of credsRows) {
-      if (row.get('Current_Reflection')) {
-        row.set('Current_Reflection', '');
-        await row.save();
-      }
-    }
+    await credentialsSheet.clearRows();
+    await credentialsSheet.setHeaderRow(['Team_Name', 'PIN', 'Current_Reflection']);
   }
 
   // 7. Update Global Settings for the New Edition

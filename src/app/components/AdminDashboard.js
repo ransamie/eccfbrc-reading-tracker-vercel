@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2 } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { generateGeneralPdfReport, generateTeamPdfReport, generateLeadersPdfReport } from "@/lib/pdfReportGenerator";
 import { AgGridReact } from 'ag-grid-react';
@@ -116,6 +116,7 @@ export default function AdminDashboard({ onLogout }) {
   const [expandUpdatePin, setExpandUpdatePin] = useState(false);
   const [expandSuperPin, setExpandSuperPin] = useState(false);
   const [expandRenameTeam, setExpandRenameTeam] = useState(false);
+  const [expandManageTeams, setExpandManageTeams] = useState(false);
   const [expandBulkUpload, setExpandBulkUpload] = useState(false);
   const [expandRawData, setExpandRawData] = useState(false);
 
@@ -600,6 +601,27 @@ export default function AdminDashboard({ onLogout }) {
       setRenameTeam({oldName: '', newName: ''});
       loadData();
     } catch (e) { showToast("Error renaming team", "error"); } finally { setSaving(false); }
+  };
+
+  const handleDeleteTeam = async (teamToDelete) => {
+    if (!window.confirm(`Are you sure you want to permanently delete team "${teamToDelete}" from the active challenge?`)) {
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'admin_delete_team', payload: { teamName: teamToDelete } })
+      });
+      if (!res.ok) throw new Error("Failed to delete team");
+      showToast(`Team "${teamToDelete}" removed successfully.`);
+      loadData();
+    } catch (e) {
+      showToast("Error deleting team", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -1622,6 +1644,66 @@ export default function AdminDashboard({ onLogout }) {
                   <RefreshCw size={15} />
                   <span>Rename Team & Cascade</span>
                 </button>
+              </div>
+            )}
+          </div>
+
+          <div className="st-expander mb-3">
+            <button className="st-expander-header" onClick={() => setExpandManageTeams(!expandManageTeams)}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Trash2 size={16} color="#F87171" />
+                <span>Manage & Remove Teams ({data?.validTeams?.length || 0})</span>
+              </span>
+              <span>{expandManageTeams ? '▼' : '▶'}</span>
+            </button>
+            {expandManageTeams && (
+              <div className="st-expander-content">
+                <p className="label mb-3">View and manage all active teams registered for this challenge. You can remove any team here.</p>
+                {(!data?.validTeams || data.validTeams.length === 0) ? (
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>No teams currently registered for this edition.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {data.validTeams.map(t => {
+                      const cred = data?.credentialsData?.find(c => String(c.Team_Name || '').trim().toLowerCase() === t.toLowerCase());
+                      const pin = cred?.PIN || '****';
+                      return (
+                        <div key={t} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.6rem 0.85rem',
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          borderRadius: '0.375rem',
+                          border: '1px solid var(--border-light)'
+                        }}>
+                          <div>
+                            <span style={{ fontWeight: '600', color: '#F1F5F9' }}>{t}</span>
+                            <span style={{ marginLeft: '0.75rem', fontSize: '0.8rem', color: '#94A3B8' }}>PIN: <code style={{ background: 'rgba(0,0,0,0.3)', padding: '0.1rem 0.35rem', borderRadius: '3px' }}>{pin}</code></span>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteTeam(t)}
+                            disabled={saving}
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              color: '#F87171',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              borderRadius: '0.25rem',
+                              padding: '0.3rem 0.6rem',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            <Trash2 size={13} />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
