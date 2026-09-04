@@ -103,21 +103,29 @@ export async function POST(request) {
       // Calculate rounds for eviction logic
       const daysPerRound = 10;
       const completedRounds = Math.floor((currentDayNum - 1) / daysPerRound);
+      const rowsToSave = [];
 
       for (const row of rows) {
         const rowTeam = normalizeTeamName(row.get('Team_Name') || row.get('Team'));
         const rowName = String(row.get('Member_Name') || '').trim();
 
         if (rowTeam === normalizeTeamName(team)) {
+          let rowChanged = false;
+
           // If updates exist for this user, apply them
           if (row.get('Status') === 'Active' && updates && updates[rowName] !== undefined) {
-             row.set(day, updates[rowName] ? 'TRUE' : 'FALSE');
+             const newVal = updates[rowName] ? 'TRUE' : 'FALSE';
+             if (String(row.get(day) || '').toUpperCase() !== newVal) {
+               row.set(day, newVal);
+               rowChanged = true;
+             }
              if (updates[rowName]) {
                const dayIndex = parseInt(day.split('_')[1] || 1);
                for (let pastD = 1; pastD < dayIndex; pastD++) {
                  const pastDStr = `Day_${pastD}`;
                  if (String(row.get(pastDStr) || '').toUpperCase() !== 'TRUE') {
                    row.set(pastDStr, 'TRUE');
+                   rowChanged = true;
                  }
                }
              }
@@ -137,24 +145,37 @@ export async function POST(request) {
                  }
               }
               if (missedDaysCount > parseInt(evictionThreshold)) {
-                 row.set('Status', 'Evicted');
+                 if (row.get('Status') !== 'Evicted') {
+                   row.set('Status', 'Evicted');
+                   rowChanged = true;
+                 }
                  break;
               }
             }
           }
-          await row.save();
+
+          if (rowChanged) {
+            rowsToSave.push(row);
+          }
         }
       }
 
-      // Save reflection if provided
+      // Save only modified rows
+      for (const r of rowsToSave) {
+        await r.save();
+      }
+
+      // Save reflection if provided and changed
       if (reflection) {
         const credsSheet = db.sheetsByTitle["Team_Credentials"];
         if (credsSheet) {
           const credsRows = await credsSheet.getRows();
           for (const cRow of credsRows) {
             if (normalizeTeamName(cRow.get('Team_Name')) === normalizeTeamName(team)) {
-              cRow.set('Current_Reflection', reflection);
-              await cRow.save();
+              if (cRow.get('Current_Reflection') !== reflection) {
+                cRow.set('Current_Reflection', reflection);
+                await cRow.save();
+              }
               break;
             }
           }
@@ -171,13 +192,17 @@ export async function POST(request) {
       const trackerSheet = await getActiveTrackerSheet(db);
       const rows = await trackerSheet.getRows();
       
+      const rowsToSave = [];
       for (const row of rows) {
         const rowTeam = normalizeTeamName(row.get('Team_Name') || row.get('Team'));
         const rowName = String(row.get('Member_Name') || '').trim();
-        if (rowTeam === normalizeTeamName(team) && rosterUpdates[rowName]) {
+        if (rowTeam === normalizeTeamName(team) && rosterUpdates[rowName] && row.get('Status') !== rosterUpdates[rowName]) {
           row.set('Status', rosterUpdates[rowName]);
-          await row.save();
+          rowsToSave.push(row);
         }
+      }
+      for (const r of rowsToSave) {
+        await r.save();
       }
       invalidateCache();
       return NextResponse.json({ success: true });
@@ -203,8 +228,10 @@ export async function POST(request) {
         let found = false;
         for (const row of settingsRows) {
           if (row.get('Setting_Key') === 'Admin_Reflection') {
-            row.set('Setting_Value', reflection);
-            await row.save();
+            if (row.get('Setting_Value') !== reflection) {
+              row.set('Setting_Value', reflection);
+              await row.save();
+            }
             found = true;
             break;
           }
@@ -241,14 +268,20 @@ export async function POST(request) {
       }
       
       const rows = await leadersSheet.getRows();
+      const rowsToSave = [];
 
       // Process updates and evictions
       for (const row of rows) {
         const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
         const currentStatus = String(row.get('Status') || '').trim().toLowerCase();
+        let rowChanged = false;
 
         if (rowName && updates && updates[rowName] !== undefined && currentStatus === 'active') {
-          row.set(day, updates[rowName] ? 'TRUE' : 'FALSE');
+          const newVal = updates[rowName] ? 'TRUE' : 'FALSE';
+          if (String(row.get(day) || '').toUpperCase() !== newVal) {
+            row.set(day, newVal);
+            rowChanged = true;
+          }
 
           if (updates[rowName]) {
             const editingDayNum = parseInt(day.split('_')[1] || 1);
@@ -256,6 +289,7 @@ export async function POST(request) {
               const pastDStr = `Day_${pastD}`;
               if (String(row.get(pastDStr) || '').toUpperCase() !== 'TRUE') {
                 row.set(pastDStr, 'TRUE');
+                rowChanged = true;
               }
             }
           }
@@ -275,13 +309,22 @@ export async function POST(request) {
               }
             }
             if (missedDaysCount > parseInt(evictionThreshold)) {
-              row.set('Status', 'Evicted');
+              if (row.get('Status') !== 'Evicted') {
+                row.set('Status', 'Evicted');
+                rowChanged = true;
+              }
               break;
             }
           }
         }
 
-        await row.save();
+        if (rowChanged) {
+          rowsToSave.push(row);
+        }
+      }
+
+      for (const r of rowsToSave) {
+        await r.save();
       }
 
       invalidateCache();
@@ -293,12 +336,16 @@ export async function POST(request) {
       const leadersSheet = await getActiveLeadersSheet(db);
       const rows = await leadersSheet.getRows();
       
+      const rowsToSave = [];
       for (const row of rows) {
         const rowName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
         if (rosterUpdates[rowName] && row.get('Status') !== rosterUpdates[rowName]) {
           row.set('Status', rosterUpdates[rowName]);
-          await row.save();
+          rowsToSave.push(row);
         }
+      }
+      for (const r of rowsToSave) {
+        await r.save();
       }
       invalidateCache();
       return NextResponse.json({ success: true });

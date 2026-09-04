@@ -215,6 +215,8 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
   const startDateStr = settings.Start_Date || '';
   const periodStr = formatChallengePeriod(startDateStr, totalDays);
 
+  const logoBase64 = await getCompressedLogoBase64();
+
   // --- HEADER SECTION ---
   doc.setFillColor(15, 23, 42); // Slate 900
   doc.rect(0, 0, pageWidth, 80, 'F');

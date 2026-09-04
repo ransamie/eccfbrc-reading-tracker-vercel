@@ -29,11 +29,13 @@ let docInstance = null;
 
 let globalCache = { data: null, timestamp: 0 };
 let leadersCache = { data: null, timestamp: 0 };
+let editionsCache = { data: null, timestamp: 0 };
 const CACHE_TTL = 15000; // 15 seconds
 
 export function invalidateCache() {
   globalCache.timestamp = 0;
   leadersCache.timestamp = 0;
+  editionsCache.timestamp = 0;
 }
 
 export async function getDatabase() {
@@ -184,6 +186,10 @@ export async function getOrCreateArchivesSheet(db) {
   if (db.sheetsByTitle["Challenge_Archives"]) {
     return db.sheetsByTitle["Challenge_Archives"];
   }
+  await db.loadInfo();
+  if (db.sheetsByTitle["Challenge_Archives"]) {
+    return db.sheetsByTitle["Challenge_Archives"];
+  }
   try {
     const newSheet = await db.addSheet({
       title: "Challenge_Archives",
@@ -197,25 +203,37 @@ export async function getOrCreateArchivesSheet(db) {
 }
 
 export async function fetchEditionsRegistry() {
+  if (editionsCache.data && Date.now() - editionsCache.timestamp < CACHE_TTL) {
+    return editionsCache.data;
+  }
+
   const db = await getDatabase();
   const archivesSheet = await getOrCreateArchivesSheet(db);
+  if (!archivesSheet) {
+    return [];
+  }
   await archivesSheet.loadHeaderRow();
   const rows = await archivesSheet.getRows();
   
-  const archives = rows.map(r => ({
-    id: String(r.get('id') || '').trim(),
-    name: String(r.get('name') || '').trim(),
-    edition: String(r.get('edition') || '').trim(),
-    startDate: String(r.get('startDate') || '').trim(),
-    totalDays: String(r.get('totalDays') || '').trim(),
-    totalMembers: String(r.get('totalMembers') || '').trim(),
-    trackerSheetTitle: String(r.get('trackerSheetTitle') || '').trim(),
-    leadersSheetTitle: String(r.get('leadersSheetTitle') || '').trim(),
-    credsSheetTitle: String(r.get('credsSheetTitle') || '').trim(),
-    archivedAt: String(r.get('archivedAt') || '').trim()
-  })).filter(a => a.id && a.trackerSheetTitle);
+  const archives = rows.map(r => {
+    const obj = r.toObject();
+    return {
+      id: String(obj.id || r.get('id') || '').trim(),
+      name: String(obj.name || r.get('name') || '').trim(),
+      edition: String(obj.edition || r.get('edition') || '').trim(),
+      startDate: String(obj.startDate || r.get('startDate') || '').trim(),
+      totalDays: String(obj.totalDays || r.get('totalDays') || '').trim(),
+      totalMembers: String(obj.totalMembers || r.get('totalMembers') || '').trim(),
+      trackerSheetTitle: String(obj.trackerSheetTitle || r.get('trackerSheetTitle') || '').trim(),
+      leadersSheetTitle: String(obj.leadersSheetTitle || r.get('leadersSheetTitle') || '').trim(),
+      credsSheetTitle: String(obj.credsSheetTitle || r.get('credsSheetTitle') || '').trim(),
+      archivedAt: String(obj.archivedAt || r.get('archivedAt') || '').trim()
+    };
+  }).filter(a => a.id && a.trackerSheetTitle);
 
-  return archives.reverse(); // Newest archives first
+  editionsCache.data = [...archives].reverse();
+  editionsCache.timestamp = Date.now();
+  return editionsCache.data;
 }
 
 export async function getActiveTrackerSheet(db) {
