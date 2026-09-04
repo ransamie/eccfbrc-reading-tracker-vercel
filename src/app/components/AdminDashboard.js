@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { generateGeneralPdfReport, generateTeamPdfReport, generateLeadersPdfReport } from "@/lib/pdfReportGenerator";
 import { AgGridReact } from 'ag-grid-react';
@@ -1449,7 +1449,10 @@ export default function AdminDashboard({ onLogout }) {
 
           <div className="st-expander mb-3">
             <div className="st-expander-content" style={{borderTop: 'none'}}>
-              <h3 className="mb-2">⚙️ Modify Global Settings</h3>
+              <h3 className="mb-2" style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                <Sliders size={18} color="#818CF8" />
+                <span>System Policies & Configuration</span>
+              </h3>
               <p className="label">Update the reading challenge branding, active round, eviction rules, and reporting windows.</p>
               
               <div className="mb-3">
@@ -1468,7 +1471,7 @@ export default function AdminDashboard({ onLogout }) {
                 <input 
                   type="text" 
                   className="input-field" 
-                  placeholder="e.g., 📖 September - December Edition" 
+                  placeholder="e.g., September - December Edition" 
                   value={settingsForm.challengeEdition || ""} 
                   onChange={(e) => setSettingsForm({...settingsForm, challengeEdition: e.target.value})} 
                 />
@@ -1529,27 +1532,39 @@ export default function AdminDashboard({ onLogout }) {
                   <input type="time" className="input-field" value={settingsForm.eveEnd || ""} onChange={(e) => setSettingsForm({...settingsForm, eveEnd: e.target.value})} />
                 </div>
               </div>
-              <button className="btn-primary" onClick={handleSaveSettings} disabled={saving}>{saving ? 'Saving...' : '💾 Save System Policies'}</button>
+              <button className="btn-primary" onClick={handleSaveSettings} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                <Save size={16} />
+                <span>{saving ? 'Saving...' : 'Save System Policies'}</span>
+              </button>
             </div>
           </div>
 
           <div className="st-expander mb-3">
             <button className="st-expander-header" onClick={() => setExpandAddTeam(!expandAddTeam)}>
-              <span>➕ Register a New Team</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <UserPlus size={16} color="#60A5FA" />
+                <span>Register a New Team</span>
+              </span>
               <span>{expandAddTeam ? '▼' : '▶'}</span>
             </button>
             {expandAddTeam && (
               <div className="st-expander-content">
                 <input type="text" className="input-field" placeholder="New Team Name (e.g., GRACE)" value={newTeam.name} onChange={e => setNewTeam({...newTeam, name: e.target.value})}/>
                 <input type="text" className="input-field" placeholder="Set 4-Digit PIN (e.g., 1234)" maxLength="4" value={newTeam.pin} onChange={e => setNewTeam({...newTeam, pin: e.target.value})}/>
-                <button className="btn-primary" onClick={handleAddTeam} disabled={saving}>Add Team</button>
+                <button className="btn-primary" onClick={handleAddTeam} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <UserPlus size={15} />
+                  <span>Add Team</span>
+                </button>
               </div>
             )}
           </div>
 
           <div className="st-expander mb-3">
             <button className="st-expander-header" onClick={() => setExpandUpdatePin(!expandUpdatePin)}>
-              <span>🔑 Update Team PIN</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <KeyRound size={16} color="#FBBF24" />
+                <span>Update Team PIN</span>
+              </span>
               <span>{expandUpdatePin ? '▼' : '▶'}</span>
             </button>
             {expandUpdatePin && (
@@ -1559,28 +1574,40 @@ export default function AdminDashboard({ onLogout }) {
                   {data?.validTeams?.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
                 <input type="text" className="input-field" placeholder="New 4-Digit PIN (e.g., 5678)" maxLength="4" value={pinUpdate.pin} onChange={e => setPinUpdate({...pinUpdate, pin: e.target.value})}/>
-                <button className="btn-primary" onClick={handleUpdatePin} disabled={saving}>Update PIN</button>
+                <button className="btn-primary" onClick={handleUpdatePin} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <KeyRound size={15} />
+                  <span>Update PIN</span>
+                </button>
               </div>
             )}
           </div>
 
           <div className="st-expander mb-3">
             <button className="st-expander-header" onClick={() => setExpandSuperPin(!expandSuperPin)}>
-              <span>🔐 Super Admin Security</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ShieldCheck size={16} color="#34D399" />
+                <span>Super Admin Security PIN</span>
+              </span>
               <span>{expandSuperPin ? '▼' : '▶'}</span>
             </button>
             {expandSuperPin && (
               <div className="st-expander-content">
                 <p className="label mb-2">Change the global Super Admin login PIN.</p>
                 <input type="password" className="input-field" placeholder="New Super Admin PIN" value={superPin} onChange={e => setSuperPin(e.target.value)}/>
-                <button className="btn-primary" onClick={handleUpdateSuperPin} disabled={saving}>Update Super Admin PIN</button>
+                <button className="btn-primary" onClick={handleUpdateSuperPin} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <ShieldCheck size={15} />
+                  <span>Update Super Admin PIN</span>
+                </button>
               </div>
             )}
           </div>
 
           <div className="st-expander mb-3">
             <button className="st-expander-header" onClick={() => setExpandRenameTeam(!expandRenameTeam)}>
-              <span>⚠️ Rename Team & Cascade Updates</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <RefreshCw size={16} color="#F87171" />
+                <span>Rename Team & Cascade Updates</span>
+              </span>
               <span>{expandRenameTeam ? '▼' : '▶'}</span>
             </button>
             {expandRenameTeam && (
@@ -1591,35 +1618,51 @@ export default function AdminDashboard({ onLogout }) {
                   {data?.validTeams?.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
                 <input type="text" className="input-field" placeholder="New Team Name" value={renameTeam.newName} onChange={e => setRenameTeam({...renameTeam, newName: e.target.value})}/>
-                <button className="btn-primary" onClick={handleRenameTeam} disabled={saving}>Rename Team & Cascade</button>
+                <button className="btn-primary" onClick={handleRenameTeam} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <RefreshCw size={15} />
+                  <span>Rename Team & Cascade</span>
+                </button>
               </div>
             )}
           </div>
 
           <div className="st-expander mb-3">
             <button className="st-expander-header" onClick={() => setExpandBulkUpload(!expandBulkUpload)}>
-              <span>📤 Bulk Onboard Members</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <UploadCloud size={16} color="#818CF8" />
+                <span>Bulk Onboard Members</span>
+              </span>
               <span>{expandBulkUpload ? '▼' : '▶'}</span>
             </button>
             {expandBulkUpload && (
               <div className="st-expander-content">
                 <p className="label mb-3">Upload a CSV file containing `Team_Name`, `Member_Name`, and `WhatsApp_Number`.</p>
                 <input type="file" className="input-field" accept=".csv" onChange={handleFileUpload} />
-                <button className="btn-primary" onClick={handleBulkUpload} disabled={saving || !csvFile}>{saving ? 'Uploading...' : 'Upload to Database'}</button>
+                <button className="btn-primary" onClick={handleBulkUpload} disabled={saving || !csvFile} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <UploadCloud size={15} />
+                  <span>{saving ? 'Uploading...' : 'Upload to Database'}</span>
+                </button>
               </div>
             )}
           </div>
 
           <div className="st-expander mb-3" style={{ border: '1px solid rgba(239, 68, 68, 0.35)', background: 'rgba(239, 68, 68, 0.03)' }}>
             <button className="st-expander-header" onClick={() => setExpandArchiveSection(!expandArchiveSection)} style={{ color: '#F87171' }}>
-              <span>🚀 Archive Current Challenge & Launch New Edition</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Archive size={16} color="#F87171" />
+                <span>Archive Current Challenge & Launch New Edition</span>
+              </span>
               <span>{expandArchiveSection ? '▼' : '▶'}</span>
             </button>
             {expandArchiveSection && (
               <div className="st-expander-content">
                 <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '0.5rem', padding: '0.85rem', marginBottom: '1rem' }}>
-                  <p style={{ margin: 0, fontSize: '0.88rem', color: '#FCA5A5', lineHeight: '1.5' }}>
-                    <strong>📦 Safe Automatic Archiving:</strong> Starting a new challenge will permanently duplicate and save the current challenge's readings, leader progress, and roster into a dedicated archive tab in Google Sheets. It will then reset the active tracking sheets to a clean Day 1 blank slate ready for your new roster.
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '700', color: '#FCA5A5', marginBottom: '0.25rem', fontSize: '0.88rem' }}>
+                    <Archive size={15} />
+                    <span>Safe Automatic Archiving:</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.84rem', color: '#FCA5A5', lineHeight: '1.5' }}>
+                    Starting a new challenge will permanently duplicate and save the current challenge's readings, leader progress, and roster into a dedicated archive tab in Google Sheets. It will then reset the active tracking sheets to a clean Day 1 blank slate ready for your new roster.
                   </p>
                 </div>
                 <button 
@@ -1648,7 +1691,10 @@ export default function AdminDashboard({ onLogout }) {
               onClick={() => setShowPdfModal(true)}
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
             >
-              <span>📑 Generate Executive PDF Reports</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FileText size={16} color="#34D399" />
+                <span>Generate Executive PDF Reports</span>
+              </span>
               <FileDown size={16} />
             </button>
           </div>
@@ -2119,8 +2165,9 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Current Edition Backup Info */}
             <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '0.5rem', padding: '0.85rem', marginBottom: '1.25rem' }}>
-              <div style={{ fontWeight: '700', color: '#FBBF24', fontSize: '0.88rem', marginBottom: '0.2rem' }}>
-                📁 What will be archived:
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '700', color: '#FBBF24', fontSize: '0.88rem', marginBottom: '0.25rem' }}>
+                <Archive size={15} />
+                <span>Archived Scope & Backup:</span>
               </div>
               <p style={{ margin: 0, fontSize: '0.82rem', color: '#FEF3C7', lineHeight: '1.4' }}>
                 Current edition <strong>"{data?.settings?.Challenge_Edition || 'Active Challenge'}"</strong> with all its daily reading checkmarks, leaderboard scores, and member records will be duplicated into a permanent Google Sheets archive tab. You can navigate back to view it anytime via the Edition Switcher.
@@ -2130,7 +2177,7 @@ export default function AdminDashboard({ onLogout }) {
             {/* New Edition Inputs */}
             <div style={{ marginBottom: '1.25rem' }}>
               <h4 style={{ fontSize: '0.95rem', fontWeight: '700', margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>
-                ✨ Configure New Edition:
+                Configure New Challenge Edition:
               </h4>
 
               <div style={{ marginBottom: '0.85rem' }}>
@@ -2149,7 +2196,7 @@ export default function AdminDashboard({ onLogout }) {
                 <input 
                   type="text" 
                   className="input-field" 
-                  placeholder="e.g., 📖 September - December Epistles Edition" 
+                  placeholder="e.g., September - December Epistles Edition" 
                   value={newEditionForm.challengeEdition} 
                   onChange={(e) => setNewEditionForm({...newEditionForm, challengeEdition: e.target.value})} 
                 />
@@ -2180,8 +2227,12 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Warning Message */}
             <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '700', color: '#FCA5A5', marginBottom: '0.2rem', fontSize: '0.82rem' }}>
+                <AlertTriangle size={14} />
+                <span>Blank Slate Confirmation:</span>
+              </div>
               <p style={{ margin: 0, fontSize: '0.8rem', color: '#FCA5A5', lineHeight: '1.4' }}>
-                ⚠️ <strong>Blank Slate Confirmation:</strong> Active tracking sheets will be wiped clean for Day 1. Make sure you are ready to onboard new participants.
+                Active tracking sheets will be wiped clean for Day 1. Make sure you are ready to onboard new participants.
               </p>
             </div>
 
