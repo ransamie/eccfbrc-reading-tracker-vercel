@@ -13,24 +13,38 @@ function cleanText(str) {
     .trim();
 }
 
-// Convert and resize image to compact Base64 for clean and lightweight PDF rendering
-async function getCompressedLogoBase64(url = '/eccfbrclogo.png') {
+// Convert high-quality logo to crisp Base64 for razor-sharp PDF rendering
+async function getCompressedLogoBase64(url = '/logo.png') {
   try {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.src = url;
-    await new Promise((resolve, reject) => {
-      img.onload = resolve;
+    const loadImage = (src) => new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => resolve(img);
       img.onerror = reject;
+      img.src = src;
     });
 
+    let img;
+    try {
+      img = await loadImage(url);
+    } catch {
+      img = await loadImage('/eccfbrclogo.png');
+    }
+
     const canvas = document.createElement('canvas');
-    const size = 160;
-    canvas.width = size;
-    canvas.height = size;
+    // High-resolution for ultra-crisp 300+ DPI print quality
+    const naturalW = img.naturalWidth || 1024;
+    const naturalH = img.naturalHeight || 1024;
+    const maxDim = 1024;
+    const scale = Math.min(1, maxDim / Math.max(naturalW, naturalH));
+    
+    canvas.width = Math.round(naturalW * scale);
+    canvas.height = Math.round(naturalH * scale);
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, size, size);
-    return canvas.toDataURL('image/png');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png', 0.95);
   } catch (e) {
     console.error('Failed to load logo for PDF:', e);
     return null;
@@ -62,6 +76,46 @@ function calculateMemberProgress(member, totalDays) {
   }
   const is100Percent = totalDays > 0 && completedDays >= totalDays;
   return { completedDays, is100Percent };
+}
+
+function formatChallengePeriod(startDateStr, totalDays) {
+  if (!startDateStr) return `${totalDays} Days`;
+  try {
+    const [sYear, sMonth, sDay] = String(startDateStr).split('-').map(Number);
+    const startDate = sYear ? new Date(sYear, sMonth - 1, sDay) : new Date(startDateStr);
+    
+    const daysToAdd = Math.max(0, parseInt(totalDays, 10) - 1);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + daysToAdd);
+
+    const options = { day: '2-digit', month: 'short', year: 'numeric' };
+    const startFormatted = new Intl.DateTimeFormat('en-GB', options).format(startDate);
+    const endFormatted = new Intl.DateTimeFormat('en-GB', options).format(endDate);
+
+    return `${startFormatted} - ${endFormatted} (${totalDays} Days)`;
+  } catch (e) {
+    return `${totalDays} Days`;
+  }
+}
+
+function getDatesBreakdown(startDateStr, totalDays) {
+  if (!startDateStr) return { startFormatted: 'N/A', endFormatted: 'N/A', totalDays };
+  try {
+    const [sYear, sMonth, sDay] = String(startDateStr).split('-').map(Number);
+    const startDate = sYear ? new Date(sYear, sMonth - 1, sDay) : new Date(startDateStr);
+    const daysToAdd = Math.max(0, parseInt(totalDays, 10) - 1);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + daysToAdd);
+
+    const options = { day: '2-digit', month: 'short', year: 'numeric' };
+    return {
+      startFormatted: new Intl.DateTimeFormat('en-GB', options).format(startDate),
+      endFormatted: new Intl.DateTimeFormat('en-GB', options).format(endDate),
+      totalDays
+    };
+  } catch (e) {
+    return { startFormatted: 'N/A', endFormatted: 'N/A', totalDays };
+  }
 }
 
 // -------------------------------------------------------------
@@ -158,7 +212,8 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     retentionRate: t.assigned > 0 ? ((t.active / t.assigned) * 100).toFixed(1) + '%' : '0.0%'
   })).sort((a, b) => b.completed100 - a.completed100 || b.active - a.active);
 
-  const logoBase64 = await getCompressedLogoBase64();
+  const startDateStr = settings.Start_Date || '';
+  const periodStr = formatChallengePeriod(startDateStr, totalDays);
 
   // --- HEADER SECTION ---
   doc.setFillColor(15, 23, 42); // Slate 900
@@ -177,11 +232,11 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(147, 197, 253);
-  doc.text(`${challengeEdition}  |  Total Reading Days: ${totalDays} Days`, textStartX, 46);
+  doc.text(`${challengeEdition}  |  ${periodStr}`, textStartX, 46);
 
   doc.setFontSize(8);
   doc.setTextColor(203, 213, 225);
-  doc.text(`General Report  |  Date: ${dateStr}`, textStartX, 60);
+  doc.text(`General Executive Report  |  Generated: ${dateStr}`, textStartX, 60);
 
   let currentY = 98;
 
@@ -460,6 +515,9 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   const completionRate = assigned > 0 ? ((completed100 / assigned) * 100).toFixed(1) : '0.0';
   const retentionRate = assigned > 0 ? ((active / assigned) * 100).toFixed(1) : '0.0';
 
+  const startDateStr = settings.Start_Date || '';
+  const periodStr = formatChallengePeriod(startDateStr, totalDays);
+
   const logoBase64 = await getCompressedLogoBase64();
 
   // --- HEADER BANNER ---
@@ -479,11 +537,11 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(147, 197, 253);
-  doc.text(`${challengeTitle}  |  ${challengeEdition}`, textStartX, 46);
+  doc.text(`${challengeEdition}  |  ${periodStr}`, textStartX, 46);
 
   doc.setFontSize(8);
   doc.setTextColor(203, 213, 225);
-  doc.text(`Team Leaders: ${leaderNames}  |  Date: ${dateStr}`, textStartX, 60);
+  doc.text(`Team Leaders: ${leaderNames}  |  Generated: ${dateStr}`, textStartX, 60);
 
   let currentY = 98;
 
@@ -692,6 +750,9 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
   const leaderCompletionRate = totalLeaders > 0 ? ((completedLeadersCount / totalLeaders) * 100).toFixed(1) : '0.0';
   const leaderRetentionRate = totalLeaders > 0 ? ((activeLeadersCount / totalLeaders) * 100).toFixed(1) : '0.0';
 
+  const startDateStr = settings.Start_Date || '';
+  const periodStr = formatChallengePeriod(startDateStr, totalDays);
+
   const logoBase64 = await getCompressedLogoBase64();
 
   // --- HEADER SECTION ---
@@ -711,11 +772,11 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(147, 197, 253);
-  doc.text(`${challengeTitle}  |  ${challengeEdition}`, textStartX, 46);
+  doc.text(`${challengeEdition}  |  ${periodStr}`, textStartX, 46);
 
   doc.setFontSize(8);
   doc.setTextColor(203, 213, 225);
-  doc.text(`Team Leaders Reading Summary  |  Date: ${dateStr}`, textStartX, 60);
+  doc.text(`Team Leaders Reading Summary  |  Generated: ${dateStr}`, textStartX, 60);
 
   let currentY = 98;
 
