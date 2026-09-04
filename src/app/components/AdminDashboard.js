@@ -731,6 +731,76 @@ export default function AdminDashboard({ onLogout }) {
         </button>
       </div>
 
+      {/* Global Edition Switcher Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem', padding: '0.6rem 0.85rem', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Edition:
+          </span>
+          <select
+            value={selectedEdition}
+            onChange={(e) => {
+              const newEdition = e.target.value;
+              setSelectedEdition(newEdition);
+              loadData(false, newEdition);
+            }}
+            className="tracker-edition-select"
+          >
+            <option value="live">
+              🟢 Active: {data?.isArchive ? "Current Live Challenge" : (data?.settings?.Challenge_Edition || "Active Challenge")}
+            </option>
+            {editionsList && editionsList.map(arch => (
+              <option key={arch.id} value={arch.id}>
+                📁 Archive: {arch.edition} ({arch.startDate || 'Past'})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {isReadingCompleted && (
+            <button
+              onClick={() => setShowPdfModal(true)}
+              className="tracker-btn-pdf"
+              title="Download Official PDF Reports"
+              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+            >
+              <FileDown size={14} /> <span>PDF Reports</span>
+            </button>
+          )}
+
+          {data?.isArchive && (
+            <button 
+              onClick={() => {
+                setSelectedEdition('live');
+                loadData(false, 'live');
+              }}
+              className="tracker-btn-archive-return"
+              title="Return to live tracking"
+            >
+              ↩ Return to Live Challenge
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Global Archive Notice Banner */}
+      {data?.isArchive && (
+        <div className="tracker-archive-banner">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <Archive size={20} color="#F59E0B" />
+            <div>
+              <div style={{ fontWeight: '700', color: '#FDE68A', fontSize: '0.92rem' }}>
+                Viewing Archived Edition: {data?.settings?.Challenge_Edition || 'Past Challenge'}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#CBD5E1', marginTop: '0.15rem' }}>
+                Period: {data?.settings?.Start_Date || 'N/A'} • {data?.settings?.Total_Days || '90'} Days • Read-Only Historical Snapshot
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'leaders' && (
         <div className="card">
 
@@ -930,22 +1000,38 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-              <button 
-                onClick={() => handleSaveAdminReport(false)} 
-                disabled={saving} 
-                className="tracker-btn-save"
-              >
-                <span>{saving ? 'Saving...' : `💾 Save ${adminSelectedDay.replace('_', ' ')} Updates`}</span>
-              </button>
-              
-              {adminSelectedDay === currentDayStr && (
-                <button 
-                  onClick={() => handleSaveAdminReport(true)} 
-                  disabled={saving} 
-                  className="tracker-btn-report"
-                >
-                  <span>📋 Generate Daily Report</span>
-                </button>
+              {data?.isArchive ? (
+                <div style={{
+                  padding: '0.85rem 1rem',
+                  background: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                  borderRadius: '0.5rem',
+                  textAlign: 'center',
+                  color: '#FDE68A',
+                  fontSize: '0.875rem'
+                }}>
+                  🔒 <strong>Archived Edition (Read-Only)</strong>: Leader check-ins from this past challenge are preserved as historical records.
+                </div>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => handleSaveAdminReport(false)} 
+                    disabled={saving} 
+                    className="tracker-btn-save"
+                  >
+                    <span>{saving ? 'Saving...' : `💾 Save ${adminSelectedDay.replace('_', ' ')} Updates`}</span>
+                  </button>
+                  
+                  {adminSelectedDay === currentDayStr && (
+                    <button 
+                      onClick={() => handleSaveAdminReport(true)} 
+                      disabled={saving} 
+                      className="tracker-btn-report"
+                    >
+                      <span>📋 Generate Daily Report</span>
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -1127,70 +1213,6 @@ export default function AdminDashboard({ onLogout }) {
 
         return (
           <div className="card">
-            {/* Edition Switcher Bar */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem', paddingBottom: '0.85rem', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  Edition:
-                </span>
-                <select
-                  value={selectedEdition}
-                  onChange={(e) => {
-                    const newEdition = e.target.value;
-                    setSelectedEdition(newEdition);
-                    loadData(false, newEdition);
-                  }}
-                  className="tracker-edition-select"
-                >
-                  <option value="live">
-                    🟢 Active: {data?.isArchive ? "Current Live Challenge" : (data?.settings?.Challenge_Edition || "Active Challenge")}
-                  </option>
-                  {editionsList && editionsList.map(arch => (
-                    <option key={arch.id} value={arch.id}>
-                      📁 Archive: {arch.edition} ({arch.startDate || 'Past'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {data?.isArchive && (
-                <button 
-                  onClick={() => {
-                    setSelectedEdition('live');
-                    loadData(false, 'live');
-                  }}
-                  className="tracker-btn-archive-return"
-                  title="Return to live tracking"
-                >
-                  ↩ Return to Live Challenge
-                </button>
-              )}
-            </div>
-
-            {/* Archive Notice Banner */}
-            {data?.isArchive && (
-              <div className="tracker-archive-banner">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                  <Archive size={20} color="#F59E0B" />
-                  <div>
-                    <strong style={{ color: '#FEF3C7', fontSize: '0.95rem' }}>Viewing Historical Archive: {data?.settings?.Challenge_Edition}</strong>
-                    <div style={{ fontSize: '0.8rem', color: '#FDE68A', opacity: 0.9 }}>
-                      Archived snapshot • {data?.trackerData?.length || 0} total participants • Read-only historical review
-                    </div>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => {
-                    setSelectedEdition('live');
-                    loadData(false, 'live');
-                  }}
-                  style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(245, 158, 11, 0.5)', color: '#FBBF24', padding: '0.35rem 0.75rem', borderRadius: '0.4rem', cursor: 'pointer', fontWeight: '700', fontSize: '0.8rem' }}
-                >
-                  Exit Archive
-                </button>
-              </div>
-            )}
-
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)' }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '800' }}>📊 Challenge Analytics & Reports</h2>

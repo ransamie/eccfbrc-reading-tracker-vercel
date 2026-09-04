@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
+import { generateTeamPdfReport } from "@/lib/pdfReportGenerator";
 
 export default function LeaderDashboard({ team, onLogout }) {
   const [data, setData] = useState(null);
@@ -15,6 +16,12 @@ export default function LeaderDashboard({ team, onLogout }) {
   const [saving, setSaving] = useState(false);
   const [reportText, setReportText] = useState("");
   const reportRef = useRef(null);
+
+  // Archive Edition Switcher States
+  const [selectedEdition, setSelectedEdition] = useState('live');
+  const [editionsList, setEditionsList] = useState([]);
+  const [isReadingCompleted, setIsReadingCompleted] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
   
   useEffect(() => {
     if (reportText && reportRef.current) {
@@ -45,14 +52,35 @@ export default function LeaderDashboard({ team, onLogout }) {
     }
   };
 
-  const loadData = (isManualRefresh = false) => {
+  const handleDownloadTeamPdf = async () => {
+    setPdfGenerating(true);
+    try {
+      const filename = await generateTeamPdfReport({
+        teamName: team,
+        trackerData: data?.trackerData || [],
+        settings: data?.settings || {},
+        leadersData: data?.leadersData || []
+      });
+      showToast(`Downloaded: ${filename}`);
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to generate team PDF report", "error");
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
+  const loadData = (isManualRefresh = false, editionOverride = null) => {
     setLoading(true);
-    return fetch(`/api/data?type=leader&team=${encodeURIComponent(team)}&t=${Date.now()}`, { cache: 'no-store' })
+    const editionParam = editionOverride !== null ? editionOverride : selectedEdition;
+    return fetch(`/api/data?type=leader&team=${encodeURIComponent(team)}&edition=${encodeURIComponent(editionParam)}&t=${Date.now()}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(d => {
         setData(d);
-        
-        const startDateStr = d.settings.Start_Date || new Date().toISOString().split('T')[0];
+        if (d.editionsList) setEditionsList(d.editionsList);
+
+        const isArch = d.isArchive === true;
+        const startDateStr = d.settings?.Start_Date || new Date().toISOString().split('T')[0];
         const [sYear, sMonth, sDay] = startDateStr.split('-').map(Number);
         const startDate = sYear ? new Date(sYear, sMonth - 1, sDay) : new Date(startDateStr);
         const now = new Date();
@@ -64,7 +92,13 @@ export default function LeaderDashboard({ team, onLogout }) {
         if (elapsedDays < 1) elapsedDays = 1;
 
         const totalDays = parseInt(d.settings?.Total_Days || 0);
-        let activeDay = elapsedDays;
+
+        const isCompleted = isArch || (totalDays > 0 && elapsedDays >= totalDays) ||
+                            String(d.settings?.Is_Completed || '').toUpperCase() === 'TRUE' ||
+                            String(d.settings?.Status || '').toLowerCase() === 'completed';
+        setIsReadingCompleted(isCompleted);
+
+        let activeDay = isArch && totalDays > 0 ? totalDays : elapsedDays;
         if (totalDays > 0 && activeDay > totalDays) {
           activeDay = totalDays;
         }
@@ -72,17 +106,19 @@ export default function LeaderDashboard({ team, onLogout }) {
         
         setCurrentDay(calcCurrentDay);
         setCurrentDayNum(activeDay);
-        if (!selectedDay) setSelectedDay(calcCurrentDay);
+        if (!selectedDay || isArch) setSelectedDay(calcCurrentDay);
         
         setReflection(d.teamReflection || "");
         
         const initialUpdates = {};
-        d.trackerData.forEach(member => {
-          if (String(member.Status || '').toLowerCase() === 'active') {
-            const memberName = String(member.Member_Name || '').trim();
-            initialUpdates[memberName] = String(member[selectedDay || calcCurrentDay] || '').toUpperCase() === 'TRUE';
-          }
-        });
+        if (d.trackerData) {
+          d.trackerData.forEach(member => {
+            if (String(member.Status || '').toLowerCase() === 'active') {
+              const memberName = String(member.Member_Name || '').trim();
+              initialUpdates[memberName] = String(member[selectedDay || calcCurrentDay] || '').toUpperCase() === 'TRUE';
+            }
+          });
+        }
         setUpdates(initialUpdates);
         if (isManualRefresh === true) showToast("Dashboard is up-to-date!");
         return d;
@@ -96,7 +132,7 @@ export default function LeaderDashboard({ team, onLogout }) {
   useEffect(() => { loadData(); }, [team]);
 
   useEffect(() => {
-    if (data) {
+    if (data && data.trackerData) {
       const newUpdates = {};
       data.trackerData.forEach(member => {
         if (String(member.Status || '').toLowerCase() === 'active') {
@@ -108,9 +144,13 @@ export default function LeaderDashboard({ team, onLogout }) {
     }
   }, [selectedDay]);
 
-  const handleCheckbox = (name) => { setUpdates(prev => ({ ...prev, [name]: !prev[name] })); };
+  const handleCheckbox = (name) => {
+    if (data?.isArchive) return; // Read-only in archive mode
+    setUpdates(prev => ({ ...prev, [name]: !prev[name] }));
+  };
 
   const handleSelectAll = (val) => {
+    if (data?.isArchive) return; // Read-only in archive mode
     const newUpdates = { ...updates };
     Object.keys(newUpdates).forEach(k => newUpdates[k] = val);
     setUpdates(newUpdates);
@@ -411,6 +451,71 @@ export default function LeaderDashboard({ team, onLogout }) {
         </button>
       </div>
 
+      {/* Edition Switcher Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem', padding: '0.6rem 0.85rem', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Edition:
+          </span>
+          <select
+            value={selectedEdition}
+            onChange={(e) => {
+              const newEdition = e.target.value;
+              setSelectedEdition(newEdition);
+              loadData(false, newEdition);
+            }}
+            className="tracker-edition-select"
+          >
+            <option value="live">
+              🟢 Active: {data?.isArchive ? "Current Live Challenge" : (data?.settings?.Challenge_Edition || "Active Challenge")}
+            </option>
+            {editionsList && editionsList.map(arch => (
+              <option key={arch.id} value={arch.id}>
+                📁 Archive: {arch.edition} ({arch.startDate || 'Past'})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {isReadingCompleted && (
+            <button
+              onClick={handleDownloadTeamPdf}
+              disabled={pdfGenerating}
+              className="tracker-btn-pdf"
+              title="Download Official Team PDF Report"
+              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+            >
+              <FileDown size={14} /> <span>{pdfGenerating ? 'Generating...' : 'Team PDF Report'}</span>
+            </button>
+          )}
+
+          {data?.isArchive && (
+            <button 
+              onClick={() => {
+                setSelectedEdition('live');
+                loadData(false, 'live');
+              }}
+              className="tracker-btn-archive-return"
+              title="Return to live tracking"
+            >
+              ↩ Return to Live Challenge
+            </button>
+          )}
+        </div>
+      </div>
+
+      {data?.isArchive && (
+        <div className="tracker-archive-banner">
+          <div className="tracker-archive-badge">
+            <FolderArchive size={16} />
+            <span>
+              Viewing Archived Edition: <strong>{data?.settings?.Challenge_Edition || 'Past Challenge'}</strong> (Read-Only Historical Snapshot)
+            </span>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'report' && (
         <div className="card">
           
@@ -606,31 +711,47 @@ export default function LeaderDashboard({ team, onLogout }) {
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-              {!isReportingWindow && (
-                <div style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#FCA5A5', padding: '0.75rem 1rem', borderRadius: '0.65rem', marginBottom: '0.5rem', border: '1px solid rgba(239, 68, 68, 0.25)', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <span>⚠️</span>
-                  <span>{closedMessage} You cannot submit updates at this time.</span>
+              {data?.isArchive ? (
+                <div style={{
+                  padding: '0.85rem 1rem',
+                  background: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                  borderRadius: '0.5rem',
+                  textAlign: 'center',
+                  color: '#FDE68A',
+                  fontSize: '0.875rem'
+                }}>
+                  🔒 <strong>Archived Edition (Read-Only)</strong>: Records are permanently preserved. Use the <strong>Team PDF Report</strong> button above to download the historical report.
                 </div>
-              )}
+              ) : (
+                <>
+                  {!isReportingWindow && (
+                    <div style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#FCA5A5', padding: '0.75rem 1rem', borderRadius: '0.65rem', marginBottom: '0.5rem', border: '1px solid rgba(239, 68, 68, 0.25)', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <span>⚠️</span>
+                      <span>{closedMessage} You cannot submit updates at this time.</span>
+                    </div>
+                  )}
 
-              <button 
-                onClick={() => handleSaveReport(false)} 
-                disabled={saving || !isReportingWindow} 
-                className="tracker-btn-save"
-                style={{ opacity: (saving || !isReportingWindow) ? 0.5 : 1, cursor: (saving || !isReportingWindow) ? 'not-allowed' : 'pointer' }}
-              >
-                <span>{saving ? 'Saving...' : `💾 Save ${selectedDay.replace('_', ' ')} Updates`}</span>
-              </button>
-              
-              {selectedDay === currentDay && (
-                <button 
-                  onClick={() => handleSaveReport(true)} 
-                  disabled={saving || !isReportingWindow} 
-                  className="tracker-btn-report"
-                  style={{ opacity: (saving || !isReportingWindow) ? 0.5 : 1, cursor: (saving || !isReportingWindow) ? 'not-allowed' : 'pointer' }}
-                >
-                  <span>📋 Generate Report</span>
-                </button>
+                  <button 
+                    onClick={() => handleSaveReport(false)} 
+                    disabled={saving || !isReportingWindow} 
+                    className="tracker-btn-save"
+                    style={{ opacity: (saving || !isReportingWindow) ? 0.5 : 1, cursor: (saving || !isReportingWindow) ? 'not-allowed' : 'pointer' }}
+                  >
+                    <span>{saving ? 'Saving...' : `💾 Save ${selectedDay.replace('_', ' ')} Updates`}</span>
+                  </button>
+                  
+                  {selectedDay === currentDay && (
+                    <button 
+                      onClick={() => handleSaveReport(true)} 
+                      disabled={saving || !isReportingWindow} 
+                      className="tracker-btn-report"
+                      style={{ opacity: (saving || !isReportingWindow) ? 0.5 : 1, cursor: (saving || !isReportingWindow) ? 'not-allowed' : 'pointer' }}
+                    >
+                      <span>📋 Generate Report</span>
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
