@@ -387,7 +387,22 @@ export default function LeaderDashboard({ team, onLogout }) {
         <div className="tracker-header-title">
           <img src="/eccfbrclogo.png" alt="Logo" />
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: '1.2' }}>Team {team}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: '1.2' }}>Team {team}</div>
+              {data?.settings?.Challenge_Edition && (
+                <span style={{ 
+                  fontSize: '0.74rem', 
+                  fontWeight: '700', 
+                  padding: '0.15rem 0.55rem', 
+                  borderRadius: '999px',
+                  background: data?.isArchive ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                  color: data?.isArchive ? '#FDE68A' : '#6EE7B7',
+                  border: `1px solid ${data?.isArchive ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
+                }}>
+                  {data?.isArchive ? '📁 ' : '🟢 '}{data.settings.Challenge_Edition}
+                </span>
+              )}
+            </div>
             {data?.leadersData && (
               <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
                 Leader: <strong style={{ color: 'var(--text-primary)' }}>{data.leadersData[0]?.Member_Name || data.leadersData[0]?.Name || data.leadersData[0]?.['Team Leader'] || 'N/A'}</strong>
@@ -397,6 +412,26 @@ export default function LeaderDashboard({ team, onLogout }) {
           </div>
         </div>
         <div className="tracker-header-actions">
+          {(isReadingCompleted || data?.isArchive) && (
+            <button 
+              onClick={handleDownloadTeamPdf}
+              disabled={pdfGenerating}
+              title="Download Official Team PDF Report"
+              className="tracker-btn-icon"
+              style={{ 
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: 'var(--success)',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                width: 'auto',
+                padding: '0 0.75rem',
+                gap: '0.4rem',
+                cursor: pdfGenerating ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <FileDown size={16} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{pdfGenerating ? 'Generating...' : 'Team PDF'}</span>
+            </button>
+          )}
           <button 
             onClick={handleCopyQuizLink}
             title="Copy Quiz Link to share with team"
@@ -446,70 +481,16 @@ export default function LeaderDashboard({ team, onLogout }) {
         </button>
       </div>
 
-      {/* Active Edition Display & PDF Export Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem', padding: '0.65rem 0.95rem', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Active Edition:
-          </span>
-          <div style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: '0.45rem', 
-            padding: '0.25rem 0.65rem', 
-            borderRadius: '0.35rem', 
-            background: data?.isArchive ? 'rgba(245,158,11,0.12)' : 'rgba(16,185,129,0.12)', 
-            border: `1px solid ${data?.isArchive ? 'rgba(245,158,11,0.3)' : 'rgba(16,185,129,0.3)'}`, 
-            color: data?.isArchive ? '#FDE68A' : '#6EE7B7', 
-            fontSize: '0.85rem', 
-            fontWeight: '700' 
-          }}>
-            {data?.isArchive ? '📁' : '🟢'} {data?.settings?.Challenge_Edition || data?.settings?.Challenge_Name || 'Active Reading Challenge'}
-          </div>
-          {data?.isArchive && (
-            <span style={{ fontSize: '0.75rem', color: '#FCD34D' }}>
-              (Admin Active Archive • Editing Enabled)
-            </span>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {(isReadingCompleted || data?.isArchive) && (
-            <button
-              onClick={handleDownloadTeamPdf}
-              disabled={pdfGenerating}
-              className="tracker-btn-pdf"
-              title="Download Official Team PDF Report"
-              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
-            >
-              <FileDown size={14} /> <span>{pdfGenerating ? 'Generating...' : 'Team PDF Report'}</span>
-            </button>
-          )}
-        </div>
-      </div>
-
       {activeTab === 'report' && (
         <div className="card">
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
-                Mark Daily Updates for Your Team
-              </h3>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
-                Tap each member's card to record daily reading progress for any day.
-              </p>
-            </div>
-            {(isReadingCompleted || data?.isArchive) && (
-              <button
-                onClick={handleDownloadTeamPdf}
-                disabled={pdfGenerating}
-                className="tracker-btn-pdf"
-                title="Download Team PDF Report"
-              >
-                <FileDown size={16} /> <span>{pdfGenerating ? 'Generating...' : 'Team PDF Report'}</span>
-              </button>
-            )}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <h3 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+              Mark Daily Updates for Your Team
+            </h3>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
+              Tap each member's card to record daily reading progress for any day.
+            </p>
           </div>
           
           {/* Modern Date Stepper Card */}
