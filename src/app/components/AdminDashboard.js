@@ -251,7 +251,7 @@ export default function AdminDashboard({ onLogout }) {
             currentRound: parseInt(d.settings?.Current_Round || 1), 
             evictionThreshold: parseInt(d.settings?.Eviction_Threshold || 5),
             challengeName: d.settings?.Challenge_Name || "ECCF Bible Reading Challenge Tracker",
-            challengeEdition: d.settings?.Challenge_Edition || "📖 June-August NT Edition",
+            challengeEdition: d.settings?.Challenge_Edition || "",
             totalDays: d.settings?.Total_Days || "",
             startDate: d.settings?.Start_Date || "",
             mornStart: parse12to24(d.settings?.Morning_Window_Start || "04:00 AM"),

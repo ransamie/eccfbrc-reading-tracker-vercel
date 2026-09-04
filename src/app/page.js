@@ -113,9 +113,13 @@ export default function Home() {
         <h2 style={{ fontSize: "1.75rem", fontWeight: "700", margin: "0", textAlign: "center", lineHeight: "1.3" }}>
           {appSettings?.Challenge_Name || "ECCF Bible Reading Challenge Tracker"}
         </h2>
-        <p style={{ color: "var(--text-secondary)", fontWeight: 500, marginTop: "10px", textAlign: "center", fontSize: "1.1rem" }}>
-          {appSettings?.Challenge_Edition || "📖 June-August NT Edition"}
-        </p>
+        {appSettings?.Challenge_Edition ? (
+          <p style={{ color: "var(--text-secondary)", fontWeight: 500, marginTop: "10px", textAlign: "center", fontSize: "1.1rem" }}>
+            {appSettings.Challenge_Edition}
+          </p>
+        ) : (
+          <div style={{ height: "1.5rem", marginTop: "10px" }} />
+        )}
       </div>
 
       <div style={{ marginTop: "1.5rem" }}>

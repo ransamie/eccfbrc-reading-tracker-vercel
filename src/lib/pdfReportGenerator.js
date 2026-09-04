@@ -210,7 +210,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     ...t,
     completionRate: t.assigned > 0 ? ((t.completed100 / t.assigned) * 100).toFixed(1) + '%' : '0.0%',
     retentionRate: t.assigned > 0 ? ((t.active / t.assigned) * 100).toFixed(1) + '%' : '0.0%'
-  })).sort((a, b) => b.completed100 - a.completed100 || b.active - a.active);
+  }));
 
   const startDateStr = settings.Start_Date || '';
   const periodStr = formatChallengePeriod(startDateStr, totalDays);
@@ -295,7 +295,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
   currentY += 8;
 
   const tableRows = teamBreakdown.map((t, index) => [
-    `#${index + 1}`,
+    (index + 1).toString(),
     t.team,
     t.leaderName,
     t.assigned.toString(),
@@ -311,7 +311,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     margin: { left: margin, right: margin },
     tableWidth: contentWidth,
     head: [[
-      'Rank', 'Team Name', 'Team Leaders', 'Registered', 'Active', 'Completed', 'Evicted', 'Declined', 'Success Rate'
+      'S/N', 'Team Name', 'Team Leaders', 'Registered', 'Active', 'Completed', 'Evicted', 'Declined', 'Success Rate'
     ]],
     body: tableRows,
     theme: 'grid',
@@ -388,7 +388,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
       startY: currentY,
       margin: { left: margin, right: margin },
       tableWidth: contentWidth,
-      head: [['#', 'Participant Name', 'Team', 'WhatsApp Number', 'Reading Record', 'Status']],
+      head: [['S/N', 'Participant Name', 'Team', 'WhatsApp Number', 'Reading Record', 'Status']],
       body: completersRows,
       theme: 'grid',
       headStyles: {
@@ -602,7 +602,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   const sortedRoster = [...rosterList].sort((a, b) => b.completedDays - a.completedDays || a.name.localeCompare(b.name));
 
   const tableRows = sortedRoster.map((m, index) => [
-    `#${index + 1}`,
+    (index + 1).toString(),
     m.name,
     m.phone,
     `${m.completedDays} / ${totalDays} Days`,
@@ -615,7 +615,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
     margin: { left: margin, right: margin },
     tableWidth: contentWidth,
     head: [[
-      '#', 'Participant Name', 'WhatsApp Number', 'Reading Record', 'Progress', 'Status'
+      'S/N', 'Participant Name', 'WhatsApp Number', 'Reading Record', 'Progress', 'Status'
     ]],
     body: tableRows,
     theme: 'grid',
@@ -836,7 +836,7 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
   const sortedLeaders = [...leadersList].sort((a, b) => b.completedDays - a.completedDays || a.team.localeCompare(b.team) || a.name.localeCompare(b.name));
 
   const tableRows = sortedLeaders.map((l, index) => [
-    `#${index + 1}`,
+    (index + 1).toString(),
     l.name,
     l.team,
     `${l.completedDays} / ${totalDays} Days`,
@@ -849,7 +849,7 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
     margin: { left: margin, right: margin },
     tableWidth: contentWidth,
     head: [[
-      '#', 'Team Leader Name', 'Assigned Team', 'Reading Record', 'Progress', 'Status'
+      'S/N', 'Team Leader Name', 'Assigned Team', 'Reading Record', 'Progress', 'Status'
     ]],
     body: tableRows,
     theme: 'grid',
