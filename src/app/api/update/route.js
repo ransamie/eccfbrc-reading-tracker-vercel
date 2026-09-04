@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, fetchGlobalData, invalidateCache, archiveAndResetChallenge } from '@/lib/googleSheets';
+import { getDatabase, fetchGlobalData, invalidateCache, archiveAndResetChallenge, getActiveTrackerSheet, getActiveLeadersSheet } from '@/lib/googleSheets';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -12,6 +12,26 @@ export async function POST(request) {
     const { action, payload } = body;
 
     const db = await getDatabase();
+
+    if (action === 'admin_switch_global_edition') {
+      const { editionId } = payload;
+      const settingsSheet = db.sheetsByTitle["Global_Settings"];
+      const rows = await settingsSheet.getRows();
+      let found = false;
+      for (const row of rows) {
+        if (row.get('Setting_Key') === 'Active_Edition_Id') {
+          row.set('Setting_Value', editionId || 'live');
+          await row.save();
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        await settingsSheet.addRow({ Setting_Key: 'Active_Edition_Id', Setting_Value: editionId || 'live' });
+      }
+      invalidateCache();
+      return NextResponse.json({ success: true, activeEditionId: editionId || 'live' });
+    }
 
     if (action === 'leader_report') {
       const { team, day, updates, reflection, currentDayNum, evictionThreshold } = payload;
@@ -38,23 +58,27 @@ export async function POST(request) {
       const inMorn = watTimeStr >= to24(mornStart) && watTimeStr <= to24(mornEnd);
       const inEve = watTimeStr >= to24(eveStart) && watTimeStr <= to24(eveEnd);
 
-      if (!inMorn && !inEve) {
+      const isHistoricalOrArchive = globalData.isArchive || (globalData.settings?.Active_Edition_Id && globalData.settings?.Active_Edition_Id !== 'live');
+      const editingDayNum = parseInt(day.split('_')[1] || 1);
+      const isPastDay = editingDayNum < (currentDayNum || 1);
+
+      if (!isHistoricalOrArchive && !isPastDay && !inMorn && !inEve) {
           return NextResponse.json({ success: false, error: `Reporting is closed. The daily windows are ${mornStart} - ${mornEnd} and ${eveStart} - ${eveEnd}.` }, { status: 400 });
       }
       
-      const trackerSheet = db.sheetsByTitle["Tracker_Data"];
+      const trackerSheet = await getActiveTrackerSheet(db);
       await trackerSheet.loadHeaderRow();
       
       const totalDays = parseInt(globalData.settings?.Total_Days || 0);
-      let editingDayNum = parseInt(day.split('_')[1] || 1);
-      if (totalDays > 0 && editingDayNum > totalDays) {
-        editingDayNum = totalDays;
+      let targetDayNum = editingDayNum;
+      if (totalDays > 0 && targetDayNum > totalDays) {
+        targetDayNum = totalDays;
       }
       
       let headersChanged = false;
       const currentHeaders = [...trackerSheet.headerValues];
       
-      for (let i = 1; i <= editingDayNum; i++) {
+      for (let i = 1; i <= targetDayNum; i++) {
         const dStr = `Day_${i}`;
         if (!currentHeaders.includes(dStr)) {
           currentHeaders.push(dStr);
@@ -76,14 +100,12 @@ export async function POST(request) {
       
       const rows = await trackerSheet.getRows();
 
-      const promises = [];
-      
       // Calculate rounds for eviction logic
       const daysPerRound = 10;
       const completedRounds = Math.floor((currentDayNum - 1) / daysPerRound);
 
       for (const row of rows) {
-        const rowTeam = normalizeTeamName(row.get('Team_Name'));
+        const rowTeam = normalizeTeamName(row.get('Team_Name') || row.get('Team'));
         const rowName = String(row.get('Member_Name') || '').trim();
 
         if (rowTeam === normalizeTeamName(team)) {
@@ -91,8 +113,8 @@ export async function POST(request) {
           if (row.get('Status') === 'Active' && updates && updates[rowName] !== undefined) {
              row.set(day, updates[rowName] ? 'TRUE' : 'FALSE');
              if (updates[rowName]) {
-               const editingDayNum = parseInt(day.split('_')[1] || 1);
-               for (let pastD = 1; pastD < editingDayNum; pastD++) {
+               const dayIndex = parseInt(day.split('_')[1] || 1);
+               for (let pastD = 1; pastD < dayIndex; pastD++) {
                  const pastDStr = `Day_${pastD}`;
                  if (String(row.get(pastDStr) || '').toUpperCase() !== 'TRUE') {
                    row.set(pastDStr, 'TRUE');
@@ -120,20 +142,21 @@ export async function POST(request) {
               }
             }
           }
-          // We save if anything was updated (either the day's read status or eviction)
           await row.save();
         }
       }
 
-      // Save reflection if today
+      // Save reflection if provided
       if (reflection) {
         const credsSheet = db.sheetsByTitle["Team_Credentials"];
-        const credsRows = await credsSheet.getRows();
-        for (const cRow of credsRows) {
-          if (normalizeTeamName(cRow.get('Team_Name')) === normalizeTeamName(team)) {
-            cRow.set('Current_Reflection', reflection);
-            await cRow.save();
-            break;
+        if (credsSheet) {
+          const credsRows = await credsSheet.getRows();
+          for (const cRow of credsRows) {
+            if (normalizeTeamName(cRow.get('Team_Name')) === normalizeTeamName(team)) {
+              cRow.set('Current_Reflection', reflection);
+              await cRow.save();
+              break;
+            }
           }
         }
       }
@@ -145,12 +168,11 @@ export async function POST(request) {
     if (action === 'leader_update_roster') {
       const { team, rosterUpdates } = payload;
       // rosterUpdates: { "Member_Name": "Left" }
-      const trackerSheet = db.sheetsByTitle["Tracker_Data"];
+      const trackerSheet = await getActiveTrackerSheet(db);
       const rows = await trackerSheet.getRows();
       
-      const promises = [];
       for (const row of rows) {
-        const rowTeam = normalizeTeamName(row.get('Team_Name'));
+        const rowTeam = normalizeTeamName(row.get('Team_Name') || row.get('Team'));
         const rowName = String(row.get('Member_Name') || '').trim();
         if (rowTeam === normalizeTeamName(team) && rosterUpdates[rowName]) {
           row.set('Status', rosterUpdates[rowName]);
@@ -163,7 +185,7 @@ export async function POST(request) {
 
     if (action === 'admin_report') {
       const { day, updates, reflection, currentDayNum: globalCurrentDayNum, evictionThreshold } = payload;
-      const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
+      const leadersSheet = await getActiveLeadersSheet(db);
       
       const globalData = await fetchGlobalData();
       const totalDays = parseInt(globalData.settings?.Total_Days || 0);
@@ -268,7 +290,7 @@ export async function POST(request) {
 
     if (action === 'admin_update_roster') {
       const { rosterUpdates } = payload;
-      const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
+      const leadersSheet = await getActiveLeadersSheet(db);
       const rows = await leadersSheet.getRows();
       
       for (const row of rows) {

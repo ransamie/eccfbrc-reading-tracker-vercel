@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchGlobalData, fetchLeadersData, fetchEditionsRegistry, fetchArchivedEditionData } from '@/lib/googleSheets';
+import { fetchGlobalData, fetchLeadersData, fetchEditionsRegistry } from '@/lib/googleSheets';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -11,89 +11,65 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const team = searchParams.get('team');
-    const edition = searchParams.get('edition');
+
+    const editionsList = await fetchEditionsRegistry().catch(() => []);
+    const [globalData, leadersData] = await Promise.all([
+      fetchGlobalData(),
+      fetchLeadersData()
+    ]);
 
     if (type === 'admin') {
-      const editionsList = await fetchEditionsRegistry().catch(() => []);
-
-      if (edition && edition !== 'live') {
-        const archivedData = await fetchArchivedEditionData(edition);
-        return NextResponse.json({
-          ...archivedData,
-          editionsList
-        });
-      }
-
-      const [globalData, leadersData] = await Promise.all([
-        fetchGlobalData(),
-        fetchLeadersData()
-      ]);
       return NextResponse.json({
-        isArchive: false,
+        isArchive: Boolean(globalData.isArchive),
+        archiveInfo: globalData.archiveInfo || null,
         settings: globalData.settings,
         trackerData: globalData.trackerData,
         credentialsData: globalData.credentialsData,
         validTeams: globalData.validTeams,
         leadersData: leadersData,
         teamReflection: globalData.settings['Admin_Reflection'] || "",
-        editionsList
+        editionsList,
+        activeEditionId: globalData.settings?.Active_Edition_Id || 'live'
       });
     }
-
-    const globalData = await fetchGlobalData();
 
     if (type === 'valid_teams') {
       return NextResponse.json({ 
         validTeams: globalData.validTeams,
-        settings: globalData.settings
+        settings: globalData.settings,
+        isArchive: Boolean(globalData.isArchive),
+        activeEditionId: globalData.settings?.Active_Edition_Id || 'live'
       });
     }
 
     if (type === 'leader') {
       if (!team) return NextResponse.json({ error: 'Team name is required' }, { status: 400 });
       
-      const editionsList = await fetchEditionsRegistry().catch(() => []);
-
-      if (edition && edition !== 'live') {
-        const archivedData = await fetchArchivedEditionData(edition);
-        const teamTrackerData = archivedData.trackerData.filter(
-          row => normalizeTeamName(row.Team_Name || row.Team) === normalizeTeamName(team)
-        );
-        const teamLeadersInfo = archivedData.leadersData.filter(
-          row => normalizeTeamName(row.Team_Name || row.Team || row['Team Name'] || row['Team Leader Team Name']) === normalizeTeamName(team)
-        );
-
-        return NextResponse.json({
-          isArchive: true,
-          archiveInfo: archivedData.archiveInfo,
-          settings: archivedData.settings,
-          trackerData: teamTrackerData,
-          teamReflection: "",
-          leadersData: teamLeadersInfo,
-          editionsList
-        });
-      }
-
       const teamTrackerData = globalData.trackerData.filter(
-        row => normalizeTeamName(row.Team_Name) === normalizeTeamName(team)
+        row => normalizeTeamName(row.Team_Name || row.Team) === normalizeTeamName(team)
       );
       
-      const leadersData = await fetchLeadersData();
       const teamLeadersInfo = leadersData.filter(
         row => normalizeTeamName(row.Team_Name || row.Team || row['Team Name'] || row['Team Leader Team Name']) === normalizeTeamName(team)
       );
       
       return NextResponse.json({
-        isArchive: false,
+        isArchive: Boolean(globalData.isArchive),
+        archiveInfo: globalData.archiveInfo || null,
         settings: globalData.settings,
         trackerData: teamTrackerData,
         teamReflection: globalData.teamReflections[team] || "",
         leadersData: teamLeadersInfo,
-        editionsList
+        editionsList,
+        activeEditionId: globalData.settings?.Active_Edition_Id || 'live'
       });
     }
 
-    return NextResponse.json(globalData);
+    return NextResponse.json({
+      ...globalData,
+      leadersData,
+      editionsList
+    });
   } catch (error) {
     console.error('Fetch data error:', error);
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });

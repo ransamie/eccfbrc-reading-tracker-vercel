@@ -63,7 +63,7 @@ export async function fetchGlobalData() {
   const [settingsRows, trackerRows, credentialsRows] = await Promise.all([
     settingsSheet.getRows(),
     (async () => { await trackerSheet.loadHeaderRow(); return trackerSheet.getRows(); })(),
-    credentialsSheet.getRows()
+    credentialsSheet ? credentialsSheet.getRows() : Promise.resolve([])
   ]);
 
   // Parse Settings
@@ -74,25 +74,71 @@ export async function fetchGlobalData() {
     }
   });
 
+  const activeEditionId = settings['Active_Edition_Id'] || 'live';
+  let isArchive = false;
+  let archiveInfo = null;
+  let finalTrackerRows = trackerRows;
+  let finalCredentialsRows = credentialsRows;
+
+  if (activeEditionId && activeEditionId !== 'live') {
+    const archives = await fetchEditionsRegistry().catch(() => []);
+    const targetArchive = archives.find(a => a.id === activeEditionId);
+    if (targetArchive) {
+      isArchive = true;
+      archiveInfo = targetArchive;
+      await db.loadInfo();
+      const archTrackerSheet = db.sheetsByTitle[targetArchive.trackerSheetTitle];
+      if (archTrackerSheet) {
+        await archTrackerSheet.loadHeaderRow();
+        finalTrackerRows = await archTrackerSheet.getRows();
+      }
+      if (targetArchive.credsSheetTitle && db.sheetsByTitle[targetArchive.credsSheetTitle]) {
+        const archCredsSheet = db.sheetsByTitle[targetArchive.credsSheetTitle];
+        finalCredentialsRows = await archCredsSheet.getRows();
+      }
+
+      settings['Challenge_Name'] = targetArchive.name || settings['Challenge_Name'];
+      settings['Challenge_Edition'] = targetArchive.edition || settings['Challenge_Edition'];
+      settings['Start_Date'] = targetArchive.startDate || settings['Start_Date'];
+      settings['Total_Days'] = targetArchive.totalDays || settings['Total_Days'];
+      settings['Is_Completed'] = 'TRUE';
+      settings['Status'] = 'Completed';
+    }
+  }
+
   // Parse Tracker Data
-  const trackerData = trackerRows.map(row => row.toObject());
+  const trackerData = finalTrackerRows.map(row => row.toObject());
 
   // Parse Credentials
-  const credentialsData = credentialsRows.map(row => row.toObject());
+  const credentialsData = finalCredentialsRows.map(row => row.toObject());
   const credentials = {};
   const validTeams = [];
   const teamReflections = {};
 
   credentialsData.forEach(row => {
-    const teamName = String(row.Team_Name || '').trim();
+    const teamName = String(row.Team_Name || row.Team || '').trim();
     if (teamName) {
-      credentials[teamName] = String(row.PIN || '').trim();
+      credentials[teamName] = String(row.PIN || '1234').trim();
       validTeams.push(teamName);
       teamReflections[teamName] = String(row.Current_Reflection || '').trim();
     }
   });
 
+  // If credentials list was empty (e.g. freshly archived or unlinked), extract teams from trackerData
+  if (validTeams.length === 0 && trackerData.length > 0) {
+    const uniqueTeams = Array.from(new Set(
+      trackerData.map(r => String(r.Team_Name || r.Team || '').trim()).filter(Boolean)
+    ));
+    uniqueTeams.forEach(t => {
+      credentials[t] = '1234';
+      validTeams.push(t);
+      teamReflections[t] = '';
+    });
+  }
+
   globalCache.data = {
+    isArchive,
+    archiveInfo,
     settings,
     trackerData,
     credentialsData,
@@ -111,7 +157,21 @@ export async function fetchLeadersData() {
   }
 
   const db = await getDatabase();
-  const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
+  const globalData = await fetchGlobalData();
+  let leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
+
+  if (globalData?.isArchive && globalData?.archiveInfo?.leadersSheetTitle) {
+    await db.loadInfo();
+    const archLeadersSheet = db.sheetsByTitle[globalData.archiveInfo.leadersSheetTitle];
+    if (archLeadersSheet) {
+      leadersSheet = archLeadersSheet;
+    }
+  }
+
+  if (!leadersSheet) {
+    return [];
+  }
+
   await leadersSheet.loadHeaderRow();
   const leadersRows = await leadersSheet.getRows();
   
@@ -127,7 +187,7 @@ export async function getOrCreateArchivesSheet(db) {
   try {
     const newSheet = await db.addSheet({
       title: "Challenge_Archives",
-      headerValues: ["id", "name", "edition", "startDate", "totalDays", "totalMembers", "trackerSheetTitle", "leadersSheetTitle", "archivedAt"]
+      headerValues: ["id", "name", "edition", "startDate", "totalDays", "totalMembers", "trackerSheetTitle", "leadersSheetTitle", "credsSheetTitle", "archivedAt"]
     });
     return newSheet;
   } catch (err) {
@@ -151,10 +211,31 @@ export async function fetchEditionsRegistry() {
     totalMembers: String(r.get('totalMembers') || '').trim(),
     trackerSheetTitle: String(r.get('trackerSheetTitle') || '').trim(),
     leadersSheetTitle: String(r.get('leadersSheetTitle') || '').trim(),
+    credsSheetTitle: String(r.get('credsSheetTitle') || '').trim(),
     archivedAt: String(r.get('archivedAt') || '').trim()
   })).filter(a => a.id && a.trackerSheetTitle);
 
   return archives.reverse(); // Newest archives first
+}
+
+export async function getActiveTrackerSheet(db) {
+  const globalData = await fetchGlobalData();
+  await db.loadInfo();
+  if (globalData?.isArchive && globalData?.archiveInfo?.trackerSheetTitle) {
+    const sheet = db.sheetsByTitle[globalData.archiveInfo.trackerSheetTitle];
+    if (sheet) return sheet;
+  }
+  return db.sheetsByTitle["Tracker_Data"];
+}
+
+export async function getActiveLeadersSheet(db) {
+  const globalData = await fetchGlobalData();
+  await db.loadInfo();
+  if (globalData?.isArchive && globalData?.archiveInfo?.leadersSheetTitle) {
+    const sheet = db.sheetsByTitle[globalData.archiveInfo.leadersSheetTitle];
+    if (sheet) return sheet;
+  }
+  return db.sheetsByTitle["Leaders_Tracker_Data"];
 }
 
 export async function fetchArchivedEditionData(archiveId) {
@@ -260,6 +341,7 @@ export async function archiveAndResetChallenge({ newChallengeName, newEdition, n
     totalMembers: String(totalMembers),
     trackerSheetTitle: trackerArchiveTitle,
     leadersSheetTitle: leadersArchiveTitle,
+    credsSheetTitle: credsArchiveTitle,
     archivedAt: new Date().toISOString()
   });
 
@@ -279,6 +361,7 @@ export async function archiveAndResetChallenge({ newChallengeName, newEdition, n
 
   // 7. Update Global Settings for the New Edition
   const newSettingsMap = {
+    'Active_Edition_Id': 'live',
     'Challenge_Name': newChallengeName || currentSettings['Challenge_Name'] || "ECCF Bible Reading Challenge Tracker",
     'Challenge_Edition': newEdition || "📖 New Reading Edition",
     'Start_Date': newStartDate || new Date().toISOString().split('T')[0],

@@ -206,14 +206,14 @@ export default function AdminDashboard({ onLogout }) {
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  const loadData = (isManualRefresh = false, editionOverride = null) => {
+  const loadData = (isManualRefresh = false) => {
     setLoading(true);
-    const editionParam = editionOverride !== null ? editionOverride : selectedEdition;
-    return fetch(`/api/data?type=admin&edition=${encodeURIComponent(editionParam)}&t=${Date.now()}`, { cache: 'no-store' })
+    return fetch(`/api/data?type=admin&t=${Date.now()}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(d => {
         setData(d);
         if (d.editionsList) setEditionsList(d.editionsList);
+        setSelectedEdition(d.activeEditionId || (d.isArchive && d.archiveInfo?.id ? d.archiveInfo.id : 'live'));
         
         const isArch = d.isArchive === true;
         const startDateStr = d.settings?.Start_Date || new Date().toISOString().split('T')[0];
@@ -280,6 +280,30 @@ export default function AdminDashboard({ onLogout }) {
       });
   };
 
+  const handleSwitchGlobalEdition = async (editionId) => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'admin_switch_global_edition',
+          payload: { editionId }
+        })
+      });
+      const resData = await res.json();
+      if (!res.ok || !resData.success) throw new Error(resData.message || "Failed to switch edition");
+      setSelectedEdition(editionId);
+      showToast(editionId === 'live' ? "Globally switched system to Live Edition!" : "Globally switched system to Archived Edition!");
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || "Failed to switch active edition", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleArchiveChallenge = async () => {
     if (!newEditionForm.challengeEdition || !newEditionForm.startDate) {
       return showToast("Please provide the New Edition Subtitle and Start Date.", "error");
@@ -305,7 +329,7 @@ export default function AdminDashboard({ onLogout }) {
       showToast(`Challenge archived successfully! Blank slate ready for ${newEditionForm.challengeEdition}`);
       setArchiveModalOpen(false);
       setSelectedEdition('live');
-      await loadData(false, 'live');
+      await loadData(false);
     } catch (e) {
       console.error(e);
       showToast(e.message || "Error archiving challenge", "error");
@@ -735,19 +759,18 @@ export default function AdminDashboard({ onLogout }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem', padding: '0.6rem 0.85rem', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Edition:
+            Active Edition:
           </span>
           <select
             value={selectedEdition}
             onChange={(e) => {
               const newEdition = e.target.value;
-              setSelectedEdition(newEdition);
-              loadData(false, newEdition);
+              handleSwitchGlobalEdition(newEdition);
             }}
             className="tracker-edition-select"
           >
             <option value="live">
-              🟢 Active: {data?.isArchive ? "Current Live Challenge" : (data?.settings?.Challenge_Edition || "Active Challenge")}
+              🟢 Live Challenge: {data?.isArchive ? "Current Live Sheet" : (data?.settings?.Challenge_Edition || "Active Challenge")}
             </option>
             {editionsList && editionsList.map(arch => (
               <option key={arch.id} value={arch.id}>
@@ -771,12 +794,9 @@ export default function AdminDashboard({ onLogout }) {
 
           {data?.isArchive && (
             <button 
-              onClick={() => {
-                setSelectedEdition('live');
-                loadData(false, 'live');
-              }}
+              onClick={() => handleSwitchGlobalEdition('live')}
               className="tracker-btn-archive-return"
-              title="Return to live tracking"
+              title="Return entire system to live tracking"
             >
               ↩ Return to Live Challenge
             </button>
@@ -791,10 +811,10 @@ export default function AdminDashboard({ onLogout }) {
             <Archive size={20} color="#F59E0B" />
             <div>
               <div style={{ fontWeight: '700', color: '#FDE68A', fontSize: '0.92rem' }}>
-                Viewing Archived Edition: {data?.settings?.Challenge_Edition || 'Past Challenge'}
+                Globally Active Archived Edition: {data?.settings?.Challenge_Edition || 'Past Challenge'}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#CBD5E1', marginTop: '0.15rem' }}>
-                Period: {data?.settings?.Start_Date || 'N/A'} • {data?.settings?.Total_Days || '90'} Days • Read-Only Historical Snapshot
+                Period: {data?.settings?.Start_Date || 'N/A'} • {data?.settings?.Total_Days || '90'} Days • Active across entire system & team leader logins • Editing Enabled
               </div>
             </div>
           </div>
@@ -1000,38 +1020,22 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-              {data?.isArchive ? (
-                <div style={{
-                  padding: '0.85rem 1rem',
-                  background: 'rgba(245, 158, 11, 0.08)',
-                  border: '1px solid rgba(245, 158, 11, 0.25)',
-                  borderRadius: '0.5rem',
-                  textAlign: 'center',
-                  color: '#FDE68A',
-                  fontSize: '0.875rem'
-                }}>
-                  🔒 <strong>Archived Edition (Read-Only)</strong>: Leader check-ins from this past challenge are preserved as historical records.
-                </div>
-              ) : (
-                <>
-                  <button 
-                    onClick={() => handleSaveAdminReport(false)} 
-                    disabled={saving} 
-                    className="tracker-btn-save"
-                  >
-                    <span>{saving ? 'Saving...' : `💾 Save ${adminSelectedDay.replace('_', ' ')} Updates`}</span>
-                  </button>
-                  
-                  {adminSelectedDay === currentDayStr && (
-                    <button 
-                      onClick={() => handleSaveAdminReport(true)} 
-                      disabled={saving} 
-                      className="tracker-btn-report"
-                    >
-                      <span>📋 Generate Daily Report</span>
-                    </button>
-                  )}
-                </>
+              <button 
+                onClick={() => handleSaveAdminReport(false)} 
+                disabled={saving} 
+                className="tracker-btn-save"
+              >
+                <span>{saving ? 'Saving...' : `💾 Save ${adminSelectedDay.replace('_', ' ')} Updates`}</span>
+              </button>
+              
+              {adminSelectedDay === currentDayStr && (
+                <button 
+                  onClick={() => handleSaveAdminReport(true)} 
+                  disabled={saving} 
+                  className="tracker-btn-report"
+                >
+                  <span>📋 Generate Daily Report</span>
+                </button>
               )}
             </div>
           </div>
