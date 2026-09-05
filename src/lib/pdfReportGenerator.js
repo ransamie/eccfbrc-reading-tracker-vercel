@@ -228,15 +228,15 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
   const textStartX = logoBase64 ? margin + 68 : margin;
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(15);
   doc.text(challengeTitle.toUpperCase(), textStartX, 32);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
+  doc.setFontSize(10.5);
   doc.setTextColor(147, 197, 253);
   doc.text(`${challengeEdition}  |  ${periodStr}`, textStartX, 46);
 
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setTextColor(203, 213, 225);
   doc.text(`General Executive Report  |  Generated: ${dateStr}`, textStartX, 60);
 
@@ -244,7 +244,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
 
   // --- SUMMARY OVERVIEW CARDS ---
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
   doc.text('SUMMARY OVERVIEW', margin, currentY);
   currentY += 8;
@@ -259,7 +259,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
 
   const cardGap = 8;
   const cardWidth = (contentWidth - (cardGap * 4)) / 5;
-  const cardHeight = 44;
+  const cardHeight = 48;
 
   cards.forEach((c, idx) => {
     const x = margin + (idx * (cardWidth + cardGap));
@@ -272,26 +272,26 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     doc.rect(x, currentY, cardWidth, 2.5, 'F');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(12.5);
     doc.setTextColor(c.color[0], c.color[1], c.color[2]);
-    doc.text(c.value, x + (cardWidth / 2), currentY + 18, { align: 'center' });
+    doc.text(c.value, x + (cardWidth / 2), currentY + 19, { align: 'center' });
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.5);
+    doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(c.label, x + (cardWidth / 2), currentY + 28, { align: 'center' });
+    doc.text(c.label, x + (cardWidth / 2), currentY + 30, { align: 'center' });
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(5.5);
+    doc.setFontSize(6.5);
     doc.setTextColor(148, 163, 184);
-    doc.text(c.sub, x + (cardWidth / 2), currentY + 37, { align: 'center' });
+    doc.text(c.sub, x + (cardWidth / 2), currentY + 40, { align: 'center' });
   });
 
   currentY += cardHeight + 16;
 
   // --- TEAM PERFORMANCE BREAKDOWN TABLE ---
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
   doc.text('TEAM PERFORMANCE BREAKDOWN', margin, currentY);
   currentY += 8;
@@ -321,25 +321,26 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
       fillColor: [15, 23, 42],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 7.5,
+      fontSize: 10,
+      cellPadding: 4,
       halign: 'center',
       valign: 'middle'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 30 },
+      0: { halign: 'center', cellWidth: 32 },
       1: { halign: 'left', fontStyle: 'bold', cellWidth: 85 },
-      2: { halign: 'left', fontSize: 7, cellWidth: 120 },
-      3: { halign: 'center', cellWidth: 45 },
+      2: { halign: 'left', fontSize: 9.5, cellWidth: 115 },
+      3: { halign: 'center', cellWidth: 42 },
       4: { halign: 'center', cellWidth: 40, fontStyle: 'bold', textColor: [37, 99, 235] },
-      5: { halign: 'center', cellWidth: 55, fontStyle: 'bold', textColor: [16, 185, 129] },
+      5: { halign: 'center', cellWidth: 48, fontStyle: 'bold', textColor: [16, 185, 129] },
       6: { halign: 'center', cellWidth: 40, textColor: [239, 68, 68] },
-      7: { halign: 'center', cellWidth: 40, textColor: [245, 158, 11] },
-      8: { halign: 'center', cellWidth: 68, fontStyle: 'bold', textColor: [15, 23, 42] }
+      7: { halign: 'center', cellWidth: 43, textColor: [245, 158, 11] },
+      8: { halign: 'center', cellWidth: 78, fontStyle: 'bold', textColor: [15, 23, 42] }
     },
     styles: {
       font: 'helvetica',
-      fontSize: 7.5,
-      cellPadding: 3.5,
+      fontSize: 10.5,
+      cellPadding: 4.5,
       lineColor: [226, 232, 240],
       lineWidth: 0.5,
       overflow: 'linebreak'
@@ -358,19 +359,19 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     doc.rect(0, 0, pageWidth, 32, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
+    doc.setFontSize(10.5);
     doc.text(`${challengeTitle.toUpperCase()}  |  LIST OF SUCCESSFUL COMPLETED PARTICIPANTS`, margin, 20);
 
     currentY = 50;
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(12);
     doc.setTextColor(5, 150, 105);
     doc.text(`List of Successful Completed Participants (${completersList.length} Members)`, margin, currentY);
     currentY += 4;
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setTextColor(100, 116, 139);
     doc.text(`Participants who successfully completed all ${totalDays} reading days.`, margin, currentY + 8);
     currentY += 16;
@@ -397,21 +398,22 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
         fillColor: [5, 150, 105],
         textColor: [255, 255, 255],
         fontStyle: 'bold',
-        fontSize: 8,
+        fontSize: 11,
+        cellPadding: 5,
         halign: 'center'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 30 },
-        1: { halign: 'left', fontStyle: 'bold', cellWidth: 145 },
-        2: { halign: 'left', cellWidth: 100 },
+        0: { halign: 'center', cellWidth: 32 },
+        1: { halign: 'left', fontStyle: 'bold', cellWidth: 155 },
+        2: { halign: 'left', cellWidth: 105 },
         3: { halign: 'center', cellWidth: 95 },
-        4: { halign: 'center', fontStyle: 'bold', textColor: [5, 150, 105], cellWidth: 75 },
-        5: { halign: 'center', fontStyle: 'bold', textColor: [16, 185, 129], cellWidth: 78 }
+        4: { halign: 'center', fontStyle: 'bold', textColor: [5, 150, 105], cellWidth: 70 },
+        5: { halign: 'center', fontStyle: 'bold', textColor: [16, 185, 129], cellWidth: 66 }
       },
       styles: {
         font: 'helvetica',
-        fontSize: 7.5,
-        cellPadding: 3.5,
+        fontSize: 11,
+        cellPadding: 5,
         lineColor: [226, 232, 240],
         lineWidth: 0.5,
         overflow: 'linebreak'
@@ -427,7 +429,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
+    doc.setFontSize(8.5);
     doc.setTextColor(148, 163, 184);
 
     doc.setDrawColor(226, 232, 240);
@@ -533,15 +535,15 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   const textStartX = logoBase64 ? margin + 68 : margin;
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(15);
   doc.text(`TEAM REPORT: ${cleanTeam.toUpperCase()}`, textStartX, 32);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
+  doc.setFontSize(10.5);
   doc.setTextColor(147, 197, 253);
   doc.text(`${challengeEdition}  |  ${periodStr}`, textStartX, 46);
 
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setTextColor(203, 213, 225);
   doc.text(`Team Leaders: ${leaderNames}  |  Generated: ${dateStr}`, textStartX, 60);
 
@@ -549,7 +551,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
 
   // --- TEAM SUMMARY CARDS ---
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
   doc.text(`TEAM ${cleanTeam.toUpperCase()} SUMMARY`, margin, currentY);
   currentY += 8;
@@ -564,7 +566,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
 
   const cardGap = 8;
   const cardWidth = (contentWidth - (cardGap * 4)) / 5;
-  const cardHeight = 44;
+  const cardHeight = 48;
 
   cards.forEach((c, idx) => {
     const x = margin + (idx * (cardWidth + cardGap));
@@ -577,26 +579,26 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
     doc.rect(x, currentY, cardWidth, 2.5, 'F');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(12.5);
     doc.setTextColor(c.color[0], c.color[1], c.color[2]);
-    doc.text(c.value, x + (cardWidth / 2), currentY + 18, { align: 'center' });
+    doc.text(c.value, x + (cardWidth / 2), currentY + 19, { align: 'center' });
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.5);
+    doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(c.label, x + (cardWidth / 2), currentY + 28, { align: 'center' });
+    doc.text(c.label, x + (cardWidth / 2), currentY + 30, { align: 'center' });
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(5.5);
+    doc.setFontSize(6.5);
     doc.setTextColor(148, 163, 184);
-    doc.text(c.sub, x + (cardWidth / 2), currentY + 37, { align: 'center' });
+    doc.text(c.sub, x + (cardWidth / 2), currentY + 40, { align: 'center' });
   });
 
   currentY += cardHeight + 16;
 
   // --- TEAM MEMBER ROSTER TABLE ---
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
   doc.text('MEMBER ROSTER & READING PROGRESS', margin, currentY);
   currentY += 8;
@@ -625,16 +627,17 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
       fillColor: [30, 58, 138],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8,
+      fontSize: 11,
+      cellPadding: 5,
       halign: 'center'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 30 },
+      0: { halign: 'center', cellWidth: 32 },
       1: { halign: 'left', fontStyle: 'bold', cellWidth: 155 },
       2: { halign: 'center', cellWidth: 105 },
       3: { halign: 'center', cellWidth: 85, fontStyle: 'bold' },
       4: { halign: 'center', cellWidth: 65, fontStyle: 'bold' },
-      5: { halign: 'center', cellWidth: 83, fontStyle: 'bold' }
+      5: { halign: 'center', cellWidth: 81, fontStyle: 'bold' }
     },
     didParseCell: function(data) {
       if (data.section === 'body' && data.column.index === 5) {
@@ -652,8 +655,8 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
     },
     styles: {
       font: 'helvetica',
-      fontSize: 7.5,
-      cellPadding: 3.5,
+      fontSize: 11,
+      cellPadding: 5,
       lineColor: [226, 232, 240],
       lineWidth: 0.5,
       overflow: 'linebreak'
@@ -668,7 +671,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
+    doc.setFontSize(8.5);
     doc.setTextColor(148, 163, 184);
 
     doc.setDrawColor(226, 232, 240);
@@ -768,15 +771,15 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
   const textStartX = logoBase64 ? margin + 68 : margin;
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(15);
   doc.text('TEAM LEADERS READING REPORT', textStartX, 32);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
+  doc.setFontSize(10.5);
   doc.setTextColor(147, 197, 253);
   doc.text(`${challengeEdition}  |  ${periodStr}`, textStartX, 46);
 
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setTextColor(203, 213, 225);
   doc.text(`Team Leaders Reading Summary  |  Generated: ${dateStr}`, textStartX, 60);
 
@@ -784,7 +787,7 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
 
   // --- LEADERS SUMMARY CARDS ---
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
   doc.text('LEADERS SUMMARY', margin, currentY);
   currentY += 8;
@@ -798,7 +801,7 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
 
   const cardGap = 10;
   const cardWidth = (contentWidth - (cardGap * 3)) / 4;
-  const cardHeight = 44;
+  const cardHeight = 48;
 
   cards.forEach((c, idx) => {
     const x = margin + (idx * (cardWidth + cardGap));
@@ -811,26 +814,26 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
     doc.rect(x, currentY, cardWidth, 2.5, 'F');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(12.5);
     doc.setTextColor(c.color[0], c.color[1], c.color[2]);
-    doc.text(c.value, x + (cardWidth / 2), currentY + 18, { align: 'center' });
+    doc.text(c.value, x + (cardWidth / 2), currentY + 19, { align: 'center' });
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.5);
+    doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(c.label, x + (cardWidth / 2), currentY + 28, { align: 'center' });
+    doc.text(c.label, x + (cardWidth / 2), currentY + 30, { align: 'center' });
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(5.5);
+    doc.setFontSize(6.5);
     doc.setTextColor(148, 163, 184);
-    doc.text(c.sub, x + (cardWidth / 2), currentY + 37, { align: 'center' });
+    doc.text(c.sub, x + (cardWidth / 2), currentY + 40, { align: 'center' });
   });
 
   currentY += cardHeight + 16;
 
   // --- LEADERS ROSTER TABLE ---
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
   doc.text('TEAM LEADERS READING PROGRESS', margin, currentY);
   currentY += 8;
@@ -859,16 +862,17 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
       fillColor: [79, 70, 229],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8,
+      fontSize: 11,
+      cellPadding: 5,
       halign: 'center'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 30 },
-      1: { halign: 'left', fontStyle: 'bold', cellWidth: 160 },
-      2: { halign: 'left', cellWidth: 120 },
+      0: { halign: 'center', cellWidth: 32 },
+      1: { halign: 'left', fontStyle: 'bold', cellWidth: 155 },
+      2: { halign: 'left', cellWidth: 115 },
       3: { halign: 'center', cellWidth: 85, fontStyle: 'bold' },
-      4: { halign: 'center', cellWidth: 60, fontStyle: 'bold' },
-      5: { halign: 'center', cellWidth: 68, fontStyle: 'bold' }
+      4: { halign: 'center', cellWidth: 65, fontStyle: 'bold' },
+      5: { halign: 'center', cellWidth: 71, fontStyle: 'bold' }
     },
     didParseCell: function(data) {
       if (data.section === 'body' && data.column.index === 5) {
@@ -884,8 +888,8 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
     },
     styles: {
       font: 'helvetica',
-      fontSize: 7.5,
-      cellPadding: 3.5,
+      fontSize: 11,
+      cellPadding: 5,
       lineColor: [226, 232, 240],
       lineWidth: 0.5,
       overflow: 'linebreak'
@@ -900,7 +904,7 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
+    doc.setFontSize(8.5);
     doc.setTextColor(148, 163, 184);
 
     doc.setDrawColor(226, 232, 240);
