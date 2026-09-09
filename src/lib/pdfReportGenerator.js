@@ -347,26 +347,26 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
       fillColor: [15, 23, 42],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 10,
-      cellPadding: 4,
+      fontSize: 8,
+      cellPadding: { top: 4, bottom: 4, left: 1, right: 1 },
       halign: 'center',
       valign: 'middle'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 30 },
-      1: { halign: 'left', fontStyle: 'bold', cellWidth: 80 },
-      2: { halign: 'left', fontSize: 9, cellWidth: 120 },
-      3: { halign: 'center', cellWidth: 42 },
-      4: { halign: 'center', cellWidth: 46, fontStyle: 'bold', textColor: [16, 185, 129] },
-      5: { halign: 'center', cellWidth: 46, fontStyle: 'bold', textColor: [99, 102, 241] },
-      6: { halign: 'center', cellWidth: 39, textColor: [239, 68, 68] },
-      7: { halign: 'center', cellWidth: 42, textColor: [245, 158, 11] },
-      8: { halign: 'center', cellWidth: 78, fontStyle: 'bold', textColor: [15, 23, 42] }
+      0: { halign: 'center', cellWidth: 26 },
+      1: { halign: 'left', fontStyle: 'bold', cellWidth: 70 },
+      2: { halign: 'left', fontSize: 8.5, cellWidth: 105 },
+      3: { halign: 'center', cellWidth: 52 },
+      4: { halign: 'center', cellWidth: 52, fontStyle: 'bold', textColor: [16, 185, 129] },
+      5: { halign: 'center', cellWidth: 54, fontStyle: 'bold', textColor: [99, 102, 241] },
+      6: { halign: 'center', cellWidth: 46, textColor: [239, 68, 68] },
+      7: { halign: 'center', cellWidth: 48, textColor: [245, 158, 11] },
+      8: { halign: 'center', cellWidth: 70, fontStyle: 'bold', textColor: [15, 23, 42] }
     },
     styles: {
       font: 'helvetica',
-      fontSize: 10.5,
-      cellPadding: 4.5,
+      fontSize: 9.5,
+      cellPadding: 3.5,
       lineColor: [226, 232, 240],
       lineWidth: 0.5,
       overflow: 'linebreak'
@@ -905,9 +905,10 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
       fillColor: [79, 70, 229],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 11,
-      cellPadding: 5,
-      halign: 'center'
+      fontSize: 9.5,
+      cellPadding: { top: 4, bottom: 4, left: 2, right: 2 },
+      halign: 'center',
+      valign: 'middle'
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 28 },
