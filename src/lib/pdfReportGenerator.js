@@ -55,15 +55,36 @@ function normalizeTeam(name) {
   return cleanText(name).toLowerCase();
 }
 
-function getLeaderNames(teamName, leadersData = []) {
+function getLeaderDetails(teamName, leadersData = []) {
   const norm = normalizeTeam(teamName);
   const teamLeaders = leadersData.filter(l => {
     const lTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'];
     return normalizeTeam(lTeam) === norm;
   });
-  const leader = cleanText(teamLeaders[0]?.Member_Name || teamLeaders[0]?.Name || teamLeaders[0]?.['Team Leader'] || 'N/A');
+  const leader = cleanText(teamLeaders[0]?.Member_Name || teamLeaders[0]?.Name || teamLeaders[0]?.['Team Leader'] || '');
   const asst = cleanText(teamLeaders[1]?.Member_Name || teamLeaders[1]?.Name || teamLeaders[1]?.['Team Leader'] || '');
-  return asst ? `${leader} & ${asst}` : leader;
+  
+  if (leader && asst) {
+    return {
+      leader,
+      asst,
+      inlineSummary: `Leader: ${leader}  •  Asst: ${asst}`,
+      tableSummary: `Leader: ${leader}\nAsst: ${asst}`
+    };
+  } else if (leader) {
+    return {
+      leader,
+      asst: '',
+      inlineSummary: `Leader: ${leader}`,
+      tableSummary: `Leader: ${leader}`
+    };
+  }
+  return {
+    leader: 'N/A',
+    asst: '',
+    inlineSummary: 'N/A',
+    tableSummary: 'N/A'
+  };
 }
 
 function calculateMemberProgress(member, totalDays) {
@@ -144,10 +165,10 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
 
   // Calculate Numbers
   let totalAssigned = trackerData.length;
-  let totalActive = 0;
+  let totalCompleted100 = 0;
+  let totalIncomplete = 0;
   let totalEvicted = 0;
   let totalDeclined = 0;
-  let totalCompleted100 = 0;
 
   const completersList = [];
 
@@ -155,8 +176,12 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     const status = cleanText(m.Status || '').toLowerCase();
     const { completedDays, is100Percent } = calculateMemberProgress(m, totalDays);
 
-    if (status === 'active') {
-      totalActive++;
+    if (status === 'evicted') {
+      totalEvicted++;
+    } else if (status === 'declined' || status === 'left') {
+      totalDeclined++;
+    } else {
+      // Active / Retained members
       if (is100Percent) {
         totalCompleted100++;
         completersList.push({
@@ -165,16 +190,14 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
           phone: cleanText(m.WhatsApp_Number || m.Whatsapp_Number || m.Phone || 'N/A'),
           completedDays
         });
+      } else {
+        totalIncomplete++;
       }
-    } else if (status === 'evicted') {
-      totalEvicted++;
-    } else if (status === 'declined' || status === 'left') {
-      totalDeclined++;
     }
   });
 
-  const overallRetentionRate = totalAssigned > 0 ? ((totalActive / totalAssigned) * 100).toFixed(1) : '0.0';
   const overallCompletionRate = totalAssigned > 0 ? ((totalCompleted100 / totalAssigned) * 100).toFixed(1) : '0.0';
+  const overallIncompleteRate = totalAssigned > 0 ? ((totalIncomplete / totalAssigned) * 100).toFixed(1) : '0.0';
 
   // Calculate Team Breakdown
   const teamsMap = {};
@@ -182,34 +205,37 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     const rawTeam = m.Team_Name || 'Unassigned';
     const team = cleanText(rawTeam);
     if (!teamsMap[team]) {
+      const leaderInfo = getLeaderDetails(team, leadersData);
       teamsMap[team] = {
         team,
         assigned: 0,
-        active: 0,
+        completed100: 0,
+        incomplete: 0,
         evicted: 0,
         declined: 0,
-        completed100: 0,
-        leaderName: getLeaderNames(team, leadersData)
+        leaderDetails: leaderInfo.tableSummary
       };
     }
     teamsMap[team].assigned++;
     const status = cleanText(m.Status || '').toLowerCase();
     const { is100Percent } = calculateMemberProgress(m, totalDays);
 
-    if (status === 'active') {
-      teamsMap[team].active++;
-      if (is100Percent) teamsMap[team].completed100++;
-    } else if (status === 'evicted') {
+    if (status === 'evicted') {
       teamsMap[team].evicted++;
     } else if (status === 'declined' || status === 'left') {
       teamsMap[team].declined++;
+    } else {
+      if (is100Percent) {
+        teamsMap[team].completed100++;
+      } else {
+        teamsMap[team].incomplete++;
+      }
     }
   });
 
   const teamBreakdown = Object.values(teamsMap).map(t => ({
     ...t,
-    completionRate: t.assigned > 0 ? ((t.completed100 / t.assigned) * 100).toFixed(1) + '%' : '0.0%',
-    retentionRate: t.assigned > 0 ? ((t.active / t.assigned) * 100).toFixed(1) + '%' : '0.0%'
+    completionRate: t.assigned > 0 ? ((t.completed100 / t.assigned) * 100).toFixed(1) + '%' : '0.0%'
   }));
 
   const startDateStr = settings.Start_Date || '';
@@ -251,8 +277,8 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
 
   const cards = [
     { label: 'REGISTERED', value: totalAssigned.toString(), color: [30, 41, 59], sub: 'Total Participants' },
-    { label: 'ACTIVE READERS', value: totalActive.toString(), color: [37, 99, 235], sub: `${overallRetentionRate}% Active` },
     { label: 'COMPLETED 100%', value: totalCompleted100.toString(), color: [16, 185, 129], sub: `${overallCompletionRate}% Finished All` },
+    { label: 'INCOMPLETE', value: totalIncomplete.toString(), color: [99, 102, 241], sub: `${overallIncompleteRate}% Unfinished` },
     { label: 'EVICTED', value: totalEvicted.toString(), color: [239, 68, 68], sub: 'Missed Threshold' },
     { label: 'DECLINED / LEFT', value: totalDeclined.toString(), color: [245, 158, 11], sub: 'Exited Reading' },
   ];
@@ -299,10 +325,10 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
   const tableRows = teamBreakdown.map((t, index) => [
     (index + 1).toString(),
     t.team,
-    t.leaderName,
+    t.leaderDetails,
     t.assigned.toString(),
-    t.active.toString(),
     t.completed100.toString(),
+    t.incomplete.toString(),
     t.evicted.toString(),
     t.declined.toString(),
     t.completionRate
@@ -313,7 +339,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     margin: { left: margin, right: margin },
     tableWidth: contentWidth,
     head: [[
-      'S/N', 'Team Name', 'Team Leaders', 'Registered', 'Active', 'Completed', 'Evicted', 'Declined', 'Success Rate'
+      'S/N', 'Team Name', 'Team Leadership', 'Registered', 'Completed', 'Incomplete', 'Evicted', 'Declined', 'Success Rate'
     ]],
     body: tableRows,
     theme: 'grid',
@@ -327,14 +353,14 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
       valign: 'middle'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 32 },
-      1: { halign: 'left', fontStyle: 'bold', cellWidth: 85 },
-      2: { halign: 'left', fontSize: 9.5, cellWidth: 115 },
+      0: { halign: 'center', cellWidth: 30 },
+      1: { halign: 'left', fontStyle: 'bold', cellWidth: 80 },
+      2: { halign: 'left', fontSize: 9, cellWidth: 120 },
       3: { halign: 'center', cellWidth: 42 },
-      4: { halign: 'center', cellWidth: 40, fontStyle: 'bold', textColor: [37, 99, 235] },
-      5: { halign: 'center', cellWidth: 48, fontStyle: 'bold', textColor: [16, 185, 129] },
-      6: { halign: 'center', cellWidth: 40, textColor: [239, 68, 68] },
-      7: { halign: 'center', cellWidth: 43, textColor: [245, 158, 11] },
+      4: { halign: 'center', cellWidth: 46, fontStyle: 'bold', textColor: [16, 185, 129] },
+      5: { halign: 'center', cellWidth: 46, fontStyle: 'bold', textColor: [99, 102, 241] },
+      6: { halign: 'center', cellWidth: 39, textColor: [239, 68, 68] },
+      7: { halign: 'center', cellWidth: 42, textColor: [245, 158, 11] },
       8: { halign: 'center', cellWidth: 78, fontStyle: 'bold', textColor: [15, 23, 42] }
     },
     styles: {
@@ -473,13 +499,13 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   // Filter Members
   const normTeam = normalizeTeam(teamName);
   const teamMembers = trackerData.filter(m => normalizeTeam(m.Team_Name) === normTeam);
-  const leaderNames = getLeaderNames(teamName, leadersData);
+  const leaderInfo = getLeaderDetails(teamName, leadersData);
 
   let assigned = teamMembers.length;
-  let active = 0;
+  let completed100 = 0;
+  let incomplete = 0;
   let evicted = 0;
   let declined = 0;
-  let completed100 = 0;
 
   const rosterList = [];
 
@@ -488,21 +514,21 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
     const { completedDays, is100Percent } = calculateMemberProgress(m, totalDays);
     const progressPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
-    let finalBadge = 'Active';
-    if (status === 'active') {
-      active++;
-      if (is100Percent) {
-        completed100++;
-        finalBadge = 'Completed';
-      } else {
-        finalBadge = 'Active';
-      }
-    } else if (status === 'evicted') {
+    let finalBadge = 'Incomplete';
+    if (status === 'evicted') {
       evicted++;
       finalBadge = 'Evicted';
     } else if (status === 'declined' || status === 'left') {
       declined++;
       finalBadge = 'Left / Declined';
+    } else {
+      if (is100Percent) {
+        completed100++;
+        finalBadge = 'Completed';
+      } else {
+        incomplete++;
+        finalBadge = 'Incomplete';
+      }
     }
 
     rosterList.push({
@@ -517,7 +543,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   });
 
   const completionRate = assigned > 0 ? ((completed100 / assigned) * 100).toFixed(1) : '0.0';
-  const retentionRate = assigned > 0 ? ((active / assigned) * 100).toFixed(1) : '0.0';
+  const incompleteRate = assigned > 0 ? ((incomplete / assigned) * 100).toFixed(1) : '0.0';
 
   const startDateStr = settings.Start_Date || '';
   const periodStr = formatChallengePeriod(startDateStr, totalDays);
@@ -545,7 +571,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
 
   doc.setFontSize(9);
   doc.setTextColor(203, 213, 225);
-  doc.text(`Team Leaders: ${leaderNames}  |  Generated: ${dateStr}`, textStartX, 60);
+  doc.text(`${leaderInfo.inlineSummary}  |  Generated: ${dateStr}`, textStartX, 60);
 
   let currentY = 98;
 
@@ -558,8 +584,8 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
 
   const cards = [
     { label: 'REGISTERED', value: assigned.toString(), color: [30, 41, 59], sub: 'Team Members' },
-    { label: 'ACTIVE READERS', value: active.toString(), color: [37, 99, 235], sub: `${retentionRate}% Active` },
     { label: 'COMPLETED 100%', value: completed100.toString(), color: [16, 185, 129], sub: `${completionRate}% Finished All` },
+    { label: 'INCOMPLETE', value: incomplete.toString(), color: [99, 102, 241], sub: `${incompleteRate}% Unfinished` },
     { label: 'EVICTED', value: evicted.toString(), color: [239, 68, 68], sub: 'Missed Threshold' },
     { label: 'DECLINED / LEFT', value: declined.toString(), color: [245, 158, 11], sub: 'Exited Reading' },
   ];
@@ -644,12 +670,14 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
         const text = String(data.cell.raw || '');
         if (text.includes('Completed')) {
           data.cell.styles.textColor = [5, 150, 105];
+        } else if (text.includes('Incomplete')) {
+          data.cell.styles.textColor = [217, 119, 6];
         } else if (text.includes('Evicted')) {
           data.cell.styles.textColor = [239, 68, 68];
         } else if (text.includes('Left') || text.includes('Declined')) {
           data.cell.styles.textColor = [245, 158, 11];
         } else {
-          data.cell.styles.textColor = [37, 99, 235];
+          data.cell.styles.textColor = [71, 85, 105];
         }
       }
     },
@@ -714,37 +742,51 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
 
   let totalLeaders = leadersData.length;
   let completedLeadersCount = 0;
-  let activeLeadersCount = 0;
+  let incompleteLeadersCount = 0;
   let evictedLeadersCount = 0;
 
   const leadersList = [];
+  const teamLeaderCounts = {};
 
   leadersData.forEach(l => {
     const rawName = l.Member_Name || l.Name || l['Team Leader'] || 'Leader';
     const name = cleanText(rawName);
     const team = cleanText(l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'] || 'Assigned Team');
-    const status = cleanText(l.Status || 'Active');
+    const normTeam = team.toLowerCase();
+    const status = cleanText(l.Status || 'Active').toLowerCase();
     const { completedDays, is100Percent } = calculateMemberProgress(l, totalDays);
     const progressPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
-    let finalBadge = 'Active';
-    if (status.toLowerCase() === 'active') {
-      activeLeadersCount++;
+    // Determine Role
+    const rawRole = cleanText(l.Role || l.Position || l.Designation || '');
+    let role = 'Team Leader';
+    if (rawRole) {
+      role = rawRole.toLowerCase().includes('asst') || rawRole.toLowerCase().includes('assistant') ? 'Assistant Leader' : 'Team Leader';
+    } else {
+      if (!teamLeaderCounts[normTeam]) {
+        teamLeaderCounts[normTeam] = 0;
+      }
+      role = teamLeaderCounts[normTeam] === 0 ? 'Team Leader' : 'Assistant Leader';
+      teamLeaderCounts[normTeam]++;
+    }
+
+    let finalBadge = 'Incomplete';
+    if (status === 'evicted') {
+      evictedLeadersCount++;
+      finalBadge = 'Evicted';
+    } else {
       if (is100Percent) {
         completedLeadersCount++;
         finalBadge = 'Completed';
       } else {
-        finalBadge = 'Active';
+        incompleteLeadersCount++;
+        finalBadge = 'Incomplete';
       }
-    } else if (status.toLowerCase() === 'evicted') {
-      evictedLeadersCount++;
-      finalBadge = 'Evicted';
-    } else {
-      finalBadge = status || 'Active';
     }
 
     leadersList.push({
       name,
+      role,
       team,
       completedDays,
       progressPct,
@@ -753,7 +795,7 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
   });
 
   const leaderCompletionRate = totalLeaders > 0 ? ((completedLeadersCount / totalLeaders) * 100).toFixed(1) : '0.0';
-  const leaderRetentionRate = totalLeaders > 0 ? ((activeLeadersCount / totalLeaders) * 100).toFixed(1) : '0.0';
+  const leaderIncompleteRate = totalLeaders > 0 ? ((incompleteLeadersCount / totalLeaders) * 100).toFixed(1) : '0.0';
 
   const startDateStr = settings.Start_Date || '';
   const periodStr = formatChallengePeriod(startDateStr, totalDays);
@@ -781,7 +823,7 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
 
   doc.setFontSize(9);
   doc.setTextColor(203, 213, 225);
-  doc.text(`Team Leaders Reading Summary  |  Generated: ${dateStr}`, textStartX, 60);
+  doc.text(`Team Leaders & Assistants Summary  |  Generated: ${dateStr}`, textStartX, 60);
 
   let currentY = 98;
 
@@ -793,10 +835,10 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
   currentY += 8;
 
   const cards = [
-    { label: 'TOTAL LEADERS', value: totalLeaders.toString(), color: [30, 41, 59], sub: 'Team Leaders & Assistants' },
-    { label: 'ACTIVE LEADERS', value: activeLeadersCount.toString(), color: [37, 99, 235], sub: `${leaderRetentionRate}% Active` },
+    { label: 'TOTAL LEADERS', value: totalLeaders.toString(), color: [30, 41, 59], sub: 'Leaders & Assistants' },
     { label: 'COMPLETED 100%', value: completedLeadersCount.toString(), color: [16, 185, 129], sub: `${leaderCompletionRate}% Finished All` },
-    { label: 'EVICTED / INACTIVE', value: evictedLeadersCount.toString(), color: [239, 68, 68], sub: 'Missed Threshold' }
+    { label: 'INCOMPLETE', value: incompleteLeadersCount.toString(), color: [99, 102, 241], sub: `${leaderIncompleteRate}% Unfinished` },
+    { label: 'EVICTED', value: evictedLeadersCount.toString(), color: [239, 68, 68], sub: 'Missed Threshold' }
   ];
 
   const cardGap = 10;
@@ -838,11 +880,12 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
   doc.text('TEAM LEADERS READING PROGRESS', margin, currentY);
   currentY += 8;
 
-  const sortedLeaders = [...leadersList].sort((a, b) => b.completedDays - a.completedDays || a.team.localeCompare(b.team) || a.name.localeCompare(b.name));
+  const sortedLeaders = [...leadersList].sort((a, b) => b.completedDays - a.completedDays || a.team.localeCompare(b.team) || a.role.localeCompare(b.role) || a.name.localeCompare(b.name));
 
   const tableRows = sortedLeaders.map((l, index) => [
     (index + 1).toString(),
     l.name,
+    l.role,
     l.team,
     `${l.completedDays} / ${totalDays} Days`,
     `${l.progressPct}%`,
@@ -854,7 +897,7 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
     margin: { left: margin, right: margin },
     tableWidth: contentWidth,
     head: [[
-      'S/N', 'Team Leader Name', 'Assigned Team', 'Reading Record', 'Progress', 'Status'
+      'S/N', 'Leader Name', 'Role', 'Assigned Team', 'Reading Record', 'Progress', 'Status'
     ]],
     body: tableRows,
     theme: 'grid',
@@ -867,29 +910,41 @@ export async function generateLeadersPdfReport({ leadersData = [], settings = {}
       halign: 'center'
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 32 },
-      1: { halign: 'left', fontStyle: 'bold', cellWidth: 155 },
-      2: { halign: 'left', cellWidth: 115 },
-      3: { halign: 'center', cellWidth: 85, fontStyle: 'bold' },
-      4: { halign: 'center', cellWidth: 65, fontStyle: 'bold' },
-      5: { halign: 'center', cellWidth: 71, fontStyle: 'bold' }
+      0: { halign: 'center', cellWidth: 28 },
+      1: { halign: 'left', fontStyle: 'bold', cellWidth: 125 },
+      2: { halign: 'center', cellWidth: 85 },
+      3: { halign: 'left', cellWidth: 95 },
+      4: { halign: 'center', cellWidth: 75, fontStyle: 'bold' },
+      5: { halign: 'center', cellWidth: 50, fontStyle: 'bold' },
+      6: { halign: 'center', cellWidth: 65, fontStyle: 'bold' }
     },
     didParseCell: function(data) {
-      if (data.section === 'body' && data.column.index === 5) {
-        const text = String(data.cell.raw || '');
-        if (text.includes('Completed')) {
-          data.cell.styles.textColor = [5, 150, 105];
-        } else if (text.includes('Evicted')) {
-          data.cell.styles.textColor = [239, 68, 68];
-        } else {
-          data.cell.styles.textColor = [37, 99, 235];
+      if (data.section === 'body') {
+        if (data.column.index === 2) {
+          const roleText = String(data.cell.raw || '');
+          if (roleText.includes('Assistant')) {
+            data.cell.styles.textColor = [100, 116, 139];
+          } else {
+            data.cell.styles.textColor = [30, 41, 59];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+        if (data.column.index === 6) {
+          const text = String(data.cell.raw || '');
+          if (text.includes('Completed')) {
+            data.cell.styles.textColor = [5, 150, 105];
+          } else if (text.includes('Incomplete')) {
+            data.cell.styles.textColor = [217, 119, 6];
+          } else if (text.includes('Evicted')) {
+            data.cell.styles.textColor = [239, 68, 68];
+          }
         }
       }
     },
     styles: {
       font: 'helvetica',
-      fontSize: 11,
-      cellPadding: 5,
+      fontSize: 10.5,
+      cellPadding: 4.5,
       lineColor: [226, 232, 240],
       lineWidth: 0.5,
       overflow: 'linebreak'
