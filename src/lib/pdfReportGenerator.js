@@ -574,12 +574,16 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
     timeZone: 'Africa/Lagos'
   }).format(new Date()) + ' (WAT)';
 
-  // Filter Members
+  // Filter Members & Leaders
   const normTeam = normalizeTeam(teamName);
   const teamMembers = trackerData.filter(m => normalizeTeam(m.Team_Name) === normTeam);
   const leaderInfo = getLeaderDetails(teamName, leadersData);
+  const teamLeaders = leadersData.filter(l => {
+    const lTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'];
+    return normalizeTeam(lTeam) === normTeam;
+  });
 
-  let assigned = teamMembers.length;
+  let assigned = teamMembers.length + teamLeaders.length;
   let completed100 = 0;
   let incomplete = 0;
   let evicted = 0;
@@ -587,6 +591,52 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
 
   const rosterList = [];
 
+  // 1. Add team leaders and assistants
+  teamLeaders.forEach((l, idx) => {
+    const rawName = l.Member_Name || l.Name || l['Team Leader'] || 'Leader';
+    const name = cleanText(rawName);
+    const status = cleanText(l.Status || 'Active').toLowerCase();
+    const { completedDays, is100Percent } = calculateMemberProgress(l, totalDays);
+    const progressPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
+
+    const rawRole = cleanText(l.Role || l.Position || l.Designation || '');
+    let role = 'Team Leader';
+    if (rawRole) {
+      role = rawRole.toLowerCase().includes('asst') || rawRole.toLowerCase().includes('assistant') ? 'Assistant Leader' : 'Team Leader';
+    } else {
+      role = idx === 0 ? 'Team Leader' : 'Assistant Leader';
+    }
+
+    let finalBadge = 'Incomplete';
+    if (status === 'evicted') {
+      evicted++;
+      finalBadge = 'Evicted';
+    } else if (status === 'declined' || status === 'left') {
+      declined++;
+      finalBadge = 'Left / Declined';
+    } else {
+      if (is100Percent) {
+        completed100++;
+        finalBadge = 'Completed';
+      } else {
+        incomplete++;
+        finalBadge = 'Incomplete';
+      }
+    }
+
+    rosterList.push({
+      name: `${name} (${role})`,
+      phone: cleanText(l.Leader_Phone || l.Assistant_Phone || l.WhatsApp_Number || l.Whatsapp_Number || l.Phone || 'N/A'),
+      completedDays,
+      progressPct,
+      finalBadge,
+      is100Percent,
+      rawStatus: status,
+      isLeader: true
+    });
+  });
+
+  // 2. Add regular members
   teamMembers.forEach(m => {
     const status = cleanText(m.Status || '').toLowerCase();
     const { completedDays, is100Percent } = calculateMemberProgress(m, totalDays);
@@ -616,7 +666,8 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
       progressPct,
       finalBadge,
       is100Percent,
-      rawStatus: status
+      rawStatus: status,
+      isLeader: false
     });
   });
 
@@ -707,7 +758,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   doc.text('MEMBER ROSTER & READING PROGRESS', margin, currentY);
   currentY += 8;
 
-  const sortedRoster = [...rosterList].sort((a, b) => b.completedDays - a.completedDays || a.name.localeCompare(b.name));
+  const sortedRoster = [...rosterList].sort((a, b) => (b.isLeader ? 1 : 0) - (a.isLeader ? 1 : 0) || b.completedDays - a.completedDays || a.name.localeCompare(b.name));
 
   const tableRows = sortedRoster.map((m, index) => [
     (index + 1).toString(),
