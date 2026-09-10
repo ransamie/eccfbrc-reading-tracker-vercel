@@ -6,7 +6,7 @@ import {
   RefreshCw, FileDown, Copy, Check, MessageSquare, KeyRound, 
   Users, ChevronRight, ChevronLeft, Calendar, Clock, ShieldCheck, 
   Sliders, ArrowRight, ExternalLink, Sparkles, UserPlus, Info, Trash2,
-  Plus, Minus
+  Plus, Minus, Lock
 } from "lucide-react";
 
 function normalizePhone(raw) {
@@ -36,7 +36,19 @@ const NAME_KEYWORDS = ["name", "full name", "member", "participant", "fullname",
 
 export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
   const [step, setStep] = useState(1);
+  const [maxUnlockedStep, setMaxUnlockedStep] = useState(1);
   const [copyFeedback, setCopyFeedback] = useState({});
+
+  const advanceToStep = (nextStep) => {
+    setMaxUnlockedStep(prev => Math.max(prev, nextStep));
+    setStep(nextStep);
+  };
+
+  const goToStep = (targetStep) => {
+    if (targetStep <= maxUnlockedStep) {
+      setStep(targetStep);
+    }
+  };
 
   // STEP 1: Settings
   const [settings, setSettings] = useState({
@@ -430,7 +442,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
         success: true,
         message: `Successfully launched "${settings.challengeEdition}" with ${allMembersPayload.length} participants across ${groupedTeams.length} teams!`
       });
-      setStep(5);
+      advanceToStep(5);
       if (onComplete) onComplete();
     } catch (err) {
       console.error("Error launching round:", err);
@@ -553,28 +565,55 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
             { s: 4, label: "4. Readiness Audit", icon: <ShieldCheck size={14} /> },
             { s: 5, label: "5. Launch & WhatsApp", icon: <MessageSquare size={14} /> }
           ].map(st => {
+            const isUnlocked = st.s <= maxUnlockedStep;
             const isActive = step === st.s;
-            const isDone = step > st.s;
+            const isDone = isUnlocked && step > st.s;
             return (
               <button
                 key={st.s}
-                onClick={() => setStep(st.s)}
+                disabled={!isUnlocked}
+                onClick={() => goToStep(st.s)}
+                title={!isUnlocked ? "Complete previous steps to unlock" : undefined}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "0.45rem",
                   padding: "0.5rem 0.85rem",
                   borderRadius: "0.5rem",
-                  border: isActive ? "1px solid #3B82F6" : "1px solid var(--border-light)",
-                  background: isActive ? "rgba(37, 99, 235, 0.2)" : isDone ? "rgba(16, 185, 129, 0.1)" : "rgba(255, 255, 255, 0.02)",
-                  color: isActive ? "#93C5FD" : isDone ? "#34D399" : "var(--text-secondary)",
+                  border: isActive 
+                    ? "1px solid #3B82F6" 
+                    : isUnlocked 
+                      ? "1px solid var(--border-light)" 
+                      : "1px dashed rgba(255, 255, 255, 0.08)",
+                  background: isActive 
+                    ? "rgba(37, 99, 235, 0.2)" 
+                    : isDone 
+                      ? "rgba(16, 185, 129, 0.1)" 
+                      : isUnlocked 
+                        ? "rgba(255, 255, 255, 0.02)" 
+                        : "transparent",
+                  color: isActive 
+                    ? "#93C5FD" 
+                    : isDone 
+                      ? "#34D399" 
+                      : isUnlocked 
+                        ? "var(--text-secondary)" 
+                        : "rgba(156, 163, 175, 0.35)",
                   fontSize: "0.82rem",
                   fontWeight: isActive ? "700" : "500",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap"
+                  cursor: isUnlocked ? "pointer" : "not-allowed",
+                  whiteSpace: "nowrap",
+                  opacity: isUnlocked ? 1 : 0.45,
+                  transition: "all 0.2s ease"
                 }}
               >
-                {isDone ? <Check size={14} color="#10B981" /> : st.icon}
+                {!isUnlocked ? (
+                  <Lock size={12} style={{ opacity: 0.6 }} />
+                ) : isDone ? (
+                  <Check size={14} color="#10B981" />
+                ) : (
+                  st.icon
+                )}
                 <span>{st.label}</span>
               </button>
             );
@@ -686,7 +725,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
 
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button 
-              onClick={() => setStep(2)}
+              onClick={() => advanceToStep(2)}
               className="btn-primary"
               style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem", padding: "0.6rem 1.25rem" }}
             >
@@ -947,12 +986,12 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
           )}
 
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }}>
-            <button onClick={() => setStep(1)} className="btn-secondary">
+            <button onClick={() => goToStep(1)} className="btn-secondary">
               <ChevronLeft size={16} />
               <span>Back to Details</span>
             </button>
             <button 
-              onClick={() => setStep(3)} 
+              onClick={() => advanceToStep(3)} 
               disabled={groupedTeams.length === 0}
               className="btn-primary"
               style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem" }}
@@ -967,13 +1006,13 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
       {/* STEP 3: LEADERS, ASSISTANTS & 4-DIGIT PINS */}
       {step === 3 && (
         <div className="card" style={{ padding: "1.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.75rem" }}>
             <div>
               <h3 style={{ fontSize: "1.15rem", fontWeight: "700", marginBottom: "0.4rem" }}>
-                Step 3: Assign Team Leaders & Generated PINs
+                Step 3: Assign Team Names, Leaders & Generated PINs
               </h3>
               <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", margin: 0 }}>
-                Assign Leaders and Assistant Leaders for each sub-team. A fresh, secure 4-digit PIN has been generated for each team.
+                Configure individual team names, designate Leaders and Assistant Leaders, and review the generated 4-digit team login PINs.
               </p>
             </div>
             <button 
@@ -986,18 +1025,28 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
             </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxHeight: "480px", overflowY: "auto", paddingRight: "0.5rem", marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxHeight: "500px", overflowY: "auto", paddingRight: "0.5rem", marginBottom: "1.5rem" }}>
             {groupedTeams.map((team, idx) => (
-              <div key={team.teamName} style={{
+              <div key={idx} style={{
                 background: "rgba(255, 255, 255, 0.02)",
                 border: "1px solid var(--border-light)",
                 borderRadius: "0.65rem",
                 padding: "1rem"
               }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                    <span style={{ fontWeight: "800", color: "#F9FAFB", fontSize: "1rem" }}>{team.teamName}</span>
-                    <span style={{ fontSize: "0.78rem", background: "rgba(255, 255, 255, 0.08)", padding: "0.15rem 0.5rem", borderRadius: "9999px", color: "var(--text-secondary)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.85rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: "1 1 280px" }}>
+                    <label style={{ fontSize: "0.82rem", fontWeight: "700", color: "#93C5FD", whiteSpace: "nowrap" }}>
+                      Team Name:
+                    </label>
+                    <input 
+                      type="text" 
+                      value={team.teamName} 
+                      onChange={e => updateTeamName(idx, e.target.value)}
+                      className="input-field" 
+                      style={{ margin: 0, padding: "0.4rem 0.75rem", fontSize: "0.9rem", fontWeight: "700", color: "#F9FAFB", maxWidth: "240px", height: "36px" }}
+                      placeholder={`Team ${String(idx + 1).padStart(2, '0')}`}
+                    />
+                    <span style={{ fontSize: "0.78rem", background: "rgba(255, 255, 255, 0.08)", padding: "0.2rem 0.6rem", borderRadius: "9999px", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
                       {team.members.length} members
                     </span>
                   </div>
@@ -1011,39 +1060,43 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                       background: "rgba(56, 189, 248, 0.15)",
                       color: "#38BDF8",
                       border: "1px solid rgba(56, 189, 248, 0.3)",
-                      padding: "0.15rem 0.6rem",
+                      padding: "0.2rem 0.65rem",
                       borderRadius: "0.35rem",
                       letterSpacing: "2px"
                     }}>
                       {team.pin}
                     </span>
                     <button 
+                      type="button"
                       onClick={() => regeneratePin(idx)}
                       title="Regenerate this team's PIN"
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", display: "flex", alignItems: "center" }}
+                      className="btn-stepper"
+                      style={{ width: "32px", height: "32px", minWidth: "32px" }}
                     >
                       <RefreshCw size={13} />
                     </button>
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
                   <div>
-                    <label className="label" style={{ fontSize: "0.78rem" }}>Team Leader Name & Phone:</label>
+                    <label className="label" style={{ fontSize: "0.78rem", fontWeight: "600", marginBottom: "0.35rem" }}>
+                      Team Leader Full Name & WhatsApp Phone:
+                    </label>
                     <div style={{ display: "flex", gap: "0.5rem" }}>
                       <input 
                         type="text" 
-                        placeholder="Leader Name"
+                        placeholder="Full Name (First & Surname)"
                         className="input-field" 
-                        style={{ fontSize: "0.82rem" }}
+                        style={{ fontSize: "0.82rem", margin: 0, flex: "1 1 55%", height: "36px" }}
                         value={team.leaderName}
                         onChange={e => updateTeamLeader(idx, "leaderName", e.target.value)}
                       />
                       <input 
                         type="text" 
-                        placeholder="Leader Phone"
+                        placeholder="WhatsApp (e.g. 080...)"
                         className="input-field" 
-                        style={{ fontSize: "0.82rem", width: "140px" }}
+                        style={{ fontSize: "0.82rem", margin: 0, flex: "1 1 45%", height: "36px" }}
                         value={team.leaderPhone}
                         onChange={e => updateTeamLeader(idx, "leaderPhone", e.target.value)}
                       />
@@ -1051,21 +1104,23 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                   </div>
 
                   <div>
-                    <label className="label" style={{ fontSize: "0.78rem" }}>Assistant Leader Name & Phone (Optional):</label>
+                    <label className="label" style={{ fontSize: "0.78rem", fontWeight: "600", marginBottom: "0.35rem" }}>
+                      Assistant Leader Full Name & Phone (Optional):
+                    </label>
                     <div style={{ display: "flex", gap: "0.5rem" }}>
                       <input 
                         type="text" 
-                        placeholder="Assistant Name"
+                        placeholder="Full Name (Optional)"
                         className="input-field" 
-                        style={{ fontSize: "0.82rem" }}
+                        style={{ fontSize: "0.82rem", margin: 0, flex: "1 1 55%", height: "36px" }}
                         value={team.assistantName}
                         onChange={e => updateTeamLeader(idx, "assistantName", e.target.value)}
                       />
                       <input 
                         type="text" 
-                        placeholder="Assistant Phone"
+                        placeholder="WhatsApp (Optional)"
                         className="input-field" 
-                        style={{ fontSize: "0.82rem", width: "140px" }}
+                        style={{ fontSize: "0.82rem", margin: 0, flex: "1 1 45%", height: "36px" }}
                         value={team.assistantPhone}
                         onChange={e => updateTeamLeader(idx, "assistantPhone", e.target.value)}
                       />
@@ -1077,10 +1132,11 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <button onClick={() => setStep(2)} className="btn-secondary">
-              &larr; Back to Upload & Grouping
+            <button onClick={() => goToStep(2)} className="btn-secondary">
+              <ChevronLeft size={16} />
+              <span>Back to Upload & Grouping</span>
             </button>
-            <button onClick={() => setStep(4)} className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem" }}>
+            <button onClick={() => advanceToStep(4)} className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem" }}>
               <span>Next: Readiness Audit</span>
               <ArrowRight size={15} />
             </button>
@@ -1123,7 +1179,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
 
                 {!c.ok && (
                   <button 
-                    onClick={() => setStep(c.stepTarget)}
+                    onClick={() => goToStep(c.stepTarget)}
                     className="btn-secondary" 
                     style={{ fontSize: "0.75rem", padding: "0.3rem 0.6rem" }}
                   >
@@ -1181,7 +1237,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
           )}
 
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <button onClick={() => setStep(3)} className="btn-secondary">
+            <button onClick={() => goToStep(3)} className="btn-secondary">
               <ChevronLeft size={16} />
               <span>Back to Leaders</span>
             </button>
