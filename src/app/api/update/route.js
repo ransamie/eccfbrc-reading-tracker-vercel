@@ -55,7 +55,7 @@ export async function POST(request) {
     }
 
     if (action === 'leader_report') {
-      const { team, day, updates, reflection, currentDayNum, evictionThreshold } = payload;
+      const { team, day, updates, leaderUpdates, reflection, currentDayNum, evictionThreshold } = payload;
       
       const globalData = await fetchGlobalData();
       const allowLeaderReporting = String(globalData.settings?.['Allow_Leader_Reporting'] ?? 'TRUE').trim().toUpperCase() !== 'FALSE';
@@ -192,6 +192,57 @@ export async function POST(request) {
       // Save only modified rows
       for (const r of rowsToSave) {
         await r.save();
+      }
+
+      // Save leader updates if provided
+      if (leaderUpdates && Object.keys(leaderUpdates).length > 0) {
+        try {
+          const leadersSheet = await getActiveLeadersSheet(db);
+          if (leadersSheet) {
+            await leadersSheet.loadHeaderRow();
+            const ldHeaders = [...leadersSheet.headerValues];
+            let ldHeadersChanged = false;
+            if (!ldHeaders.includes(day) && (totalDays === 0 || parseInt(day.split('_')[1] || 1) <= totalDays)) {
+              ldHeaders.push(day);
+              ldHeadersChanged = true;
+            }
+            if (ldHeadersChanged) {
+              if (ldHeaders.length > leadersSheet.columnCount) {
+                await leadersSheet.resize({ rowCount: leadersSheet.rowCount, columnCount: ldHeaders.length + 5 });
+              }
+              await leadersSheet.setHeaderRow(ldHeaders);
+              await leadersSheet.loadHeaderRow();
+            }
+
+            const ldRows = await leadersSheet.getRows();
+            const ldRowsToSave = [];
+            for (const row of ldRows) {
+              const rowTeam = normalizeTeamName(row.get('Team') || row.get('Team_Name') || row.get('Team Leader Team Name'));
+              const rowLeaderName = String(row.get('Team Leader') || row.get('Name') || row.get('Member_Name') || '').trim();
+              if (rowTeam === normalizeTeamName(team) && leaderUpdates[rowLeaderName] !== undefined) {
+                const newVal = leaderUpdates[rowLeaderName] ? 'TRUE' : 'FALSE';
+                if (String(row.get(day) || '').toUpperCase() !== newVal) {
+                  row.set(day, newVal);
+                  if (leaderUpdates[rowLeaderName]) {
+                    const dayIndex = parseInt(day.split('_')[1] || 1);
+                    for (let pastD = 1; pastD < dayIndex; pastD++) {
+                      const pastDStr = `Day_${pastD}`;
+                      if (String(row.get(pastDStr) || '').toUpperCase() !== 'TRUE') {
+                        row.set(pastDStr, 'TRUE');
+                      }
+                    }
+                  }
+                  ldRowsToSave.push(row);
+                }
+              }
+            }
+            for (const r of ldRowsToSave) {
+              await r.save();
+            }
+          }
+        } catch (lErr) {
+          console.error("Error updating leaders sheet from leader report:", lErr);
+        }
       }
 
       // Save reflection if provided and changed
@@ -567,6 +618,105 @@ export async function POST(request) {
         newTotalDays
       });
       return NextResponse.json(result);
+    }
+
+    if (action === 'admin_launch_new_round') {
+      const { mode, settings: newSettings, members, credentials, leaders } = payload;
+
+      // 1. If fresh mode, archive current challenge and reset sheets
+      if (mode === 'fresh') {
+        await archiveAndResetChallenge({
+          newChallengeName: newSettings.Challenge_Name,
+          newEdition: newSettings.Challenge_Edition,
+          newStartDate: newSettings.Start_Date,
+          newTotalDays: newSettings.Total_Days
+        });
+        await db.loadInfo();
+      }
+
+      // 2. Update Global_Settings
+      const settingsSheet = db.sheetsByTitle["Global_Settings"];
+      if (settingsSheet) {
+        const rows = await settingsSheet.getRows();
+        const settingsMap = {
+          'Challenge_Name': newSettings.Challenge_Name,
+          'Challenge_Edition': newSettings.Challenge_Edition,
+          'Start_Date': newSettings.Start_Date,
+          'Total_Days': String(newSettings.Total_Days),
+          'Morning_Window_Start': newSettings.Morning_Window_Start || "04:00 AM",
+          'Morning_Window_End': newSettings.Morning_Window_End || "11:00 AM",
+          'Evening_Window_Start': newSettings.Evening_Window_Start || "06:00 PM",
+          'Evening_Window_End': newSettings.Evening_Window_End || "11:00 PM",
+          'Current_Round': newSettings.Current_Round || "1",
+          'Status': 'Active',
+          'Is_Completed': 'FALSE',
+          'Active_Edition_Id': 'live',
+          'Allow_Leader_Reporting': 'TRUE'
+        };
+
+        const foundKeys = new Set();
+        for (const row of rows) {
+          const k = row.get('Setting_Key');
+          if (settingsMap[k] !== undefined) {
+            row.set('Setting_Value', String(settingsMap[k]));
+            await row.save();
+            foundKeys.add(k);
+          }
+        }
+        for (const [k, v] of Object.entries(settingsMap)) {
+          if (!foundKeys.has(k)) {
+            await settingsSheet.addRow({ Setting_Key: k, Setting_Value: String(v) });
+          }
+        }
+      }
+
+      // 3. Write members to Tracker_Data
+      const trackerSheet = db.sheetsByTitle["Tracker_Data"];
+      if (trackerSheet) {
+        await trackerSheet.loadHeaderRow();
+        const headers = trackerSheet.headerValues;
+        if (!headers.includes('System_ID')) {
+          const newH = [...headers, 'System_ID'];
+          if (newH.length > trackerSheet.columnCount) {
+            await trackerSheet.resize({ rowCount: trackerSheet.rowCount, columnCount: newH.length + 5 });
+          }
+          await trackerSheet.setHeaderRow(newH);
+        }
+        await trackerSheet.addRows(members);
+      }
+
+      // 4. Write team credentials with generated 4-digit PINs
+      const credsSheet = db.sheetsByTitle["Team_Credentials"];
+      if (credsSheet) {
+        await credsSheet.loadHeaderRow();
+        await credsSheet.addRows(credentials);
+      }
+
+      // 5. Write Leaders_Tracker_Data with Leaders & Assistants
+      const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
+      if (leadersSheet) {
+        await leadersSheet.loadHeaderRow();
+        const ldHeaders = leadersSheet.headerValues;
+        const neededCols = ['Team Leader', 'Status', 'Team', 'Assistant', 'Leader_Phone', 'Assistant_Phone'];
+        let updatedCols = [...ldHeaders];
+        let needsHeaderUpdate = false;
+        neededCols.forEach(col => {
+          if (!updatedCols.includes(col)) {
+            updatedCols.push(col);
+            needsHeaderUpdate = true;
+          }
+        });
+        if (needsHeaderUpdate) {
+          if (updatedCols.length > leadersSheet.columnCount) {
+            await leadersSheet.resize({ rowCount: leadersSheet.rowCount, columnCount: updatedCols.length + 5 });
+          }
+          await leadersSheet.setHeaderRow(updatedCols);
+        }
+        await leadersSheet.addRows(leaders);
+      }
+
+      invalidateCache();
+      return NextResponse.json({ success: true, memberCount: members.length, teamCount: credentials.length });
     }
 
     return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });

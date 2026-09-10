@@ -163,8 +163,8 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     timeZone: 'Africa/Lagos'
   }).format(new Date()) + ' (WAT)';
 
-  // Calculate Numbers
-  let totalAssigned = trackerData.length;
+  // Calculate Numbers (All participants: Members + Team Leaders + Assistant Leaders)
+  let totalAssigned = trackerData.length + leadersData.length;
   let totalCompleted100 = 0;
   let totalIncomplete = 0;
   let totalEvicted = 0;
@@ -172,6 +172,7 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
 
   const completersList = [];
 
+  // 1. Process regular members
   trackerData.forEach(m => {
     const status = cleanText(m.Status || '').toLowerCase();
     const { completedDays, is100Percent } = calculateMemberProgress(m, totalDays);
@@ -196,10 +197,52 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
     }
   });
 
+  // 2. Process team leaders and assistants
+  const teamLeaderCounts = {};
+  leadersData.forEach(l => {
+    const rawName = l.Member_Name || l.Name || l['Team Leader'] || 'Leader';
+    const name = cleanText(rawName);
+    const rawTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'] || 'Unassigned';
+    const team = cleanText(rawTeam);
+    const normTeam = team.toLowerCase();
+    const status = cleanText(l.Status || 'Active').toLowerCase();
+    const { completedDays, is100Percent } = calculateMemberProgress(l, totalDays);
+
+    const rawRole = cleanText(l.Role || l.Position || l.Designation || '');
+    let role = 'Team Leader';
+    if (rawRole) {
+      role = rawRole.toLowerCase().includes('asst') || rawRole.toLowerCase().includes('assistant') ? 'Assistant Leader' : 'Team Leader';
+    } else {
+      if (!teamLeaderCounts[normTeam]) {
+        teamLeaderCounts[normTeam] = 0;
+      }
+      role = teamLeaderCounts[normTeam] === 0 ? 'Team Leader' : 'Assistant Leader';
+      teamLeaderCounts[normTeam]++;
+    }
+
+    if (status === 'evicted') {
+      totalEvicted++;
+    } else if (status === 'declined' || status === 'left') {
+      totalDeclined++;
+    } else {
+      if (is100Percent) {
+        totalCompleted100++;
+        completersList.push({
+          name: `${name} (${role})`,
+          team: team,
+          phone: cleanText(l.Leader_Phone || l.Assistant_Phone || l.WhatsApp_Number || l.Whatsapp_Number || l.Phone || 'N/A'),
+          completedDays
+        });
+      } else {
+        totalIncomplete++;
+      }
+    }
+  });
+
   const overallCompletionRate = totalAssigned > 0 ? ((totalCompleted100 / totalAssigned) * 100).toFixed(1) : '0.0';
   const overallIncompleteRate = totalAssigned > 0 ? ((totalIncomplete / totalAssigned) * 100).toFixed(1) : '0.0';
 
-  // Calculate Team Breakdown
+  // Calculate Team Breakdown (Members + Assigned Leaders)
   const teamsMap = {};
   trackerData.forEach(m => {
     const rawTeam = m.Team_Name || 'Unassigned';
@@ -229,6 +272,41 @@ export async function generateGeneralPdfReport({ trackerData = [], settings = {}
         teamsMap[team].completed100++;
       } else {
         teamsMap[team].incomplete++;
+      }
+    }
+  });
+
+  // Factor team leaders into each team's summary breakdown
+  leadersData.forEach(l => {
+    const rawTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'] || 'Unassigned';
+    const team = cleanText(rawTeam);
+    let matchedKey = Object.keys(teamsMap).find(k => normalizeTeam(k) === normalizeTeam(team));
+    if (!matchedKey) {
+      matchedKey = team;
+      const leaderInfo = getLeaderDetails(team, leadersData);
+      teamsMap[matchedKey] = {
+        team,
+        assigned: 0,
+        completed100: 0,
+        incomplete: 0,
+        evicted: 0,
+        declined: 0,
+        leaderDetails: leaderInfo.tableSummary
+      };
+    }
+    teamsMap[matchedKey].assigned++;
+    const status = cleanText(l.Status || 'Active').toLowerCase();
+    const { is100Percent } = calculateMemberProgress(l, totalDays);
+
+    if (status === 'evicted') {
+      teamsMap[matchedKey].evicted++;
+    } else if (status === 'declined' || status === 'left') {
+      teamsMap[matchedKey].declined++;
+    } else {
+      if (is100Percent) {
+        teamsMap[matchedKey].completed100++;
+      } else {
+        teamsMap[matchedKey].incomplete++;
       }
     }
   });

@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2, Power, Lock, Unlock } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
+import NewRoundWizard from "./NewRoundWizard";
+import AdminTutorialModal from "./AdminTutorialModal";
+import { HelpCircle } from "lucide-react";
 import { generateGeneralPdfReport, generateTeamPdfReport, generateLeadersPdfReport } from "@/lib/pdfReportGenerator";
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
@@ -70,6 +73,7 @@ export default function AdminDashboard({ onLogout }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("leaders");
+  const [showTutorial, setShowTutorial] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Data
@@ -737,6 +741,14 @@ export default function AdminDashboard({ onLogout }) {
           <span>Admin Command Center</span>
         </div>
         <div className="tracker-header-actions">
+          <button
+            onClick={() => setShowTutorial(true)}
+            title="Open Admin Guide & System Tour"
+            className="tracker-btn-quiz"
+            style={{ background: 'rgba(56, 189, 248, 0.15)', borderColor: 'rgba(56, 189, 248, 0.3)', color: '#38BDF8' }}
+          >
+            <HelpCircle size={16} /> <span>Guide & Tour</span>
+          </button>
           <a
             href="/admin/quiz"
             title="Open Quiz Control Center"
@@ -765,6 +777,16 @@ export default function AdminDashboard({ onLogout }) {
       </div>
 
       <div className="tracker-tabs-bar">
+        <button 
+          className={`tracker-tab-pill ${activeTab === 'wizard' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('wizard')}
+          style={{ 
+            background: activeTab === 'wizard' ? 'rgba(37, 99, 235, 0.25)' : undefined, 
+            borderColor: activeTab === 'wizard' ? '#3B82F6' : undefined 
+          }}
+        >
+          <Sparkles size={15} color={activeTab === 'wizard' ? '#60A5FA' : '#FBBF24'} /> <span>Start New Round</span>
+        </button>
         <button className={`tracker-tab-pill ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
           <BarChart3 size={15} /> <span>Overview</span>
         </button>
@@ -856,6 +878,20 @@ export default function AdminDashboard({ onLogout }) {
             </div>
           </div>
         </div>
+      )}
+
+      {activeTab === 'wizard' && (
+        <NewRoundWizard 
+          onComplete={() => {
+            loadData(true);
+            setActiveTab('leaders');
+          }}
+          currentEditionInfo={{
+            name: data?.settings?.Challenge_Name,
+            edition: data?.settings?.Challenge_Edition,
+            totalDays: data?.settings?.Total_Days
+          }}
+        />
       )}
 
       {activeTab === 'leaders' && (
@@ -1192,33 +1228,52 @@ export default function AdminDashboard({ onLogout }) {
 
       {activeTab === 'analytics' && (() => {
         const dfTracker = data?.trackerData || [];
+        const allLeaders = data?.leadersData || [];
+
         const dfActive = dfTracker.filter(m => String(m.Status || '').trim().toLowerCase() === 'active');
-        const totalMembers = dfTracker.length;
-        const activeMembers = dfActive.length;
-        const evictedMembers = dfTracker.filter(m => String(m.Status || '').trim().toLowerCase() === 'evicted').length;
-        const declinedMembers = dfTracker.filter(m => String(m.Status || '').trim().toLowerCase() === 'declined').length;
+        const activeLeaders = allLeaders.filter(l => String(l.Status || 'active').trim().toLowerCase() === 'active');
+
+        const totalMembers = dfTracker.length + allLeaders.length;
+        const activeMembers = dfActive.length + activeLeaders.length;
+
+        const evictedMembers = dfTracker.filter(m => String(m.Status || '').trim().toLowerCase() === 'evicted').length
+          + allLeaders.filter(l => String(l.Status || '').trim().toLowerCase() === 'evicted').length;
+
+        const declinedMembers = dfTracker.filter(m => {
+          const s = String(m.Status || '').trim().toLowerCase();
+          return s === 'declined' || s === 'left';
+        }).length + allLeaders.filter(l => {
+          const s = String(l.Status || '').trim().toLowerCase();
+          return s === 'declined' || s === 'left';
+        }).length;
 
         let todayReads = 0;
         if (activeMembers > 0) {
-           todayReads = dfActive.filter(m => String(m[currentDayStr] || '').toUpperCase() === 'TRUE').length;
+          const trackerReads = dfActive.filter(m => String(m[currentDayStr] || '').toUpperCase() === 'TRUE').length;
+          const leaderReads = activeLeaders.filter(l => String(l[currentDayStr] || '').toUpperCase() === 'TRUE').length;
+          todayReads = trackerReads + leaderReads;
         }
         const completionRate = activeMembers > 0 ? todayReads / activeMembers : 0;
 
         const trendData = [];
         for (let i = 1; i <= currentDayNum; i++) {
           const dayCol = `Day_${i}`;
-          const reads = dfTracker.filter(m => String(m[dayCol] || '').toUpperCase() === 'TRUE').length;
-          trendData.push({ day: i, participants: reads });
+          const readsTracker = dfTracker.filter(m => String(m[dayCol] || '').toUpperCase() === 'TRUE').length;
+          const readsLeaders = allLeaders.filter(l => String(l[dayCol] || '').toUpperCase() === 'TRUE').length;
+          trendData.push({ day: i, participants: readsTracker + readsLeaders });
         }
 
         const teamsMap = {};
+        const norm = (str) => String(str || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+
+        // 1. Process regular members
         dfTracker.forEach(m => {
           const t = m.Team_Name || m.Team || m['Team Name'];
           if (!t) return;
           if (!teamsMap[t]) {
-            const teamLeadersInfo = (data?.leadersData || []).filter(l => {
+            const teamLeadersInfo = allLeaders.filter(l => {
               const lTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'];
-              return String(lTeam || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase() === String(t || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+              return norm(lTeam) === norm(t);
             });
             const leaderName = teamLeadersInfo[0]?.Member_Name || teamLeadersInfo[0]?.Name || teamLeadersInfo[0]?.['Team Leader'] || 'N/A';
             const assistantName = teamLeadersInfo[1]?.Member_Name || teamLeadersInfo[1]?.Name || teamLeadersInfo[1]?.['Team Leader'] || 'N/A';
@@ -1235,6 +1290,35 @@ export default function AdminDashboard({ onLogout }) {
             teamsMap[t].evicted++;
           } else if (status === 'declined' || status === 'left') {
             teamsMap[t].declined++;
+          }
+        });
+
+        // 2. Include team leaders and assistants in each team's tally
+        allLeaders.forEach(l => {
+          const lTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'];
+          if (!lTeam) return;
+          let matchedKey = Object.keys(teamsMap).find(k => norm(k) === norm(lTeam));
+          if (!matchedKey) {
+            matchedKey = lTeam;
+            const teamLeadersInfo = allLeaders.filter(lead => {
+              const leadTeam = lead.Team_Name || lead.Team || lead['Team Name'] || lead['Team Leader Team Name'];
+              return norm(leadTeam) === norm(matchedKey);
+            });
+            const leaderName = teamLeadersInfo[0]?.Member_Name || teamLeadersInfo[0]?.Name || teamLeadersInfo[0]?.['Team Leader'] || 'N/A';
+            const assistantName = teamLeadersInfo[1]?.Member_Name || teamLeadersInfo[1]?.Name || teamLeadersInfo[1]?.['Team Leader'] || 'N/A';
+            teamsMap[matchedKey] = { active: 0, evicted: 0, declined: 0, total: 0, todayReads: 0, leaderName, assistantName };
+          }
+          teamsMap[matchedKey].total++;
+          const status = String(l.Status || 'active').trim().toLowerCase();
+          if (status === 'active') {
+            teamsMap[matchedKey].active++;
+            if (String(l[currentDayStr] || '').toUpperCase() === 'TRUE') {
+              teamsMap[matchedKey].todayReads++;
+            }
+          } else if (status === 'evicted') {
+            teamsMap[matchedKey].evicted++;
+          } else if (status === 'declined' || status === 'left') {
+            teamsMap[matchedKey].declined++;
           }
         });
 
@@ -2240,7 +2324,7 @@ export default function AdminDashboard({ onLogout }) {
               </p>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.4rem', paddingTop: '0.4rem', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '0.76rem' }}>
                 <span>Challenge Length: <strong style={{ color: 'var(--text-primary)' }}>{data?.settings?.Total_Days || 87} Days</strong></span>
-                <span>Tracked Records: <strong style={{ color: 'var(--text-primary)' }}>{pdfScope === 'leaders' ? (data?.leadersData || []).length : (data?.trackerData?.length || 0)}</strong></span>
+                <span>Tracked Records: <strong style={{ color: 'var(--text-primary)' }}>{pdfScope === 'leaders' ? (data?.leadersData || []).length : pdfScope === 'general' ? ((data?.trackerData?.length || 0) + (data?.leadersData?.length || 0)) : (data?.trackerData?.filter(m => (m.Team_Name || m.Team) === selectedPdfTeam).length || 0) + (data?.leadersData?.filter(l => (l.Team || l.Team_Name) === selectedPdfTeam).length || 0)}</strong></span>
               </div>
             </div>
 
@@ -2464,6 +2548,11 @@ export default function AdminDashboard({ onLogout }) {
           </div>
         </div>
       )}
+
+      <AdminTutorialModal 
+        isOpen={showTutorial} 
+        onClose={() => setShowTutorial(false)} 
+      />
     </div>
   );
 }

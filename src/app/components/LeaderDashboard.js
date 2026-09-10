@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle, Crown } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { generateTeamPdfReport } from "@/lib/pdfReportGenerator";
 
@@ -12,6 +12,7 @@ export default function LeaderDashboard({ team, onLogout }) {
   const [currentDayNum, setCurrentDayNum] = useState(1);
   
   const [updates, setUpdates] = useState({});
+  const [leaderUpdates, setLeaderUpdates] = useState({});
   const [reflection, setReflection] = useState("");
   const [saving, setSaving] = useState(false);
   const [reportText, setReportText] = useState("");
@@ -116,6 +117,16 @@ export default function LeaderDashboard({ team, onLogout }) {
           });
         }
         setUpdates(initialUpdates);
+
+        const initialLeaderUpdates = {};
+        if (d.leadersData) {
+          d.leadersData.forEach(l => {
+            const lName = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
+            initialLeaderUpdates[lName] = String(l[selectedDay || calcCurrentDay] || '').toUpperCase() === 'TRUE';
+          });
+        }
+        setLeaderUpdates(initialLeaderUpdates);
+
         if (isManualRefresh === true) showToast("Dashboard is up-to-date!");
         return d;
       })
@@ -138,10 +149,22 @@ export default function LeaderDashboard({ team, onLogout }) {
       });
       setUpdates(newUpdates);
     }
+    if (data && data.leadersData) {
+      const newLeaderUpdates = {};
+      data.leadersData.forEach(l => {
+        const lName = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
+        newLeaderUpdates[lName] = String(l[selectedDay] || '').toUpperCase() === 'TRUE';
+      });
+      setLeaderUpdates(newLeaderUpdates);
+    }
   }, [selectedDay]);
 
   const handleCheckbox = (name) => {
     setUpdates(prev => ({ ...prev, [name]: !prev[name] }));
+  };
+
+  const handleLeaderCheckbox = (name) => {
+    setLeaderUpdates(prev => ({ ...prev, [name]: !prev[name] }));
   };
 
   const handleSelectAll = (val) => {
@@ -203,6 +226,7 @@ export default function LeaderDashboard({ team, onLogout }) {
             team,
             day: selectedDay,
             updates,
+            leaderUpdates,
             reflection: selectedDay === currentDay ? reflection : undefined,
             currentDayNum: currentDayNum,
             evictionThreshold: data?.settings?.Eviction_Threshold || 5
@@ -552,6 +576,70 @@ export default function LeaderDashboard({ team, onLogout }) {
               <ChevronRight size={20} />
             </button>
           </div>
+
+          {/* Team Leadership Daily Reading Ticks */}
+          {data?.leadersData && data.leadersData.length > 0 && (
+            <div style={{ marginBottom: '1.25rem', background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '0.75rem', padding: '0.85rem 1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Crown size={17} color="#F59E0B" />
+                  <span style={{ fontWeight: '800', fontSize: '0.88rem', color: '#FDE68A', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Team Leadership Reading
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                  Tap your card to mark your reading for {selectedDay.replace('_', ' ')}
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.65rem' }}>
+                {data.leadersData.map((l, idx) => {
+                  const lName = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
+                  const isChecked = !!leaderUpdates[lName];
+                  const rawRole = String(l.Role || l.Position || l.Designation || '').toLowerCase();
+                  const roleLabel = rawRole.includes('asst') || rawRole.includes('assistant') || idx > 0 ? 'Assistant Leader' : 'Team Leader';
+
+                  return (
+                    <div
+                      key={lName || idx}
+                      onClick={() => handleLeaderCheckbox(lName)}
+                      className={`tracker-check-tile ${isChecked ? 'checked' : ''}`}
+                      style={{
+                        borderColor: isChecked ? 'rgba(245, 158, 11, 0.55)' : 'rgba(255, 255, 255, 0.08)',
+                        background: isChecked ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%)' : 'var(--surface-secondary)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div className="tracker-check-box" style={{ borderColor: isChecked ? '#F59E0B' : undefined, background: isChecked ? '#F59E0B' : undefined }}>
+                        {isChecked && <Check size={14} color="#000" strokeWidth={3} />}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.88rem', color: isChecked ? '#FDE68A' : 'var(--text-primary)' }}>
+                            {lName}
+                          </span>
+                          <span style={{ 
+                            fontSize: '0.68rem', 
+                            fontWeight: 700, 
+                            padding: '0.1rem 0.45rem', 
+                            borderRadius: '0.35rem', 
+                            background: isChecked ? 'rgba(245, 158, 11, 0.3)' : 'rgba(255, 255, 255, 0.08)', 
+                            color: isChecked ? '#FFF' : '#FBBF24',
+                            border: '1px solid rgba(245, 158, 11, 0.35)'
+                          }}>
+                            {roleLabel}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: isChecked ? '#34D399' : 'var(--text-secondary)', marginTop: '0.15rem', fontWeight: 600 }}>
+                          {isChecked ? '✓ Marked Read' : 'Tap to mark read'}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div>
             {/* Search Bar */}
