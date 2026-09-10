@@ -225,6 +225,9 @@ export default function AdminQuizPage() {
   const [openDropdown, setOpenDropdown] = useState(null); // 'sort' | 'edition' | 'round' | 'team' | 'session_status' | 'session_edition' | 'session_round' | 'session_team' | null
   const [showCustomEditionInput, setShowCustomEditionInput] = useState(false);
   const [newEditionName, setNewEditionName] = useState("");
+  const [showCustomRoundInput, setShowCustomRoundInput] = useState(false);
+  const [newRoundInputName, setNewRoundInputName] = useState("");
+  const [customRoundsMap, setCustomRoundsMap] = useState({}); // { [editionName]: string[] }
   
   const [copiedLink, setCopiedLink] = useState(false);
   const [quizUrl, setQuizUrl] = useState("");
@@ -993,24 +996,107 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     return qEd.trim().toLowerCase() === currentTrack.trim().toLowerCase();
   });
 
+  // Helper to extract missing rounds and suggest next logical rounds
+  const getLowestMissingRound = (roundsList) => {
+    const existingNums = new Set(
+      roundsList
+        .map(r => {
+          const match = String(r).match(/round\s*(\d+)/i);
+          return match ? parseInt(match[1], 10) : null;
+        })
+        .filter(n => n !== null && !isNaN(n))
+    );
+
+    for (let i = 1; i <= 100; i++) {
+      if (!existingNums.has(i)) {
+        return `Round ${i}`;
+      }
+    }
+    return `Round ${roundsList.length + 1}`;
+  };
+
+  const getRoundSuggestions = (roundsList) => {
+    const existingNums = new Set(
+      roundsList
+        .map(r => {
+          const match = String(r).match(/round\s*(\d+)/i);
+          return match ? parseInt(match[1], 10) : null;
+        })
+        .filter(n => n !== null && !isNaN(n))
+    );
+
+    const suggestions = [];
+    for (let i = 1; i <= 100; i++) {
+      if (!existingNums.has(i)) {
+        suggestions.push(`Round ${i}`);
+        break;
+      }
+    }
+
+    const maxNum = existingNums.size > 0 ? Math.max(...Array.from(existingNums)) : 0;
+    const nextMax = `Round ${maxNum + 1}`;
+    if (!suggestions.includes(nextMax)) {
+      suggestions.push(nextMax);
+    }
+
+    return suggestions;
+  };
+
+  const handleAddNewRound = (rawName) => {
+    const trimmed = (rawName || "").trim();
+    if (!trimmed) return;
+
+    // Standardize casing if it's like "round 1" -> "Round 1"
+    const roundName = trimmed.toLowerCase().startsWith("round ")
+      ? `Round ${trimmed.slice(6).trim()}`
+      : trimmed;
+
+    // Add to custom rounds map for this edition
+    setCustomRoundsMap(prev => {
+      const existing = prev[currentTrack] || [];
+      if (!existing.includes(roundName)) {
+        return { ...prev, [currentTrack]: [...existing, roundName] };
+      }
+      return prev;
+    });
+
+    setSelectedBankRound(roundName);
+    setQuestionForm(prev => ({ ...prev, round: roundName, edition: currentTrack }));
+    setBulkRound(roundName);
+    setBulkEdition(currentTrack);
+    setAiRound(roundName);
+    setAiEdition(currentTrack);
+    if (editingQuestionId) handleCancelEdit();
+    setShowCustomRoundInput(false);
+    setNewRoundInputName("");
+    showToast(`Switched to "${roundName}" (${currentTrack}). Add your questions below!`);
+  };
+
   // Unique rounds inside currently selected edition / track
-  const uniqueRoundsInEdition = Array.from(new Set(
-    editionQuestions.map(q => q.round).filter(Boolean)
-  )).sort((a, b) => {
-    const numA = parseInt(a.replace(/\D/g, "") || "0", 10);
-    const numB = parseInt(b.replace(/\D/g, "") || "0", 10);
-    if (numA !== numB) return numA - numB;
-    return a.localeCompare(b);
+  const editionCustomRounds = customRoundsMap[currentTrack] || [];
+  const rawRoundsInEdition = [
+    ...editionQuestions.map(q => q.round),
+    (settings.Active_Edition === currentTrack && settings.Active_Round) ? settings.Active_Round : null,
+    (selectedBankRound && selectedBankRound !== "All") ? selectedBankRound : null,
+    ...editionCustomRounds
+  ].filter(Boolean);
+
+  const uniqueRoundsInEdition = Array.from(new Set(rawRoundsInEdition)).sort((a, b) => {
+    const numA = parseInt(String(a).replace(/\D/g, "") || "-1", 10);
+    const numB = parseInt(String(b).replace(/\D/g, "") || "-1", 10);
+    if (numA !== -1 && numB !== -1 && numA !== numB) return numA - numB;
+    return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
   });
 
   // Unique rounds across the entire system
-  const allUniqueRounds = Array.from(new Set(
-    questions.map(q => q.round).filter(Boolean)
-  )).sort((a, b) => {
-    const numA = parseInt(a.replace(/\D/g, "") || "0", 10);
-    const numB = parseInt(b.replace(/\D/g, "") || "0", 10);
-    if (numA !== numB) return numA - numB;
-    return a.localeCompare(b);
+  const allUniqueRounds = Array.from(new Set([
+    ...questions.map(q => q.round).filter(Boolean),
+    ...uniqueRoundsInEdition
+  ])).sort((a, b) => {
+    const numA = parseInt(String(a).replace(/\D/g, "") || "-1", 10);
+    const numB = parseInt(String(b).replace(/\D/g, "") || "-1", 10);
+    if (numA !== -1 && numB !== -1 && numA !== numB) return numA - numB;
+    return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
   });
 
   // Results scoped to currently selected reading track
@@ -2197,15 +2283,13 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     );
                   })}
 
-                  {/* + New Round Button */}
+                  {/* + Add Round Button */}
                   <button
                     type="button"
                     onClick={() => {
-                      const nextRoundNum = uniqueRoundsInEdition.length + 1;
-                      const newRoundName = `Round ${nextRoundNum}`;
-                      setSelectedBankRound(newRoundName);
-                      if (editingQuestionId) handleCancelEdit();
-                      showToast(`Switched to ${newRoundName} (${selectedEdition}). Add your questions below!`);
+                      const lowestMissing = getLowestMissingRound(uniqueRoundsInEdition);
+                      setNewRoundInputName(lowestMissing);
+                      setShowCustomRoundInput(prev => !prev);
                     }}
                     style={{
                       display: 'inline-flex',
@@ -2213,20 +2297,131 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       gap: '0.3rem',
                       padding: '0.4rem 0.8rem',
                       borderRadius: '0.5rem',
-                      backgroundColor: 'transparent',
-                      border: '1px dashed var(--border)',
-                      color: 'var(--text-secondary)',
+                      backgroundColor: showCustomRoundInput ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
+                      border: `1px dashed ${showCustomRoundInput ? 'var(--accent)' : 'var(--border)'}`,
+                      color: showCustomRoundInput ? '#60A5FA' : 'var(--text-secondary)',
                       fontSize: '0.82rem',
                       fontWeight: 600,
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
                     onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent-hover)'; }}
-                    onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.borderColor = showCustomRoundInput ? 'var(--accent)' : 'var(--border)'; e.currentTarget.style.color = showCustomRoundInput ? '#60A5FA' : 'var(--text-secondary)'; }}
                   >
-                    <PlusCircle size={14} /> New Round
+                    <PlusCircle size={14} /> Add Round
                   </button>
                 </div>
+
+                {/* INLINE NEW ROUND INPUT & SUGGESTIONS */}
+                {showCustomRoundInput && (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: '0.55rem',
+                    marginTop: '0.85rem',
+                    padding: '0.75rem 1rem',
+                    backgroundColor: 'var(--surface-secondary)',
+                    borderRadius: '0.65rem',
+                    border: '1.5px solid var(--accent)',
+                    boxShadow: '0 4px 15px rgba(37, 99, 235, 0.15)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <PlusCircle size={16} style={{ color: 'var(--accent)' }} />
+                      <span style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                        Round Name:
+                      </span>
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="e.g. Round 1, Round 5, Final Round..."
+                      value={newRoundInputName}
+                      onChange={(e) => setNewRoundInputName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddNewRound(newRoundInputName);
+                        } else if (e.key === 'Escape') {
+                          setShowCustomRoundInput(false);
+                        }
+                      }}
+                      autoFocus
+                      style={{
+                        flex: '1 1 160px',
+                        padding: '0.45rem 0.75rem',
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: '0.45rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.88rem',
+                        fontWeight: '700',
+                        outline: 'none'
+                      }}
+                    />
+
+                    {/* Quick Suggestion Chips */}
+                    {getRoundSuggestions(uniqueRoundsInEdition).length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>Suggestions:</span>
+                        {getRoundSuggestions(uniqueRoundsInEdition).map(sugg => (
+                          <button
+                            key={sugg}
+                            type="button"
+                            onClick={() => handleAddNewRound(sugg)}
+                            style={{
+                              padding: '0.2rem 0.55rem',
+                              backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                              border: '1px solid rgba(37, 99, 235, 0.35)',
+                              borderRadius: '0.35rem',
+                              color: '#60A5FA',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            + {sugg}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleAddNewRound(newRoundInputName)}
+                        style={{
+                          padding: '0.45rem 0.95rem',
+                          backgroundColor: 'var(--accent)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '0.45rem',
+                          fontSize: '0.84rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        Add & Switch
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowCustomRoundInput(false)}
+                        style={{
+                          padding: '0.45rem 0.65rem',
+                          backgroundColor: 'transparent',
+                          color: 'var(--text-secondary)',
+                          border: 'none',
+                          fontSize: '0.82rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 2-COLUMN LAYOUT: QUESTION BUILDER + QUESTION BANK */}
@@ -2355,18 +2550,79 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.45rem',
+                    justifyContent: 'space-between',
+                    gap: '0.5rem',
                     padding: '0.5rem 0.75rem',
                     backgroundColor: 'var(--surface-secondary)',
                     border: '1px solid var(--border-light)',
                     borderRadius: '0.55rem',
                     marginBottom: '1rem',
-                    fontSize: '0.82rem'
+                    fontSize: '0.82rem',
+                    flexWrap: 'wrap'
                   }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Target:</span>
-                    <strong style={{ color: '#60A5FA' }}>{activeTargetRound}</strong>
-                    <span style={{ color: 'var(--text-secondary)' }}>•</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{selectedEdition}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Target:</span>
+                      <strong style={{ color: '#60A5FA', fontSize: '0.88rem' }}>{activeTargetRound}</strong>
+                      <span style={{ color: 'var(--text-secondary)' }}>•</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{selectedEdition}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      {uniqueRoundsInEdition.length > 1 && (
+                        <select
+                          value={activeTargetRound}
+                          onChange={(e) => {
+                            const r = e.target.value;
+                            setSelectedBankRound(r);
+                            setQuestionForm(prev => ({ ...prev, round: r, edition: selectedEdition }));
+                            setBulkRound(r);
+                            setBulkEdition(selectedEdition);
+                            setAiRound(r);
+                            setAiEdition(selectedEdition);
+                            if (editingQuestionId) handleCancelEdit();
+                          }}
+                          style={{
+                            padding: '0.2rem 0.45rem',
+                            backgroundColor: 'var(--surface)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '0.35rem',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.78rem',
+                            fontWeight: 600,
+                            outline: 'none',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {uniqueRoundsInEdition.map(r => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const lowestMissing = getLowestMissingRound(uniqueRoundsInEdition);
+                          setNewRoundInputName(lowestMissing);
+                          setShowCustomRoundInput(true);
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.2rem',
+                          padding: '0.2rem 0.45rem',
+                          backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                          border: '1px solid rgba(37, 99, 235, 0.3)',
+                          borderRadius: '0.35rem',
+                          color: '#60A5FA',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <PlusCircle size={11} /> + Round
+                      </button>
+                    </div>
                   </div>
 
                   {builderMode === "single" ? (
