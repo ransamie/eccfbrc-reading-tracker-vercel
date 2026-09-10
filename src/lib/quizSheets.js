@@ -562,4 +562,48 @@ export async function deleteQuizSubmission(whatsAppNumber, round, timestamp, ful
   }
 }
 
+export async function deleteRoundQuestions(edition, round) {
+  try {
+    const sheet = await getSheetByTitle("Quiz_Questions", [
+      "ID",
+      "Edition",
+      "Round",
+      "Question",
+      "Option_1",
+      "Option_2",
+      "Option_3",
+      "Option_4",
+      "Correct_Answer"
+    ]);
+    const rows = await sheet.getRows();
+    const targetEdition = String(edition || "").trim().toLowerCase();
+    const targetRound = String(round || "").trim().toLowerCase();
+
+    let deletedCount = 0;
+    for (const row of rows) {
+      const rowEdition = String(row.get("Edition") || "New Testament (3 chapters daily)").trim().toLowerCase();
+      const rowRound = String(row.get("Round") || "").trim().toLowerCase();
+
+      if ((!targetEdition || rowEdition === targetEdition) && rowRound === targetRound) {
+        await row.delete();
+        deletedCount++;
+      }
+    }
+    return deletedCount;
+  } catch (err) {
+    console.error("deleteRoundQuestions error:", err);
+    throw err;
+  }
+}
+
+export async function deleteQuizRound(edition, round) {
+  try {
+    const deletedCount = await deleteRoundQuestions(edition, round);
+    return { success: true, deletedQuestionsCount: deletedCount };
+  } catch (err) {
+    console.error("deleteQuizRound error:", err);
+    throw err;
+  }
+}
+
 

@@ -228,6 +228,7 @@ export default function AdminQuizPage() {
   const [showCustomRoundInput, setShowCustomRoundInput] = useState(false);
   const [newRoundInputName, setNewRoundInputName] = useState("");
   const [customRoundsMap, setCustomRoundsMap] = useState({}); // { [editionName]: string[] }
+  const [deletedRoundsMap, setDeletedRoundsMap] = useState({}); // { [editionName]: string[] }
   
   const [copiedLink, setCopiedLink] = useState(false);
   const [quizUrl, setQuizUrl] = useState("");
@@ -639,6 +640,138 @@ export default function AdminQuizPage() {
     });
   };
 
+  // Clear all questions for a specific round in the active reading track
+  const handleClearRoundQuestions = (roundToClear) => {
+    const rName = roundToClear || (selectedBankRound !== "All" ? selectedBankRound : activeTargetRound);
+    if (!rName || rName === "All") return;
+    const questionsInRound = editionQuestions.filter(q => q.round === rName);
+    const count = questionsInRound.length;
+
+    if (count === 0) {
+      showAlert({
+        title: "No Questions to Clear",
+        message: `"${rName}" (${selectedEdition}) currently has no questions saved in the database.`,
+        type: "info"
+      });
+      return;
+    }
+
+    showConfirm({
+      title: `Clear Questions from ${rName}?`,
+      message: `Are you sure you want to delete all ${count} question(s) from "${rName}" in "${selectedEdition}"? This action cannot be undone.`,
+      type: "danger",
+      confirmText: `Yes, Clear ${count} Question${count !== 1 ? 's' : ''}`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/quiz/admin", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": pin
+            },
+            body: JSON.stringify({
+              action: "clearRoundQuestions",
+              edition: selectedEdition,
+              round: rName
+            })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            setQuestions(prev => prev.filter(q => {
+              const qEd = (q.edition || "New Testament (3 chapters daily)").trim().toLowerCase();
+              const curEd = selectedEdition.trim().toLowerCase();
+              return !(qEd === curEd && q.round === rName);
+            }));
+            if (editingQuestionId) handleCancelEdit();
+            showToast(`Cleared ${count} question(s) from ${rName}!`);
+          } else {
+            showAlert({
+              title: "Clear Failed",
+              message: data.error || "Failed to clear questions from Google Sheets.",
+              type: "danger"
+            });
+          }
+        } catch (err) {
+          showAlert({
+            title: "Clear Error",
+            message: "Error connecting to server. Please check connection.",
+            type: "danger"
+          });
+        }
+      }
+    });
+  };
+
+  // Completely delete a round from the active reading track
+  const handleDeleteRound = (roundToDelete) => {
+    const rName = roundToDelete || (selectedBankRound !== "All" ? selectedBankRound : activeTargetRound);
+    if (!rName || rName === "All") return;
+    const questionsInRound = editionQuestions.filter(q => q.round === rName);
+    const count = questionsInRound.length;
+
+    showConfirm({
+      title: `Delete Round "${rName}"?`,
+      message: `Are you sure you want to delete "${rName}" from "${selectedEdition}"? ${count > 0 ? `All ${count} associated question(s) will also be deleted from Google Sheets.` : 'This round will be removed from the track.'}`,
+      type: "danger",
+      confirmText: `Yes, Delete Round`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/quiz/admin", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": pin
+            },
+            body: JSON.stringify({
+              action: "deleteRound",
+              edition: selectedEdition,
+              round: rName
+            })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            // Remove from questions state
+            setQuestions(prev => prev.filter(q => {
+              const qEd = (q.edition || "New Testament (3 chapters daily)").trim().toLowerCase();
+              const curEd = selectedEdition.trim().toLowerCase();
+              return !(qEd === curEd && q.round === rName);
+            }));
+
+            // Track in deletedRoundsMap
+            setDeletedRoundsMap(prev => {
+              const existing = prev[selectedEdition] || [];
+              return { ...prev, [selectedEdition]: [...existing, rName] };
+            });
+
+            // Remove from customRoundsMap
+            setCustomRoundsMap(prev => {
+              const existing = prev[selectedEdition] || [];
+              return { ...prev, [selectedEdition]: existing.filter(r => r !== rName) };
+            });
+
+            if (selectedBankRound === rName) {
+              setSelectedBankRound("All");
+            }
+            if (editingQuestionId) handleCancelEdit();
+            showToast(`Deleted "${rName}" from ${selectedEdition}.`);
+          } else {
+            showAlert({
+              title: "Delete Failed",
+              message: data.error || "Failed to delete round from Google Sheets.",
+              type: "danger"
+            });
+          }
+        } catch (err) {
+          showAlert({
+            title: "Delete Error",
+            message: "Error connecting to server. Please check connection.",
+            type: "danger"
+          });
+        }
+      }
+    });
+  };
+
   const handleDeleteSubmission = (sub) => {
     const candidateName = sub.fullName || "this candidate";
     const subRound = sub.round || "this round";
@@ -996,6 +1129,23 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     return qEd.trim().toLowerCase() === currentTrack.trim().toLowerCase();
   });
 
+  // Get planned rounds count for a reading track
+  const getEditionPlannedRounds = (editionName) => {
+    const key = `Total_Rounds_${editionName}`;
+    if (settings[key]) {
+      const parsed = parseInt(settings[key], 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    if (settings.Total_Rounds) {
+      const parsed = parseInt(settings.Total_Rounds, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    const lower = String(editionName || "").toLowerCase();
+    if (lower.includes("new testament")) return 9;
+    if (lower.includes("entire bible")) return 30;
+    return 9;
+  };
+
   // Helper to extract missing rounds and suggest next logical rounds
   const getLowestMissingRound = (roundsList) => {
     const existingNums = new Set(
@@ -1060,6 +1210,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       return prev;
     });
 
+    // Remove from deleted rounds if re-added
+    setDeletedRoundsMap(prev => {
+      const existing = prev[currentTrack] || [];
+      return { ...prev, [currentTrack]: existing.filter(r => r !== roundName) };
+    });
+
     setSelectedBankRound(roundName);
     setQuestionForm(prev => ({ ...prev, round: roundName, edition: currentTrack }));
     setBulkRound(roundName);
@@ -1072,14 +1228,23 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     showToast(`Switched to "${roundName}" (${currentTrack}). Add your questions below!`);
   };
 
+  // Planned rounds for current edition
+  const plannedRoundsCount = getEditionPlannedRounds(currentTrack);
+  const plannedRoundsList = Array.from({ length: plannedRoundsCount }, (_, i) => `Round ${i + 1}`);
+
   // Unique rounds inside currently selected edition / track
   const editionCustomRounds = customRoundsMap[currentTrack] || [];
+  const editionDeletedRounds = deletedRoundsMap[currentTrack] || [];
+
   const rawRoundsInEdition = [
+    ...plannedRoundsList,
     ...editionQuestions.map(q => q.round),
     (settings.Active_Edition === currentTrack && settings.Active_Round) ? settings.Active_Round : null,
     (selectedBankRound && selectedBankRound !== "All") ? selectedBankRound : null,
     ...editionCustomRounds
-  ].filter(Boolean);
+  ]
+    .filter(Boolean)
+    .filter(r => !editionDeletedRounds.includes(r));
 
   const uniqueRoundsInEdition = Array.from(new Set(rawRoundsInEdition)).sort((a, b) => {
     const numA = parseInt(String(a).replace(/\D/g, "") || "-1", 10);
@@ -1087,6 +1252,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     if (numA !== -1 && numB !== -1 && numA !== numB) return numA - numB;
     return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
   });
+
+  const configuredRoundsCount = uniqueRoundsInEdition.filter(r => editionQuestions.some(q => q.round === r)).length;
 
   // Unique rounds across the entire system
   const allUniqueRounds = Array.from(new Set([
@@ -2059,6 +2226,45 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       </span>
                     </div>
 
+                    {/* Planned Total Rounds */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                        Total Planned Rounds in Track
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={settings.Total_Rounds || getEditionPlannedRounds(settings.Active_Edition || selectedEdition)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSettings(prev => ({ 
+                              ...prev, 
+                              Total_Rounds: val,
+                              [`Total_Rounds_${settings.Active_Edition || selectedEdition}`]: val
+                            }));
+                          }}
+                          required
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem 0.9rem 0.75rem 2.2rem',
+                            backgroundColor: 'var(--surface-secondary)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '0.55rem',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.9rem',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                        <Layers size={15} style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                      </div>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'block' }}>
+                        Expected rounds for this reading challenge (e.g. 9 for New Testament).
+                      </span>
+                    </div>
+
                     {/* Target Summary Card */}
                     <div style={{
                       backgroundColor: 'var(--surface-secondary)',
@@ -2164,13 +2370,21 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 boxShadow: '0 8px 25px rgba(0, 0, 0, 0.18)'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.85rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <Layers size={18} style={{ color: 'var(--accent)' }} />
                     <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                      Select Round to Manage & Build:
+                      {selectedEdition}:
                     </span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--accent-hover)', fontWeight: 600 }}>
-                      ({selectedEdition})
+                    <span style={{
+                      fontSize: '0.78rem',
+                      padding: '0.15rem 0.6rem',
+                      borderRadius: '999px',
+                      backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                      border: '1px solid rgba(37, 99, 235, 0.35)',
+                      color: '#60A5FA',
+                      fontWeight: 700
+                    }}>
+                      {plannedRoundsCount} Total Rounds ({configuredRoundsCount} of {plannedRoundsCount} Configured)
                     </span>
                   </div>
 
@@ -3368,6 +3582,61 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                         {selectedEdition}
                       </span>
                     </div>
+
+                    {/* Actions: Clear Questions & Delete Round */}
+                    {selectedBankRound !== "All" && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        {editionQuestions.filter(q => q.round === selectedBankRound).length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleClearRoundQuestions(selectedBankRound)}
+                            title={`Clear all questions from ${selectedBankRound}`}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              padding: '0.35rem 0.65rem',
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              borderRadius: '0.45rem',
+                              color: '#F87171',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
+                          >
+                            <Trash2 size={13} /> Clear Questions
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRound(selectedBankRound)}
+                          title={`Delete ${selectedBankRound} from this track`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            padding: '0.35rem 0.65rem',
+                            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                            border: '1px solid rgba(239, 68, 68, 0.35)',
+                            borderRadius: '0.45rem',
+                            color: '#EF4444',
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)'; }}
+                        >
+                          <X size={13} /> Delete Round
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Questions Scroll Area */}

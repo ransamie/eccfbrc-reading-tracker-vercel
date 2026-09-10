@@ -10,7 +10,9 @@ import {
   bulkAddQuizQuestions,
   updateQuizQuestion,
   deleteQuizQuestion,
-  deleteQuizSubmission 
+  deleteQuizSubmission,
+  deleteRoundQuestions,
+  deleteQuizRound 
 } from "@/lib/quizSheets";
 import { fetchGlobalData } from "@/lib/googleSheets";
 
@@ -198,10 +200,42 @@ export async function POST(request) {
       if (isQuizLive !== undefined) {
         await updateQuizSettings("Is_Quiz_Live", isQuizLive ? "TRUE" : "FALSE");
       }
+      if (body.totalRounds !== undefined) {
+        await updateQuizSettings("Total_Rounds", String(body.totalRounds));
+        if (activeEdition) {
+          await updateQuizSettings(`Total_Rounds_${activeEdition}`, String(body.totalRounds));
+        }
+      }
       if (geminiApiKey !== undefined) {
         await updateQuizSettings("GEMINI_API_KEY", String(geminiApiKey).trim());
       }
       return NextResponse.json({ success: true, message: "Settings updated successfully" });
+    }
+
+    if (action === "clearRoundQuestions") {
+      const { edition, round } = body;
+      if (!round) {
+        return NextResponse.json({ error: "Missing round parameter to clear questions" }, { status: 400 });
+      }
+      const count = await deleteRoundQuestions(edition, round);
+      return NextResponse.json({ 
+        success: true, 
+        count, 
+        message: `Successfully cleared ${count} question${count !== 1 ? 's' : ''} from ${round}${edition ? ` (${edition})` : ''}` 
+      });
+    }
+
+    if (action === "deleteRound") {
+      const { edition, round } = body;
+      if (!round) {
+        return NextResponse.json({ error: "Missing round parameter for deletion" }, { status: 400 });
+      }
+      const res = await deleteQuizRound(edition, round);
+      return NextResponse.json({ 
+        success: true, 
+        deletedQuestionsCount: res.deletedQuestionsCount, 
+        message: `Successfully deleted ${round}${edition ? ` (${edition})` : ''} and ${res.deletedQuestionsCount} associated question${res.deletedQuestionsCount !== 1 ? 's' : ''}` 
+      });
     }
 
     if (action === "saveGeminiApiKey") {
