@@ -2,10 +2,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import * as XLSX from "xlsx";
 import { 
-  Layers, UploadCloud, CheckCircle2, AlertCircle, AlertTriangle, 
+  Layers, Play, UploadCloud, CheckCircle2, AlertCircle, AlertTriangle, 
   RefreshCw, FileDown, Copy, Check, MessageSquare, KeyRound, 
   Users, ChevronRight, ChevronLeft, Calendar, Clock, ShieldCheck, 
-  Sliders, ArrowRight, ExternalLink, Sparkles, UserPlus, Info, Trash2
+  Sliders, ArrowRight, ExternalLink, Sparkles, UserPlus, Info, Trash2,
+  Plus, Minus
 } from "lucide-react";
 
 function normalizePhone(raw) {
@@ -58,6 +59,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
   const [selectedPhoneCol, setSelectedPhoneCol] = useState("");
   const [selectedStatusCol, setSelectedStatusCol] = useState("");
   const [numTeams, setNumTeams] = useState(10);
+  const [teamNamePrefix, setTeamNamePrefix] = useState("Team");
   const [roundPrefix, setRoundPrefix] = useState("");
   const [groupedTeams, setGroupedTeams] = useState([]);
   const [previewTeamIdx, setPreviewTeamIdx] = useState(0);
@@ -173,9 +175,10 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
     const shuffled = [...cleanValidMembers].sort(() => Math.random() - 0.5);
 
     const padLen = String(n).length;
+    const prefixTeam = (teamNamePrefix || "Team").trim();
     const teams = [];
     for (let t = 1; t <= n; t++) {
-      const teamLabel = `Team ${String(t).padStart(padLen > 1 ? padLen : 2, "0")}`;
+      const teamLabel = `${prefixTeam} ${String(t).padStart(padLen > 1 ? padLen : 2, "0")}`;
       teams.push({
         teamNumber: t,
         teamName: teamLabel,
@@ -200,18 +203,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
       });
     });
 
-    teams.forEach(t => {
-      if (t.members.length > 0 && !t.leaderName) {
-        t.leaderName = t.members[0].name;
-        t.leaderPhone = t.members[0].phoneClean;
-        t.leaderWaLink = t.members[0].waLink;
-      }
-      if (t.members.length > 1 && !t.assistantName) {
-        t.assistantName = t.members[1].name;
-        t.assistantPhone = t.members[1].phoneClean;
-        t.assistantWaLink = t.members[1].waLink;
-      }
-    });
+    // Team leader & assistant names/phones are left empty for manual entry
 
     setGroupedTeams(teams);
     setPreviewTeamIdx(0);
@@ -221,7 +213,17 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
     if (cleanValidMembers.length > 0) {
       executeGrouping();
     }
-  }, [cleanValidMembers.length, numTeams]);
+  }, [cleanValidMembers.length, numTeams, teamNamePrefix]);
+
+  const updateTeamName = (teamIdx, newName) => {
+    setGroupedTeams(prev => {
+      const updated = [...prev];
+      const t = { ...updated[teamIdx], teamName: newName };
+      t.members = t.members.map(m => ({ ...m, assignedTeam: newName }));
+      updated[teamIdx] = t;
+      return updated;
+    });
+  };
 
   const updateTeamLeader = (teamIdx, field, val) => {
     setGroupedTeams(prev => {
@@ -271,7 +273,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
       `Hello!\n\n` +
       `I am ${leaderName}, your Team Leader for ${teamName} in the ECCF Bible Reading Challenge (${edition}).\n\n` +
       `I am reaching out to welcome you and to request your permission to add you to our team\'s group chat for mutual follow-up and accountability.\n\n` +
-      `If you are happy to proceed, you can join the group directly using the invite link below: 👇\n\n` +
+      `If you are happy to proceed, you can join the group directly using the invite link below:\n\n` +
       `[LINK TO TEAM GROUP CHAT]\n\n` +
       `I look forward to welcoming you to the team!\n` +
       `-----------------------------------------------------------\n` +
@@ -314,12 +316,21 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
         stepTarget: 2
       },
       {
+        id: "teams_named",
+        label: "Team Names Configured",
+        ok: groupedTeams.length > 0 && groupedTeams.every(t => t.teamName && t.teamName.trim()),
+        detail: groupedTeams.length > 0 && groupedTeams.every(t => t.teamName && t.teamName.trim())
+          ? `All ${groupedTeams.length} teams have configured names`
+          : "Some teams have empty team names",
+        stepTarget: 3
+      },
+      {
         id: "leaders_assigned",
-        label: "Team Leaders & Assistants",
-        ok: groupedTeams.length > 0 && groupedTeams.every(t => t.leaderName.trim()),
-        detail: groupedTeams.length > 0 && groupedTeams.every(t => t.leaderName.trim())
-          ? `All ${groupedTeams.length} teams have assigned leaders`
-          : "Some teams do not have a leader specified",
+        label: "Team Leaders Designated",
+        ok: groupedTeams.length > 0 && groupedTeams.every(t => t.leaderName && t.leaderName.trim()),
+        detail: groupedTeams.length > 0 && groupedTeams.every(t => t.leaderName && t.leaderName.trim())
+          ? `All ${groupedTeams.length} teams have designated leaders`
+          : `${groupedTeams.filter(t => !t.leaderName || !t.leaderName.trim()).length} of ${groupedTeams.length} teams need leader details`,
         stepTarget: 3
       },
       {
@@ -534,7 +545,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
         </div>
 
         {/* Stepper Navigator */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.5rem" }}>
+        <div className="wizard-stepper-bar no-scrollbar" style={{ paddingBottom: "0.5rem" }}>
           {[
             { s: 1, label: "1. Round Details", icon: <Sliders size={14} /> },
             { s: 2, label: "2. Upload & Group", icon: <UploadCloud size={14} /> },
@@ -585,7 +596,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
             <label className="label" style={{ fontWeight: "700", marginBottom: "0.5rem", display: "block" }}>
               Round Launch Mode:
             </label>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
               <div 
                 onClick={() => setSettings(s => ({ ...s, mode: "fresh" }))}
                 style={{
@@ -597,8 +608,8 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.35rem" }}>
-                  <span style={{ fontWeight: "700", fontSize: "0.95rem", color: settings.mode === "fresh" ? "#93C5FD" : "#F9FAFB" }}>
-                    🔄 Start Fresh Round (Recommended)
+                  <span style={{ fontWeight: "700", fontSize: "0.95rem", color: settings.mode === "fresh" ? "#93C5FD" : "#F9FAFB", display: "inline-flex", alignItems: "center", gap: "0.45rem" }}>
+                    <RefreshCw size={15} color="#3B82F6" /> <span>Start Fresh Round (Recommended)</span>
                   </span>
                   {settings.mode === "fresh" && <CheckCircle2 size={16} color="#3B82F6" />}
                 </div>
@@ -618,8 +629,8 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.35rem" }}>
-                  <span style={{ fontWeight: "700", fontSize: "0.95rem", color: settings.mode === "append" ? "#6EE7B7" : "#F9FAFB" }}>
-                    ➕ Append to Active Roster
+                  <span style={{ fontWeight: "700", fontSize: "0.95rem", color: settings.mode === "append" ? "#6EE7B7" : "#F9FAFB", display: "inline-flex", alignItems: "center", gap: "0.45rem" }}>
+                    <UserPlus size={15} color="#10B981" /> <span>Append to Active Roster</span>
                   </span>
                   {settings.mode === "append" && <CheckCircle2 size={16} color="#10B981" />}
                 </div>
@@ -630,7 +641,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", marginBottom: "1.25rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1.25rem", marginBottom: "1.25rem" }}>
             <div>
               <label className="label">Challenge Main Title:</label>
               <input 
@@ -652,7 +663,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", marginBottom: "1.5rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.25rem", marginBottom: "1.5rem" }}>
             <div>
               <label className="label">Start Date:</label>
               <input 
@@ -739,7 +750,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                 <h4 style={{ fontSize: "0.92rem", fontWeight: "700", marginBottom: "0.75rem", color: "#E0F2FE" }}>
                   Column Mapping Confirmation
                 </h4>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
                   <div>
                     <label className="label">Participant Name Column:</label>
                     <select 
@@ -776,7 +787,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
 
               <div style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
                 gap: "1.25rem",
                 marginBottom: "1.5rem"
               }}>
@@ -785,31 +796,46 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <button 
                       type="button" 
-                      className="btn-secondary" 
-                      style={{ width: "36px", height: "36px", padding: 0 }}
+                      className="btn-stepper" 
+                      title="Decrease teams"
                       onClick={() => setNumTeams(n => Math.max(1, parseInt(n) - 1))}
                     >
-                      -
+                      <Minus size={15} />
                     </button>
                     <input 
                       type="number" 
                       min="1"
                       className="input-field" 
-                      style={{ textAlign: "center", fontWeight: "700" }}
+                      style={{ textAlign: "center", fontWeight: "700", height: "38px", margin: 0 }}
                       value={numTeams}
                       onChange={e => setNumTeams(Math.max(1, parseInt(e.target.value) || 1))}
                     />
                     <button 
                       type="button" 
-                      className="btn-secondary" 
-                      style={{ width: "36px", height: "36px", padding: 0 }}
+                      className="btn-stepper" 
+                      title="Increase teams"
                       onClick={() => setNumTeams(n => parseInt(n) + 1)}
                     >
-                      +
+                      <Plus size={15} />
                     </button>
                   </div>
                   <span style={{ fontSize: "0.78rem", color: "#60A5FA", marginTop: "0.35rem", display: "block" }}>
-                    ≈ {cleanValidMembers.length > 0 && numTeams > 0 ? Math.floor(cleanValidMembers.length / numTeams) : 0} to {cleanValidMembers.length > 0 && numTeams > 0 ? Math.ceil(cleanValidMembers.length / numTeams) : 0} members per team
+                    ≈ {cleanValidMembers.length > 0 && numTeams > 0 ? Math.floor(cleanValidMembers.length / numTeams) : 0} to {cleanValidMembers.length > 0 && numTeams > 0 ? Math.ceil(cleanValidMembers.length / numTeams) : 0} members/team
+                  </span>
+                </div>
+
+                <div>
+                  <label className="label">Team Name Prefix / Template:</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    style={{ height: "38px", margin: 0 }}
+                    value={teamNamePrefix}
+                    placeholder="e.g. Team or Group"
+                    onChange={e => setTeamNamePrefix(e.target.value)}
+                  />
+                  <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "0.35rem", display: "block" }}>
+                    Generates: {teamNamePrefix || "Team"} 01, {teamNamePrefix || "Team"} 02...
                   </span>
                 </div>
 
@@ -818,7 +844,9 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                   <input 
                     type="text" 
                     className="input-field" 
+                    style={{ height: "38px", margin: 0 }}
                     value={roundPrefix}
+                    placeholder="e.g. SEP2026BRC"
                     onChange={e => setRoundPrefix(e.target.value.toUpperCase())}
                   />
                   <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "0.35rem", display: "block" }}>
@@ -835,7 +863,9 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                 background: "rgba(56, 189, 248, 0.1)",
                 border: "1px solid rgba(56, 189, 248, 0.25)",
                 borderRadius: "0.5rem",
-                marginBottom: "1.5rem"
+                marginBottom: "1.5rem",
+                flexWrap: "wrap",
+                gap: "0.75rem"
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                   <CheckCircle2 size={18} color="#38BDF8" />
@@ -846,8 +876,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
 
                 <button 
                   onClick={executeGrouping}
-                  className="btn-secondary"
-                  style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}
+                  className="btn-reshuffle"
                 >
                   <RefreshCw size={13} />
                   <span>Re-shuffle</span>
@@ -859,21 +888,23 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                   <h4 style={{ fontSize: "0.95rem", fontWeight: "700", marginBottom: "0.75rem" }}>
                     Generated Teams Overview ({groupedTeams.length} Teams)
                   </h4>
-                  <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", paddingBottom: "0.5rem", marginBottom: "1rem" }}>
+                  <div className="wizard-team-pills no-scrollbar" style={{ marginBottom: "1rem" }}>
                     {groupedTeams.map((t, idx) => (
                       <button
-                        key={t.teamName}
+                        key={t.teamName + idx}
                         onClick={() => setPreviewTeamIdx(idx)}
                         style={{
-                          padding: "0.45rem 0.8rem",
+                          padding: "0.45rem 0.85rem",
                           borderRadius: "0.5rem",
                           border: previewTeamIdx === idx ? "1px solid #38BDF8" : "1px solid var(--border-light)",
-                          background: previewTeamIdx === idx ? "rgba(56, 189, 248, 0.15)" : "rgba(255, 255, 255, 0.02)",
+                          background: previewTeamIdx === idx ? "rgba(56, 189, 248, 0.18)" : "var(--surface-secondary)",
                           color: previewTeamIdx === idx ? "#38BDF8" : "var(--text-secondary)",
-                          fontSize: "0.8rem",
-                          fontWeight: "600",
+                          fontSize: "0.82rem",
+                          fontWeight: previewTeamIdx === idx ? "700" : "500",
                           cursor: "pointer",
-                          whiteSpace: "nowrap"
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                          transition: "all 0.15s ease"
                         }}
                       >
                         {t.teamName} ({t.members.length})
@@ -917,7 +948,8 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
 
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }}>
             <button onClick={() => setStep(1)} className="btn-secondary">
-              &larr; Back to Details
+              <ChevronLeft size={16} />
+              <span>Back to Details</span>
             </button>
             <button 
               onClick={() => setStep(3)} 
@@ -995,7 +1027,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
                   <div>
                     <label className="label" style={{ fontSize: "0.78rem" }}>Team Leader Name & Phone:</label>
                     <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -1150,7 +1182,8 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
 
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <button onClick={() => setStep(3)} className="btn-secondary">
-              &larr; Back to Leaders
+              <ChevronLeft size={16} />
+              <span>Back to Leaders</span>
             </button>
             <button 
               onClick={handleLaunchRound}
@@ -1175,8 +1208,8 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                 </>
               ) : (
                 <>
-                  <Sparkles size={16} />
-                  <span>🚀 Launch New Round & Sync Live</span>
+                  <Play size={16} />
+                  <span>Launch New Round & Sync Live</span>
                 </>
               )}
             </button>

@@ -419,7 +419,7 @@ export default function AdminTutorialModal({ isOpen, onClose }) {
           background: "rgba(15, 23, 42, 0.5)"
         }}>
           <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
-            Tip: You can re-open this guide anytime by clicking the 💡 Guide button in the header.
+            Tip: You can re-open this guide anytime by clicking the Guide button in the header.
           </span>
           <button
             onClick={onClose}
@@ -435,7 +435,7 @@ export default function AdminTutorialModal({ isOpen, onClose }) {
               boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.3)"
             }}
           >
-            Got it, let\'s build!
+            Got it, let&apos;s build!
           </button>
         </div>
       </div>

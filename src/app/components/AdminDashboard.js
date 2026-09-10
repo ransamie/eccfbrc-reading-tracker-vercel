@@ -780,12 +780,8 @@ export default function AdminDashboard({ onLogout }) {
         <button 
           className={`tracker-tab-pill ${activeTab === 'wizard' ? 'active' : ''}`} 
           onClick={() => setActiveTab('wizard')}
-          style={{ 
-            background: activeTab === 'wizard' ? 'rgba(37, 99, 235, 0.25)' : undefined, 
-            borderColor: activeTab === 'wizard' ? '#3B82F6' : undefined 
-          }}
         >
-          <Sparkles size={15} color={activeTab === 'wizard' ? '#60A5FA' : '#FBBF24'} /> <span>Start New Round</span>
+          <PlusCircle size={15} /> <span>Start New Round</span>
         </button>
         <button className={`tracker-tab-pill ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
           <BarChart3 size={15} /> <span>Overview</span>
@@ -819,11 +815,11 @@ export default function AdminDashboard({ onLogout }) {
             className="tracker-edition-select"
           >
             <option value="live">
-              🟢 Live Challenge: {data?.isArchive ? "Current Live Sheet" : (data?.settings?.Challenge_Edition || "Active Challenge")}
+              Live Challenge: {data?.isArchive ? "Current Live Sheet" : (data?.settings?.Challenge_Edition || "Active Challenge")}
             </option>
             {editionsList && editionsList.map(arch => (
               <option key={arch.id} value={arch.id}>
-                📁 Archive: {arch.edition} ({arch.startDate || 'Past'})
+                Archive: {arch.edition} ({arch.startDate || 'Past'})
               </option>
             ))}
           </select>
@@ -857,7 +853,8 @@ export default function AdminDashboard({ onLogout }) {
               className="tracker-btn-archive-return"
               title="Return entire system to live tracking"
             >
-              ↩ Return to Live Challenge
+              <Archive size={14} />
+              <span>Return to Live Challenge</span>
             </button>
           )}
         </div>

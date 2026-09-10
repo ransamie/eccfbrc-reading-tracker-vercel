@@ -113,6 +113,117 @@ h1, h2, h3, h4, h5, h6 {
   cursor: not-allowed;
 }
 
+/* Secondary Action Button */
+.btn-secondary {
+  background-color: var(--surface-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  padding: 0.55rem 1.15rem !important;
+  border-radius: 0.5rem !important;
+  font-weight: 500 !important;
+  font-size: 0.88rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.45rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-decoration: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Stepper Increment/Decrement Buttons */
+.btn-stepper {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: var(--surface-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 0.5rem !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  user-select: none !important;
+  padding: 0 !important;
+}
+
+.btn-stepper:hover:not(:disabled) {
+  background-color: rgba(56, 189, 248, 0.15) !important;
+  border-color: #38BDF8 !important;
+  color: #38BDF8 !important;
+}
+
+.btn-stepper:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.btn-stepper:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Re-shuffle Action Button */
+.btn-reshuffle {
+  background-color: rgba(15, 23, 42, 0.7);
+  color: #E0F2FE;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.btn-reshuffle:hover:not(:disabled) {
+  background-color: rgba(56, 189, 248, 0.2);
+  border-color: #38BDF8;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-reshuffle:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Universal Scrollbar Concealer */
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* Streamlit Text Input */
 .input-field {
   width: 100%;
@@ -734,12 +845,11 @@ select option {
   }
 
   .tracker-tab-pill {
-    flex: 1 1 0px !important;
-    min-width: 0 !important;
-    padding: 0.46rem 0.15rem !important;
-    font-size: 0.73rem !important;
+    flex: 0 0 auto !important;
+    padding: 0.5rem 0.85rem !important;
+    font-size: 0.8rem !important;
     font-weight: 600 !important;
-    gap: 0.22rem !important;
+    gap: 0.35rem !important;
     justify-content: center !important;
     text-align: center !important;
   }
@@ -749,23 +859,23 @@ select option {
   }
 
   .tracker-tab-pill svg {
-    width: 13px !important;
-    height: 13px !important;
+    width: 14px !important;
+    height: 14px !important;
     flex-shrink: 0 !important;
   }
 
   .tracker-edition-bar {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 0.55rem !important;
-    padding: 0.65rem 0.75rem !important;
+    gap: 0.85rem !important;
+    padding: 0.85rem 1rem !important;
   }
 
   .tracker-edition-left {
     width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.5rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.4rem !important;
   }
 
   .tracker-edition-label {
@@ -773,28 +883,28 @@ select option {
   }
 
   .tracker-edition-select {
-    flex: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
     min-width: 0 !important;
-    font-size: 0.8rem !important;
-    height: 2.25rem !important;
-    padding: 0.3rem 0.5rem !important;
+    font-size: 0.85rem !important;
+    height: 2.6rem !important;
+    padding: 0.45rem 2rem 0.45rem 0.75rem !important;
   }
 
   .tracker-edition-actions {
     width: 100% !important;
     display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 0.4rem !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
   }
 
   .tracker-edition-actions > * {
-    flex: 1 1 calc(50% - 0.25rem) !important;
-    min-width: 0 !important;
-    height: 2.25rem !important;
+    width: 100% !important;
+    height: 2.5rem !important;
     justify-content: center !important;
     text-align: center !important;
-    font-size: 0.76rem !important;
-    padding: 0 0.4rem !important;
+    font-size: 0.82rem !important;
+    padding: 0 0.6rem !important;
   }
 
   .tracker-edition-actions > .tracker-btn-archive-return {
@@ -965,6 +1075,48 @@ select option {
   gap: 0.35rem;
   margin-bottom: 1.5rem;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tracker-tabs-bar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Wizard Stepper & Pills (No Scrollbars) */
+.wizard-stepper-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.25rem;
+}
+
+.wizard-stepper-bar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.wizard-team-pills {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.25rem;
+}
+
+.wizard-team-pills::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .tracker-tab-pill {
@@ -1312,55 +1464,66 @@ select option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-  padding: 0.6rem 0.85rem;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1.15rem;
   background: var(--surface);
-  border-radius: 0.65rem;
+  border-radius: 0.75rem;
   border: 1px solid var(--border-light);
+  flex-wrap: wrap;
 }
 
 .tracker-edition-left {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  flex: 1;
+  gap: 0.75rem;
+  flex: 1 1 340px;
   min-width: 0;
 }
 
 .tracker-edition-label {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 800;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   white-space: nowrap;
 }
 
 .tracker-edition-select {
-  background: var(--surface-secondary);
-  color: #F9FAFB;
-  border: 1px solid var(--border);
-  padding: 0.38rem 0.75rem;
+  background-color: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.55rem 2.2rem 0.55rem 0.85rem;
   border-radius: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 500;
   cursor: pointer;
   outline: none;
   transition: all 0.2s ease;
-  max-width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  flex: 1;
+  min-width: 240px;
+  max-width: 480px;
 }
 
 .tracker-edition-select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-light);
+  background-color: var(--surface);
 }
 
 .tracker-edition-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .tracker-btn-reporting {
