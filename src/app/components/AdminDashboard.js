@@ -783,9 +783,9 @@ export default function AdminDashboard({ onLogout }) {
       </div>
 
       {/* Global Edition & Quick Actions Switcher Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem', padding: '0.6rem 0.85rem', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+      <div className="tracker-edition-bar">
+        <div className="tracker-edition-left">
+          <span className="tracker-edition-label">
             Active Edition:
           </span>
           <select
@@ -807,29 +807,13 @@ export default function AdminDashboard({ onLogout }) {
           </select>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div className="tracker-edition-actions">
           <button
             onClick={() => handleToggleLeaderReporting(!isLeaderReportingAllowed)}
             disabled={saving}
             title={isLeaderReportingAllowed ? "Leader reporting is currently ACTIVE. Click to Pause/Deactivate save buttons." : "Leader reporting is PAUSED. Click to Activate save buttons."}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.35rem 0.75rem',
-              borderRadius: '0.45rem',
-              fontSize: '0.8rem',
-              fontWeight: '700',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              border: isLeaderReportingAllowed 
-                ? '1px solid rgba(16, 185, 129, 0.4)' 
-                : '1px solid rgba(239, 68, 68, 0.4)',
-              background: isLeaderReportingAllowed 
-                ? 'rgba(16, 185, 129, 0.15)' 
-                : 'rgba(239, 68, 68, 0.15)',
-              color: isLeaderReportingAllowed ? '#34D399' : '#F87171',
-              transition: 'all 0.18s ease'
-            }}
+            className={`tracker-btn-reporting ${isLeaderReportingAllowed ? 'active' : 'paused'}`}
+            style={{ cursor: saving ? 'not-allowed' : 'pointer' }}
           >
             <Power size={13} />
             <span>{isLeaderReportingAllowed ? 'Leader Reporting: ON' : 'Leader Reporting: OFF'}</span>
@@ -840,7 +824,6 @@ export default function AdminDashboard({ onLogout }) {
               onClick={() => setShowPdfModal(true)}
               className="tracker-btn-pdf"
               title="Download Official PDF Reports"
-              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
             >
               <FileDown size={14} /> <span>PDF Reports</span>
             </button>

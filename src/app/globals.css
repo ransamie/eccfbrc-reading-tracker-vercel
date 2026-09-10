@@ -691,34 +691,114 @@ select option {
   }
 
   .tracker-header-title {
-    font-size: 1.25rem !important;
+    font-size: 1.2rem !important;
   }
 
   .tracker-header-actions {
     width: 100% !important;
-    display: grid !important;
-    grid-template-columns: 1fr 1fr auto auto !important;
+    display: flex !important;
+    align-items: center !important;
     gap: 0.4rem !important;
   }
 
-  .tracker-header-actions > * {
-    justify-content: center !important;
-    text-align: center !important;
+  .tracker-header-actions > *:not(.tracker-btn-icon) {
+    flex: 1 1 0px !important;
+    min-width: 0 !important;
+    height: 2.25rem !important;
     padding: 0 0.5rem !important;
     font-size: 0.78rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .tracker-header-actions > .tracker-btn-icon {
+    flex: 0 0 2.25rem !important;
+    width: 2.25rem !important;
     height: 2.25rem !important;
+    padding: 0 !important;
+    justify-content: center !important;
   }
 
   .tracker-tabs-bar {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 0.35rem !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 0.25rem !important;
+    padding: 0.25rem !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .tracker-tabs-bar::-webkit-scrollbar {
+    display: none !important;
   }
 
   .tracker-tab-pill {
-    padding: 0.55rem 0.5rem !important;
-    font-size: 0.82rem !important;
+    flex: 1 1 0px !important;
+    min-width: 0 !important;
+    padding: 0.46rem 0.15rem !important;
+    font-size: 0.73rem !important;
+    font-weight: 600 !important;
+    gap: 0.22rem !important;
+    justify-content: center !important;
     text-align: center !important;
+  }
+
+  .tracker-tab-pill span {
+    white-space: nowrap !important;
+  }
+
+  .tracker-tab-pill svg {
+    width: 13px !important;
+    height: 13px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .tracker-edition-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.55rem !important;
+    padding: 0.65rem 0.75rem !important;
+  }
+
+  .tracker-edition-left {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+
+  .tracker-edition-label {
+    font-size: 0.74rem !important;
+  }
+
+  .tracker-edition-select {
+    flex: 1 !important;
+    min-width: 0 !important;
+    font-size: 0.8rem !important;
+    height: 2.25rem !important;
+    padding: 0.3rem 0.5rem !important;
+  }
+
+  .tracker-edition-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+  }
+
+  .tracker-edition-actions > * {
+    flex: 1 1 calc(50% - 0.25rem) !important;
+    min-width: 0 !important;
+    height: 2.25rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+    font-size: 0.76rem !important;
+    padding: 0 0.4rem !important;
+  }
+
+  .tracker-edition-actions > .tracker-btn-archive-return {
+    flex: 1 1 100% !important;
   }
 
   .tracker-check-grid {
@@ -1228,13 +1308,42 @@ select option {
 }
 
 /* Edition Switcher & Archive Banner */
+.tracker-edition-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--surface);
+  border-radius: 0.65rem;
+  border: 1px solid var(--border-light);
+}
+
+.tracker-edition-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.tracker-edition-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
 .tracker-edition-select {
   background: var(--surface-secondary);
   color: #F9FAFB;
   border: 1px solid var(--border);
   padding: 0.38rem 0.75rem;
   border-radius: 0.5rem;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   outline: none;
@@ -1245,6 +1354,73 @@ select option {
 .tracker-edition-select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.tracker-edition-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.tracker-btn-reporting {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 0.75rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.tracker-btn-reporting.active {
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+}
+
+.tracker-btn-reporting.active:hover {
+  background: rgba(16, 185, 129, 0.25);
+  color: #FFFFFF;
+}
+
+.tracker-btn-reporting.paused {
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.15);
+  color: #F87171;
+}
+
+.tracker-btn-reporting.paused:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #FFFFFF;
+}
+
+.tracker-btn-archive-return {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: rgba(245, 158, 11, 0.2);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 0 0.75rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.tracker-btn-archive-return:hover {
+  background: rgba(245, 158, 11, 0.3);
+  color: #FFFFFF;
 }
 
 .tracker-archive-banner {
@@ -1258,23 +1434,6 @@ select option {
   margin-bottom: 1.25rem;
   flex-wrap: wrap;
   gap: 0.75rem;
-}
-
-.tracker-btn-archive-return {
-  background: rgba(245, 158, 11, 0.2);
-  color: #FBBF24;
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.45rem;
-  font-weight: 700;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.tracker-btn-archive-return:hover {
-  background: rgba(245, 158, 11, 0.3);
-  color: #FFFFFF;
 }
 
 
