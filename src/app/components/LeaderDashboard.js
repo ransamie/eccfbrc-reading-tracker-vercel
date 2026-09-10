@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle, Crown } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { generateTeamPdfReport } from "@/lib/pdfReportGenerator";
 
@@ -579,20 +579,11 @@ export default function LeaderDashboard({ team, onLogout }) {
 
           {/* Team Leadership Daily Reading Ticks */}
           {data?.leadersData && data.leadersData.length > 0 && (
-            <div style={{ marginBottom: '1.25rem', background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '0.75rem', padding: '0.85rem 1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <Crown size={17} color="#F59E0B" />
-                  <span style={{ fontWeight: '800', fontSize: '0.88rem', color: '#FDE68A', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Team Leadership Reading
-                  </span>
-                </div>
-                <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
-                  Tap your card to mark your reading for {selectedDay.replace('_', ' ')}
-                </span>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.45rem' }}>
+                Team Leadership
               </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.65rem' }}>
+              <div className="tracker-check-grid" style={{ marginBottom: 0 }}>
                 {data.leadersData.map((l, idx) => {
                   const lName = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
                   const isChecked = !!leaderUpdates[lName];
@@ -603,36 +594,16 @@ export default function LeaderDashboard({ team, onLogout }) {
                     <div
                       key={lName || idx}
                       onClick={() => handleLeaderCheckbox(lName)}
-                      className={`tracker-check-tile ${isChecked ? 'checked' : ''}`}
-                      style={{
-                        borderColor: isChecked ? 'rgba(245, 158, 11, 0.55)' : 'rgba(255, 255, 255, 0.08)',
-                        background: isChecked ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%)' : 'var(--surface-secondary)',
-                        cursor: 'pointer'
-                      }}
+                      className={`tracker-check-tile ${isChecked ? 'active' : ''}`}
                     >
-                      <div className="tracker-check-box" style={{ borderColor: isChecked ? '#F59E0B' : undefined, background: isChecked ? '#F59E0B' : undefined }}>
-                        {isChecked && <Check size={14} color="#000" strokeWidth={3} />}
+                      <div className="tracker-tile-checkbox">
+                        {isChecked && <Check size={14} strokeWidth={3} />}
                       </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.88rem', color: isChecked ? '#FDE68A' : 'var(--text-primary)' }}>
-                            {lName}
-                          </span>
-                          <span style={{ 
-                            fontSize: '0.68rem', 
-                            fontWeight: 700, 
-                            padding: '0.1rem 0.45rem', 
-                            borderRadius: '0.35rem', 
-                            background: isChecked ? 'rgba(245, 158, 11, 0.3)' : 'rgba(255, 255, 255, 0.08)', 
-                            color: isChecked ? '#FFF' : '#FBBF24',
-                            border: '1px solid rgba(245, 158, 11, 0.35)'
-                          }}>
-                            {roleLabel}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.74rem', color: isChecked ? '#34D399' : 'var(--text-secondary)', marginTop: '0.15rem', fontWeight: 600 }}>
-                          {isChecked ? '✓ Marked Read' : 'Tap to mark read'}
-                        </div>
+                      <div className="tracker-tile-info">
+                        <span className="tracker-tile-name">{lName}</span>
+                        <span style={{ fontSize: '0.76rem', color: isChecked ? '#93C5FD' : 'var(--text-secondary)', fontWeight: '600' }}>
+                          {roleLabel}
+                        </span>
                       </div>
                     </div>
                   );
