@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2, Power, Lock, Unlock } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2, Power, Lock, Unlock, MessageSquare, FileSpreadsheet } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import NewRoundWizard from "./NewRoundWizard";
 import AdminTutorialModal from "./AdminTutorialModal";
+import LeaderWhatsAppModal from "./LeaderWhatsAppModal";
+import SyncNamesModal from "./SyncNamesModal";
 import { HelpCircle } from "lucide-react";
 import { generateGeneralPdfReport, generateTeamPdfReport, generateLeadersPdfReport } from "@/lib/pdfReportGenerator";
 import { AgGridReact } from 'ag-grid-react';
@@ -74,6 +76,8 @@ export default function AdminDashboard({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("leaders");
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [showSyncNamesModal, setShowSyncNamesModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Data
@@ -903,15 +907,28 @@ export default function AdminDashboard({ onLogout }) {
                 Tap on each leader's card to record reading progress for the day.
               </p>
             </div>
-            {isReadingCompleted && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
               <button
-                onClick={() => setShowPdfModal(true)}
-                className="tracker-btn-pdf"
-                title="Download PDF Reports"
+                type="button"
+                onClick={() => setShowWhatsAppModal(true)}
+                className="btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', padding: '0.5rem 0.95rem' }}
+                title="View & copy WhatsApp onboarding messages with member links for all team leaders"
               >
-                <FileDown size={16} /> <span>PDF Reports</span>
+                <MessageSquare size={16} color="#22C55E" />
+                <span>Team Leader WhatsApp Messages</span>
               </button>
-            )}
+
+              {isReadingCompleted && (
+                <button
+                  onClick={() => setShowPdfModal(true)}
+                  className="tracker-btn-pdf"
+                  title="Download PDF Reports"
+                >
+                  <FileDown size={16} /> <span>PDF Reports</span>
+                </button>
+              )}
+            </div>
           </div>
           
           {/* Modern Date Stepper Card */}
@@ -1128,8 +1145,22 @@ export default function AdminDashboard({ onLogout }) {
 
       {activeTab === 'roster' && (
         <div className="card">
-          <h3 className="mb-2">Manage Team Leaders Roster</h3>
-          <p className="label mb-3">Update a leader's status if they have been evicted or declined the challenge. Changes made here will update the Leaders Tracker Data.</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '800' }}>Manage Team Leaders & Roster</h3>
+              <p className="label" style={{ margin: '0.2rem 0 0 0' }}>Update statuses and synchronize participant names across Google Sheets.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSyncNamesModal(true)}
+              className="btn-primary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', background: '#0284C7', color: 'white', padding: '0.5rem 1rem' }}
+              title="Upload your registration spreadsheet to match and update full names in Google Sheets"
+            >
+              <FileSpreadsheet size={16} />
+              <span>Sync Full Names from Excel</span>
+            </button>
+          </div>
           
           <input 
             type="text" 
@@ -2549,6 +2580,18 @@ export default function AdminDashboard({ onLogout }) {
       <AdminTutorialModal 
         isOpen={showTutorial} 
         onClose={() => setShowTutorial(false)} 
+      />
+
+      <LeaderWhatsAppModal 
+        isOpen={showWhatsAppModal} 
+        onClose={() => setShowWhatsAppModal(false)} 
+        data={data} 
+      />
+
+      <SyncNamesModal 
+        isOpen={showSyncNamesModal} 
+        onClose={() => setShowSyncNamesModal(false)} 
+        onSuccess={() => loadData(true)} 
       />
     </div>
   );

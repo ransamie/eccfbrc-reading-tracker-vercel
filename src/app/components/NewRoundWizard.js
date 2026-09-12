@@ -32,7 +32,10 @@ function generate4DigitPin() {
 }
 
 const PHONE_KEYWORDS = ["phone", "whatsapp", "mobile", "contact", "tel", "number"];
-const NAME_KEYWORDS = ["name", "full name", "member", "participant", "fullname", "first name"];
+const FIRST_NAME_KEYWORDS = ["first name", "firstname", "first_name", "given name", "first"];
+const SURNAME_KEYWORDS = ["surname", "last name", "lastname", "last_name", "family name"];
+const OTHER_NAME_KEYWORDS = ["other names", "other name", "othernames", "middle name", "middlename", "other"];
+const SINGLE_NAME_KEYWORDS = ["full name", "fullname", "member name", "participant name", "name"];
 
 export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
   const [step, setStep] = useState(1);
@@ -67,6 +70,10 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
   const [fileName, setFileName] = useState("");
   const [rawHeaders, setRawHeaders] = useState([]);
   const [rawRows, setRawRows] = useState([]);
+  const [nameFormatMode, setNameFormatMode] = useState("separate"); // "separate" | "single"
+  const [selectedFirstNameCol, setSelectedFirstNameCol] = useState("");
+  const [selectedSurnameCol, setSelectedSurnameCol] = useState("");
+  const [selectedOtherNameCol, setSelectedOtherNameCol] = useState("");
   const [selectedNameCol, setSelectedNameCol] = useState("");
   const [selectedPhoneCol, setSelectedPhoneCol] = useState("");
   const [selectedStatusCol, setSelectedStatusCol] = useState("");
@@ -130,19 +137,38 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
         setRawRows(rows);
 
         let detectedPhone = "";
-        let detectedName = "";
+        let detectedFirst = "";
+        let detectedSurname = "";
+        let detectedOther = "";
+        let detectedSingleName = "";
         let detectedStatus = "";
 
         for (const h of headers) {
-          const hl = h.toLowerCase();
+          const hl = h.toLowerCase().trim();
           if (!detectedPhone && PHONE_KEYWORDS.some(kw => hl.includes(kw))) detectedPhone = h;
-          if (!detectedName && NAME_KEYWORDS.some(kw => hl.includes(kw))) detectedName = h;
+          if (!detectedFirst && FIRST_NAME_KEYWORDS.some(kw => hl.includes(kw))) detectedFirst = h;
+          if (!detectedSurname && SURNAME_KEYWORDS.some(kw => hl.includes(kw))) detectedSurname = h;
+          if (!detectedOther && OTHER_NAME_KEYWORDS.some(kw => hl.includes(kw))) detectedOther = h;
+          if (!detectedSingleName && SINGLE_NAME_KEYWORDS.some(kw => hl.includes(kw))) detectedSingleName = h;
           if (!detectedStatus && hl.includes("status")) detectedStatus = h;
         }
 
         setSelectedPhoneCol(detectedPhone || headers[1] || headers[0]);
-        setSelectedNameCol(detectedName || headers[0]);
         setSelectedStatusCol(detectedStatus);
+
+        if (detectedFirst && detectedSurname) {
+          setNameFormatMode("separate");
+          setSelectedFirstNameCol(detectedFirst);
+          setSelectedSurnameCol(detectedSurname);
+          setSelectedOtherNameCol(detectedOther || "");
+          setSelectedNameCol(detectedSingleName || headers[0]);
+        } else {
+          setNameFormatMode("single");
+          setSelectedNameCol(detectedSingleName || headers[0]);
+          setSelectedFirstNameCol(detectedFirst || headers[0]);
+          setSelectedSurnameCol(detectedSurname || headers[0]);
+          setSelectedOtherNameCol(detectedOther || "");
+        }
       } catch (err) {
         console.error("Spreadsheet parsing error:", err);
         alert("Failed to parse spreadsheet file: " + err.message);
@@ -165,7 +191,16 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
       if (!phoneClean || seen.has(phoneClean)) return;
       seen.add(phoneClean);
 
-      const nameVal = selectedNameCol ? String(r[selectedNameCol] || "").trim() : "";
+      let nameVal = "";
+      if (nameFormatMode === "separate") {
+        const fn = selectedFirstNameCol ? String(r[selectedFirstNameCol] || "").trim() : "";
+        const on = selectedOtherNameCol ? String(r[selectedOtherNameCol] || "").trim() : "";
+        const sn = selectedSurnameCol ? String(r[selectedSurnameCol] || "").trim() : "";
+        nameVal = [fn, on, sn].filter(Boolean).join(" ");
+      } else {
+        nameVal = selectedNameCol ? String(r[selectedNameCol] || "").trim() : "";
+      }
+
       valid.push({
         name: nameVal || "Participant",
         phoneRaw: String(phoneRaw || ""),
@@ -177,7 +212,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
     });
 
     return valid;
-  }, [rawRows, selectedPhoneCol, selectedNameCol, selectedStatusCol]);
+  }, [rawRows, selectedPhoneCol, nameFormatMode, selectedNameCol, selectedFirstNameCol, selectedSurnameCol, selectedOtherNameCol, selectedStatusCol]);
 
   const executeGrouping = () => {
     if (!cleanValidMembers.length) return;
@@ -225,7 +260,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
     if (cleanValidMembers.length > 0) {
       executeGrouping();
     }
-  }, [cleanValidMembers.length, numTeams, teamNamePrefix]);
+  }, [cleanValidMembers, numTeams, teamNamePrefix]);
 
   const updateTeamName = (teamIdx, newName) => {
     setGroupedTeams(prev => {
@@ -400,8 +435,9 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
         Status: "Active",
         Team: t.teamName,
         Assistant: t.assistantName || "",
-        Leader_Phone: t.leaderPhone || "",
-        Assistant_Phone: t.assistantPhone || ""
+        Assistant_Status: t.assistantName ? "Active" : "",
+        Leader_Phone: normalizePhone(t.leaderPhone),
+        Assistant_Phone: normalizePhone(t.assistantPhone)
       }));
 
       const payload = {
@@ -443,7 +479,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
         message: `Successfully launched "${settings.challengeEdition}" with ${allMembersPayload.length} participants across ${groupedTeams.length} teams!`
       });
       advanceToStep(5);
-      if (onComplete) onComplete();
+      // Do not auto-close here: keep user on Step 5 so they can copy WhatsApp messages and download Excel.
     } catch (err) {
       console.error("Error launching round:", err);
       alert("Error launching round: " + err.message);
@@ -786,12 +822,89 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                 border: "1px solid var(--border-light)",
                 marginBottom: "1.5rem"
               }}>
-                <h4 style={{ fontSize: "0.92rem", fontWeight: "700", marginBottom: "0.75rem", color: "#E0F2FE" }}>
-                  Column Mapping Confirmation
-                </h4>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-                  <div>
-                    <label className="label">Participant Name Column:</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                  <h4 style={{ fontSize: "0.92rem", fontWeight: "700", margin: 0, color: "#E0F2FE" }}>
+                    Column Mapping & Name Combination
+                  </h4>
+
+                  {/* Mode Toggle */}
+                  <div style={{ display: "inline-flex", background: "rgba(0, 0, 0, 0.3)", borderRadius: "0.45rem", padding: "0.2rem", border: "1px solid var(--border-light)" }}>
+                    <button
+                      type="button"
+                      onClick={() => setNameFormatMode("separate")}
+                      style={{
+                        padding: "0.3rem 0.75rem",
+                        borderRadius: "0.35rem",
+                        fontSize: "0.78rem",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        border: "none",
+                        background: nameFormatMode === "separate" ? "#0284C7" : "transparent",
+                        color: nameFormatMode === "separate" ? "#FFFFFF" : "var(--text-secondary)",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      Separate Columns (First Name + Surname)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNameFormatMode("single")}
+                      style={{
+                        padding: "0.3rem 0.75rem",
+                        borderRadius: "0.35rem",
+                        fontSize: "0.78rem",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        border: "none",
+                        background: nameFormatMode === "single" ? "#0284C7" : "transparent",
+                        color: nameFormatMode === "single" ? "#FFFFFF" : "var(--text-secondary)",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      Single Full Name Column
+                    </button>
+                  </div>
+                </div>
+
+                {nameFormatMode === "separate" ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.85rem", marginBottom: "0.85rem" }}>
+                    <div>
+                      <label className="label">First Name Column: *</label>
+                      <select 
+                        className="input-field" 
+                        value={selectedFirstNameCol} 
+                        onChange={e => setSelectedFirstNameCol(e.target.value)}
+                      >
+                        <option value="">-- Select Column --</option>
+                        {rawHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Surname / Last Name: *</label>
+                      <select 
+                        className="input-field" 
+                        value={selectedSurnameCol} 
+                        onChange={e => setSelectedSurnameCol(e.target.value)}
+                      >
+                        <option value="">-- Select Column --</option>
+                        {rawHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Other / Middle Names (Optional):</label>
+                      <select 
+                        className="input-field" 
+                        value={selectedOtherNameCol} 
+                        onChange={e => setSelectedOtherNameCol(e.target.value)}
+                      >
+                        <option value="">-- None --</option>
+                        {rawHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: "0.85rem" }}>
+                    <label className="label">Single Participant Full Name Column: *</label>
                     <select 
                       className="input-field" 
                       value={selectedNameCol} 
@@ -800,8 +913,11 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                       {rawHeaders.map(h => <option key={h} value={h}>{h}</option>)}
                     </select>
                   </div>
+                )}
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem" }}>
                   <div>
-                    <label className="label">Phone / WhatsApp Column:</label>
+                    <label className="label">Phone / WhatsApp Column: *</label>
                     <select 
                       className="input-field" 
                       value={selectedPhoneCol} 
@@ -822,6 +938,26 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                     </select>
                   </div>
                 </div>
+
+                {/* Live Sample Preview */}
+                {cleanValidMembers.length > 0 && (
+                  <div style={{
+                    marginTop: "0.85rem",
+                    padding: "0.6rem 0.85rem",
+                    background: "rgba(56, 189, 248, 0.08)",
+                    border: "1px solid rgba(56, 189, 248, 0.25)",
+                    borderRadius: "0.45rem",
+                    fontSize: "0.82rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem"
+                  }}>
+                    <Sparkles size={14} color="#38BDF8" />
+                    <span>
+                      <strong style={{ color: "#38BDF8" }}>Participant #1 Live Preview:</strong> "{cleanValidMembers[0].name}" &middot; Phone: <span style={{ fontFamily: "monospace", color: "#A7F3D0" }}>{cleanValidMembers[0].phoneClean}</span>
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div style={{
@@ -1308,7 +1444,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
               <button 
                 onClick={handleDownloadExcel}
                 className="btn-primary"
@@ -1324,6 +1460,25 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
               >
                 {copyFeedback["all_leaders_dir"] ? <Check size={15} color="#10B981" /> : <Copy size={15} />}
                 <span>{copyFeedback["all_leaders_dir"] ? "Copied Directory!" : "Copy PIN Directory"}</span>
+              </button>
+              <button 
+                onClick={() => {
+                  if (onComplete) onComplete();
+                }}
+                className="btn-primary"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.45rem",
+                  fontSize: "0.85rem",
+                  padding: "0.5rem 1.1rem",
+                  background: "#10B981",
+                  color: "#FFFFFF",
+                  fontWeight: "700"
+                }}
+              >
+                <CheckCircle2 size={16} />
+                <span>Open Dashboard</span>
               </button>
             </div>
           </div>
@@ -1413,6 +1568,30 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                   </div>
                 );
               })}
+            </div>
+
+            <div style={{ marginTop: "2rem", display: "flex", justifyContent: "center" }}>
+              <button 
+                onClick={() => {
+                  if (onComplete) onComplete();
+                }}
+                className="btn-primary"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.55rem",
+                  fontSize: "0.95rem",
+                  padding: "0.75rem 2.2rem",
+                  background: "#10B981",
+                  color: "#FFFFFF",
+                  fontWeight: "700",
+                  borderRadius: "0.6rem",
+                  boxShadow: "0 4px 14px rgba(16, 185, 129, 0.4)"
+                }}
+              >
+                <CheckCircle2 size={18} />
+                <span>Finish Onboarding & Return to Dashboard</span>
+              </button>
             </div>
           </div>
         </div>

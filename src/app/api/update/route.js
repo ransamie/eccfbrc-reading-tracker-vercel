@@ -6,6 +6,26 @@ export const fetchCache = 'force-no-store';
 
 const normalizeTeamName = (name) => String(name || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
 
+const sanitizePhoneForSheets = (val) => {
+  if (val === null || val === undefined) return "";
+  let text = String(val).trim();
+  if (["none", "nan", "n/a", ""].includes(text.toLowerCase())) return "";
+  // Strip leading +, =, @ or spaces to prevent Google Sheets formula evaluation (#ERROR!)
+  text = text.replace(/^[+=@]+/, "").trim();
+  // Strip .0 float artifacts from Excel
+  if (text.endsWith(".0")) {
+    text = text.slice(0, -2);
+  }
+  let digits = text.replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.length === 11 && digits.startsWith("0")) {
+    digits = "234" + digits.slice(1);
+  } else if (digits.length === 10 && ["7", "8", "9"].includes(digits[0])) {
+    digits = "234" + digits;
+  }
+  return digits;
+};
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -682,7 +702,12 @@ export async function POST(request) {
           }
           await trackerSheet.setHeaderRow(newH);
         }
-        await trackerSheet.addRows(members);
+        // Sanitize phone numbers to pure digits so Google Sheets never interprets + as a formula
+        const sanitizedMembers = (members || []).map(m => ({
+          ...m,
+          WhatsApp_Number: sanitizePhoneForSheets(m.WhatsApp_Number)
+        }));
+        await trackerSheet.addRows(sanitizedMembers);
       }
 
       // 4. Write team credentials with generated 4-digit PINs
@@ -692,12 +717,12 @@ export async function POST(request) {
         await credsSheet.addRows(credentials);
       }
 
-      // 5. Write Leaders_Tracker_Data with Leaders & Assistants
+      // 5. Write Leaders_Tracker_Data with Leaders & Assistants (with sanitized phones & Assistant_Status)
       const leadersSheet = db.sheetsByTitle["Leaders_Tracker_Data"];
       if (leadersSheet) {
         await leadersSheet.loadHeaderRow();
         const ldHeaders = leadersSheet.headerValues;
-        const neededCols = ['Team Leader', 'Status', 'Team', 'Assistant', 'Leader_Phone', 'Assistant_Phone'];
+        const neededCols = ['Team Leader', 'Status', 'Team', 'Assistant', 'Assistant_Status', 'Leader_Phone', 'Assistant_Phone'];
         let updatedCols = [...ldHeaders];
         let needsHeaderUpdate = false;
         neededCols.forEach(col => {
@@ -712,11 +737,99 @@ export async function POST(request) {
           }
           await leadersSheet.setHeaderRow(updatedCols);
         }
-        await leadersSheet.addRows(leaders);
+
+        const sanitizedLeaders = (leaders || []).map(l => ({
+          "Team Leader": l["Team Leader"] || l.leaderName || "",
+          Status: l.Status || "Active",
+          Team: l.Team || l.Team_Name || l.teamName || "",
+          Assistant: l.Assistant || l.assistantName || "",
+          Assistant_Status: l.Assistant_Status || (l.Assistant || l.assistantName ? "Active" : ""),
+          Leader_Phone: sanitizePhoneForSheets(l.Leader_Phone || l['Leader Phone'] || l.leaderPhone),
+          Assistant_Phone: sanitizePhoneForSheets(l.Assistant_Phone || l['Assistant Phone'] || l.assistantPhone)
+        }));
+
+        await leadersSheet.addRows(sanitizedLeaders);
       }
 
       invalidateCache();
       return NextResponse.json({ success: true, memberCount: members.length, teamCount: credentials.length });
+    }
+
+    if (action === 'admin_sync_member_names') {
+      const { memberUpdates } = payload; // Array of { phone, fullName }
+      if (!memberUpdates || !Array.isArray(memberUpdates) || memberUpdates.length === 0) {
+        return NextResponse.json({ success: false, message: 'No member updates provided' }, { status: 400 });
+      }
+
+      const phoneMap = new Map();
+      memberUpdates.forEach(u => {
+        const cleanP = sanitizePhoneForSheets(u.phone);
+        const nameClean = String(u.fullName || '').trim();
+        if (cleanP && nameClean) {
+          phoneMap.set(cleanP, nameClean);
+        }
+      });
+
+      if (phoneMap.size === 0) {
+        return NextResponse.json({ success: false, message: 'No valid phone-name pairs found to sync' }, { status: 400 });
+      }
+
+      const trackerSheet = db.sheetsByTitle["Tracker_Data"];
+      if (!trackerSheet) {
+        return NextResponse.json({ success: false, message: 'Tracker_Data sheet not found' }, { status: 404 });
+      }
+
+      await trackerSheet.loadHeaderRow();
+      const headers = trackerSheet.headerValues;
+      const nameColIdx = headers.indexOf('Member_Name');
+      const phoneColIdx = headers.indexOf('WhatsApp_Number');
+
+      if (nameColIdx === -1 || phoneColIdx === -1) {
+        return NextResponse.json({ 
+          success: false, 
+          message: 'Required columns (Member_Name, WhatsApp_Number) not found in Tracker_Data' 
+        }, { status: 400 });
+      }
+
+      const rows = await trackerSheet.getRows();
+      if (rows.length === 0) {
+        return NextResponse.json({ success: true, updatedCount: 0, message: 'Tracker_Data has no rows' });
+      }
+
+      // Load all relevant cells for fast atomic batch saving
+      const totalRowCount = rows.length + 1; // 1-indexed (row 0 is headers)
+      await trackerSheet.loadCells({
+        startRowIndex: 1,
+        endRowIndex: totalRowCount,
+        startColumnIndex: 0,
+        endColumnIndex: headers.length
+      });
+
+      let updatedCount = 0;
+      for (let r = 1; r < totalRowCount; r++) {
+        const phoneCell = trackerSheet.getCell(r, phoneColIdx);
+        const cellPhoneClean = sanitizePhoneForSheets(phoneCell.value);
+        if (cellPhoneClean && phoneMap.has(cellPhoneClean)) {
+          const newName = phoneMap.get(cellPhoneClean);
+          const nameCell = trackerSheet.getCell(r, nameColIdx);
+          if (String(nameCell.value || '').trim() !== newName) {
+            nameCell.value = newName;
+            updatedCount++;
+          }
+        }
+      }
+
+      if (updatedCount > 0) {
+        await trackerSheet.saveUpdatedCells();
+      }
+
+      invalidateCache();
+      return NextResponse.json({ 
+        success: true, 
+        updatedCount, 
+        totalProcessed: rows.length, 
+        matchedCount: phoneMap.size 
+      });
     }
 
     return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
