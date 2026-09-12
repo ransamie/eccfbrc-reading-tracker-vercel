@@ -178,187 +178,77 @@ export default function AdminTutorialModal({ isOpen, onClose }) {
   const currentSection = tourSections.find(s => s.id === activeTourTab) || tourSections[0];
 
   return (
-    <div style={{
-      position: "fixed",
-      inset: 0,
-      zIndex: 99999,
-      backgroundColor: "rgba(10, 15, 29, 0.82)",
-      backdropFilter: "blur(6px)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "1rem"
-    }}>
-      <div style={{
-        background: "#111827",
-        border: "1px solid rgba(255, 255, 255, 0.12)",
-        borderRadius: "1rem",
-        width: "100%",
-        maxWidth: "920px",
-        maxHeight: "90vh",
-        display: "flex",
-        flexDirection: "column",
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
-        overflow: "hidden",
-        color: "#F9FAFB"
-      }}>
+    <div className="tutorial-modal-backdrop" onClick={onClose}>
+      <div className="tutorial-modal-dialog" onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "1.25rem 1.5rem",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-          background: "linear-gradient(90deg, rgba(37, 99, 235, 0.15) 0%, rgba(17, 24, 39, 0) 100%)"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "0.5rem",
-              background: "rgba(56, 189, 248, 0.15)",
-              border: "1px solid rgba(56, 189, 248, 0.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}>
+        <div className="tutorial-header">
+          <div className="tutorial-header-left">
+            <div className="tutorial-header-icon">
               <BookOpen size={20} color="#38BDF8" />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "700" }}>Super Admin Guide & System Tour</h3>
-              <p style={{ margin: 0, fontSize: "0.8rem", color: "#9CA3AF" }}>Everything you need to know to run the ECCF Bible Reading Tracker</p>
+              <h3 className="tutorial-header-title">Super Admin Guide & System Tour</h3>
+              <p className="tutorial-header-subtitle">Everything you need to know to run the ECCF Bible Reading Tracker</p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            style={{
-              background: "rgba(255, 255, 255, 0.05)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: "0.5rem",
-              width: "32px",
-              height: "32px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#9CA3AF",
-              cursor: "pointer"
-            }}
+            className="tutorial-close-btn"
+            title="Close Guide"
+            aria-label="Close Guide"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Modal Body: Sidebar Tabs + Content Area */}
-        <div style={{
-          display: "flex",
-          flex: 1,
-          minHeight: 0,
-          overflow: "hidden"
-        }}>
-          {/* Navigation Tabs Sidebar */}
-          <div style={{
-            width: "240px",
-            borderRight: "1px solid rgba(255, 255, 255, 0.08)",
-            background: "rgba(15, 23, 42, 0.6)",
-            padding: "0.85rem",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.4rem",
-            overflowY: "auto"
-          }}>
-            <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "1px", color: "#6B7280", fontWeight: "800", padding: "0.4rem 0.6rem" }}>
+        {/* Modal Body: Sidebar Tabs (Desktop) / Horizontal Scrollable Tabs (Mobile) + Content Area */}
+        <div className="tutorial-body">
+          {/* Navigation Tabs */}
+          <div className="tutorial-nav">
+            <span className="tutorial-nav-label">
               Sections Tour
             </span>
             {tourSections.map(sec => (
               <button
                 key={sec.id}
                 onClick={() => setActiveTourTab(sec.id)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "0.65rem 0.75rem",
-                  borderRadius: "0.5rem",
-                  border: activeTourTab === sec.id ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid transparent",
-                  background: activeTourTab === sec.id ? "rgba(56, 189, 248, 0.12)" : "transparent",
-                  color: activeTourTab === sec.id ? "#F9FAFB" : "#9CA3AF",
-                  fontWeight: activeTourTab === sec.id ? "600" : "500",
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "all 0.15s ease"
-                }}
+                className={`tutorial-nav-btn ${activeTourTab === sec.id ? 'active' : ''}`}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   {sec.icon}
                   <span>{sec.title}</span>
                 </div>
-                {activeTourTab === sec.id && <ChevronRight size={14} color="#38BDF8" />}
+                {activeTourTab === sec.id && <ChevronRight size={14} color="#38BDF8" className="tutorial-nav-chevron" />}
               </button>
             ))}
           </div>
 
           {/* Active Section Content */}
-          <div style={{
-            flex: 1,
-            padding: "1.5rem 1.75rem",
-            overflowY: "auto"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-              <span style={{
-                background: "rgba(56, 189, 248, 0.15)",
-                color: "#38BDF8",
-                border: "1px solid rgba(56, 189, 248, 0.3)",
-                fontSize: "0.72rem",
-                fontWeight: "700",
-                padding: "0.2rem 0.55rem",
-                borderRadius: "9999px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px"
-              }}>
-                {currentSection.badge}
-              </span>
-            </div>
+          <div className="tutorial-content">
+            <span className="tutorial-badge">
+              {currentSection.badge}
+            </span>
 
-            <h2 style={{ fontSize: "1.35rem", fontWeight: "800", color: "#F9FAFB", marginBottom: "0.5rem" }}>
+            <h2 className="tutorial-heading">
               {currentSection.heading}
             </h2>
-            <p style={{ fontSize: "0.9rem", color: "#9CA3AF", lineHeight: 1.6, marginBottom: "1.5rem" }}>
+            <p className="tutorial-description">
               {currentSection.description}
             </p>
 
             {/* If section has structured steps */}
             {currentSection.steps && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+              <div>
                 {currentSection.steps.map(step => (
-                  <div key={step.num} style={{
-                    display: "flex",
-                    gap: "1rem",
-                    padding: "0.9rem",
-                    background: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid rgba(255, 255, 255, 0.06)",
-                    borderRadius: "0.65rem"
-                  }}>
-                    <div style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "50%",
-                      background: "rgba(56, 189, 248, 0.2)",
-                      color: "#38BDF8",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: "800",
-                      fontSize: "0.85rem",
-                      flexShrink: 0
-                    }}>
+                  <div key={step.num} className="tutorial-step-card">
+                    <div className="tutorial-step-num">
                       {step.num}
                     </div>
                     <div>
-                      <h4 style={{ margin: "0 0 0.25rem 0", fontSize: "0.92rem", fontWeight: "700", color: "#E0F2FE" }}>
+                      <h4 className="tutorial-step-title">
                         {step.title}
                       </h4>
-                      <p style={{ margin: 0, fontSize: "0.84rem", color: "#9CA3AF", lineHeight: 1.5 }}>
+                      <p className="tutorial-step-text">
                         {step.text}
                       </p>
                     </div>
@@ -369,36 +259,17 @@ export default function AdminTutorialModal({ isOpen, onClose }) {
 
             {/* If section has bullet points */}
             {currentSection.points && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.85rem" }}>
+              <div>
                 {currentSection.points.map((pt, idx) => (
-                  <div key={idx} style={{
-                    padding: "0.9rem",
-                    background: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid rgba(255, 255, 255, 0.06)",
-                    borderRadius: "0.65rem",
-                    display: "flex",
-                    gap: "0.85rem",
-                    alignItems: "flex-start"
-                  }}>
-                    <div style={{
-                      marginTop: "2px",
-                      width: "20px",
-                      height: "20px",
-                      borderRadius: "50%",
-                      background: "rgba(16, 185, 129, 0.15)",
-                      color: "#10B981",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0
-                    }}>
+                  <div key={idx} className="tutorial-point-card">
+                    <div className="tutorial-point-icon">
                       <CheckCircle2 size={14} />
                     </div>
                     <div>
-                      <h4 style={{ margin: "0 0 0.2rem 0", fontSize: "0.92rem", fontWeight: "700", color: "#F3F4F6" }}>
+                      <h4 className="tutorial-point-title">
                         {pt.title}
                       </h4>
-                      <p style={{ margin: 0, fontSize: "0.84rem", color: "#9CA3AF", lineHeight: 1.5 }}>
+                      <p className="tutorial-point-text">
                         {pt.text}
                       </p>
                     </div>
@@ -410,30 +281,13 @@ export default function AdminTutorialModal({ isOpen, onClose }) {
         </div>
 
         {/* Modal Footer */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "1rem 1.5rem",
-          borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-          background: "rgba(15, 23, 42, 0.5)"
-        }}>
-          <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>
+        <div className="tutorial-footer">
+          <span className="tutorial-footer-tip">
             Tip: You can re-open this guide anytime by clicking the Guide button in the header.
           </span>
           <button
             onClick={onClose}
-            style={{
-              background: "#2563EB",
-              color: "white",
-              border: "none",
-              padding: "0.55rem 1.25rem",
-              borderRadius: "0.5rem",
-              fontSize: "0.85rem",
-              fontWeight: "600",
-              cursor: "pointer",
-              boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.3)"
-            }}
+            className="tutorial-footer-btn"
           >
             Got it, let&apos;s build!
           </button>

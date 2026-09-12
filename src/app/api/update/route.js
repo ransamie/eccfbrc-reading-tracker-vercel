@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, fetchGlobalData, invalidateCache, archiveAndResetChallenge, getActiveTrackerSheet, getActiveLeadersSheet } from '@/lib/googleSheets';
-import { formatTeamName } from '@/lib/teamUtils';
+import { formatTeamName, toTitleCase } from '@/lib/teamUtils';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -505,8 +505,9 @@ export async function POST(request) {
 
     if (action === 'admin_add_team') {
       const { newTeamName, newTeamPin } = payload;
+      const formattedTeamName = toTitleCase(newTeamName);
       const credsSheet = db.sheetsByTitle["Team_Credentials"];
-      await credsSheet.addRow({ Team_Name: newTeamName, PIN: newTeamPin, Current_Reflection: '' });
+      await credsSheet.addRow({ Team_Name: formattedTeamName, PIN: newTeamPin, Current_Reflection: '' });
       invalidateCache();
       return NextResponse.json({ success: true });
     }
@@ -551,6 +552,7 @@ export async function POST(request) {
     
     if (action === 'admin_rename_team') {
       const { oldTeamName, newTeamName } = payload;
+      const formattedNewName = toTitleCase(newTeamName);
       const promises = [];
       
       // Update Credentials
@@ -558,7 +560,7 @@ export async function POST(request) {
       const credRows = await credsSheet.getRows();
       for (const row of credRows) {
         if (normalizeTeamName(row.get('Team_Name')) === normalizeTeamName(oldTeamName)) {
-           row.set('Team_Name', newTeamName);
+           row.set('Team_Name', formattedNewName);
            await row.save();
         }
       }
@@ -568,7 +570,7 @@ export async function POST(request) {
       const trRows = await trackerSheet.getRows();
       for (const row of trRows) {
         if (normalizeTeamName(row.get('Team_Name')) === normalizeTeamName(oldTeamName)) {
-           row.set('Team_Name', newTeamName);
+           row.set('Team_Name', formattedNewName);
            await row.save();
         }
       }
@@ -579,11 +581,24 @@ export async function POST(request) {
       for (const row of ldRows) {
         const rowTeam = normalizeTeamName(row.get('Team') || row.get('Team_Name'));
         if (rowTeam === normalizeTeamName(oldTeamName)) {
-           if (row.get('Team') !== undefined) row.set('Team', newTeamName);
-           if (row.get('Team_Name') !== undefined) row.set('Team_Name', newTeamName);
+           if (row.get('Team') !== undefined) row.set('Team', formattedNewName);
+           if (row.get('Team_Name') !== undefined) row.set('Team_Name', formattedNewName);
            await row.save();
         }
       }
+
+      // Update Quiz Scores if present
+      const quizScoresSheet = db.sheetsByTitle["Quiz_Scores"];
+      if (quizScoresSheet) {
+        const qRows = await quizScoresSheet.getRows();
+        for (const row of qRows) {
+          if (normalizeTeamName(row.get('Team')) === normalizeTeamName(oldTeamName)) {
+            row.set('Team', formattedNewName);
+            await row.save();
+          }
+        }
+      }
+
       invalidateCache();
       return NextResponse.json({ success: true });
     }
@@ -620,7 +635,7 @@ export async function POST(request) {
         
         for (const t of uniqueUploadedTeams) {
           if (!existingTeams.has(normalizeTeamName(t))) {
-            await credsSheet.addRow({ Team_Name: t.toUpperCase(), PIN: '1234', Current_Reflection: '' });
+            await credsSheet.addRow({ Team_Name: toTitleCase(t), PIN: '1234', Current_Reflection: '' });
             existingTeams.add(normalizeTeamName(t));
           }
         }

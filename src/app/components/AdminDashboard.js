@@ -9,6 +9,7 @@ import SyncNamesModal from "./SyncNamesModal";
 import AddMemberModal from "./AddMemberModal";
 import { HelpCircle } from "lucide-react";
 import { generateGeneralPdfReport, generateTeamPdfReport, generateLeadersPdfReport } from "@/lib/pdfReportGenerator";
+import { toTitleCase } from "@/lib/teamUtils";
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 
@@ -603,15 +604,16 @@ export default function AdminDashboard({ onLogout }) {
 
   const handleAddTeam = async () => {
     if (!newTeam.name || !newTeam.pin) return showToast("Provide both name and PIN.", "error");
+    const formattedName = toTitleCase(newTeam.name);
     setSaving(true);
     try {
       const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'admin_add_team', payload: { newTeamName: newTeam.name.toUpperCase(), newTeamPin: newTeam.pin } })
+        body: JSON.stringify({ action: 'admin_add_team', payload: { newTeamName: formattedName, newTeamPin: newTeam.pin } })
       });
       if (!res.ok) throw new Error("Failed to add team");
-      showToast(`Team ${newTeam.name} added!`);
+      showToast(`Team ${formattedName} added!`);
       setNewTeam({name: '', pin: ''});
       loadData();
     } catch (e) { showToast("Error adding team", "error"); } finally { setSaving(false); }
@@ -650,15 +652,16 @@ export default function AdminDashboard({ onLogout }) {
 
   const handleRenameTeam = async () => {
     if (!renameTeam.oldName || !renameTeam.newName) return showToast("Provide both old and new names.", "error");
+    const formattedNewName = toTitleCase(renameTeam.newName);
     setSaving(true);
     try {
       const res = await fetch('/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'admin_rename_team', payload: { oldTeamName: renameTeam.oldName, newTeamName: renameTeam.newName.toUpperCase() } })
+        body: JSON.stringify({ action: 'admin_rename_team', payload: { oldTeamName: renameTeam.oldName, newTeamName: formattedNewName } })
       });
       if (!res.ok) throw new Error("Failed to rename team");
-      showToast(`Successfully renamed ${renameTeam.oldName} to ${renameTeam.newName.toUpperCase()} across all databases!`);
+      showToast(`Successfully renamed ${renameTeam.oldName} to ${formattedNewName} across all databases!`);
       setRenameTeam({oldName: '', newName: ''});
       loadData();
     } catch (e) { showToast("Error renaming team", "error"); } finally { setSaving(false); }
@@ -1871,7 +1874,7 @@ export default function AdminDashboard({ onLogout }) {
             </button>
             {expandAddTeam && (
               <div className="st-expander-content">
-                <input type="text" className="input-field" placeholder="New Team Name (e.g., GRACE)" value={newTeam.name} onChange={e => setNewTeam({...newTeam, name: e.target.value})}/>
+                <input type="text" className="input-field" placeholder="New Team Name (e.g., Grace)" value={newTeam.name} onChange={e => setNewTeam({...newTeam, name: e.target.value})}/>
                 <input type="text" className="input-field" placeholder="Set 4-Digit PIN (e.g., 1234)" maxLength="4" value={newTeam.pin} onChange={e => setNewTeam({...newTeam, pin: e.target.value})}/>
                 <button className="btn-primary" onClick={handleAddTeam} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
                   <UserPlus size={15} />
@@ -1939,7 +1942,7 @@ export default function AdminDashboard({ onLogout }) {
                   <option value="">Select Existing Team</option>
                   {data?.validTeams?.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
-                <input type="text" className="input-field" placeholder="New Team Name" value={renameTeam.newName} onChange={e => setRenameTeam({...renameTeam, newName: e.target.value})}/>
+                <input type="text" className="input-field" placeholder="New Team Name (e.g., Grace)" value={renameTeam.newName} onChange={e => setRenameTeam({...renameTeam, newName: e.target.value})}/>
                 <button className="btn-primary" onClick={handleRenameTeam} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
                   <RefreshCw size={15} />
                   <span>Rename Team & Cascade</span>
