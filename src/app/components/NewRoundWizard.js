@@ -322,7 +322,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
       return `${idx + 1}. ${namePrefix}https://wa.me/${m.phoneClean}`;
     }).join("\n");
 
-    return `Good Morning Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
+    return `Hello Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
       `*Your Team Dashboard Access:*\n` +
       `🌐 *App Link*: ${baseUrl}\n` +
       `👥 *Team*: ${formattedTeam}\n` +

@@ -1032,7 +1032,7 @@ export async function POST(request) {
       const origin = request.headers.get('origin') || (request.headers.get('host') ? `https://${request.headers.get('host')}` : 'https://eccfbrc-reading-tracker.vercel.app');
 
       const messageText = 
-        `Good Morning Dear ECCFBRC Team Leader. I believe you've already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
+        `Hello Dear ECCFBRC Team Leader. I believe you've already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
         `*Your Team Dashboard Access:*\n` +
         `🌐 *App Link*: ${origin}\n` +
         `👥 *Team*: ${displayTeamFormatted}\n` +

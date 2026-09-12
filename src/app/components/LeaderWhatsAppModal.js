@@ -199,7 +199,7 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data, initialTeam
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://eccfbrc-reading-tracker.vercel.app';
 
       const messageText = 
-        `Good Morning Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
+        `Hello Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
         `*Your Team Dashboard Access:*\n` +
         `🌐 *App Link*: ${baseUrl}\n` +
         `👥 *Team*: ${formattedTeam}\n` +
