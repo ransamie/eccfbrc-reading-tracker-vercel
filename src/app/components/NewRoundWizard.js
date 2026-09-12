@@ -317,7 +317,11 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const dashboardLink = `${baseUrl}/?team=${encodeURIComponent(formattedTeam)}&pin=${team.pin}`;
 
-    const membersList = team.members.map((m, idx) => `${idx + 1}. https://wa.me/${m.phoneClean}`).join("\n");
+    const membersList = team.members.map((m, idx) => {
+      const memberName = (m.name || "").trim();
+      const namePrefix = memberName && memberName.toLowerCase() !== "participant" ? `${memberName} - ` : "";
+      return `${idx + 1}. ${namePrefix}https://wa.me/${m.phoneClean}`;
+    }).join("\n");
 
     return `Good Morning Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
       `*Your Team Dashboard Access:*\n` +

@@ -1009,11 +1009,12 @@ export async function POST(request) {
         const rTeam = normalizeTeamName(r.get('Team_Name') || r.get('Team'));
         if (rTeam === normalizeTeamName(assignedTeam)) {
           const p = sanitizePhoneForSheets(r.get('WhatsApp_Number'));
-          if (p) assignedMembers.push(p);
+          const n = (r.get('Member_Name') || r.get('Name') || '').trim();
+          if (p) assignedMembers.push({ name: n, phone: p });
         }
       });
-      // Add the new member's phone
-      assignedMembers.push(cleanPhone);
+      // Add the new member
+      assignedMembers.push({ name: cleanName.trim(), phone: cleanPhone });
 
       const leaderDisplay = leaderName || "[TEAM LEADER'S NAME]";
       const leaderWaLink = leaderPhone ? `https://wa.me/${leaderPhone}` : "https://wa.me/";
@@ -1022,7 +1023,11 @@ export async function POST(request) {
         ? `${assistantName} [${assistantWaLink}]`
         : "[ASSISTANT NAME] [https://wa.me/]";
 
-      const membersList = assignedMembers.map((p, idx) => `${idx + 1}. https://wa.me/${p}`).join("\n");
+      const membersList = assignedMembers.map((m, idx) => {
+        const memberName = (m.name || "").trim();
+        const namePrefix = memberName && memberName.toLowerCase() !== "participant" ? `${memberName} - ` : "";
+        return `${idx + 1}. ${namePrefix}https://wa.me/${m.phone}`;
+      }).join("\n");
       const displayTeamFormatted = formatTeamName(assignedTeam);
       const origin = request.headers.get('origin') || (request.headers.get('host') ? `https://${request.headers.get('host')}` : 'https://eccfbrc-reading-tracker.vercel.app');
       const dashboardLink = `${origin}/?team=${encodeURIComponent(displayTeamFormatted)}&pin=${pin}`;

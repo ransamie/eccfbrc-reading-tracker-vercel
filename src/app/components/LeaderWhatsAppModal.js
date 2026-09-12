@@ -188,7 +188,11 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data, initialTeam
         : "[ASSISTANT NAME] [https://wa.me/]";
 
       const membersList = members.length > 0
-        ? members.map((m, idx) => `${idx + 1}. https://wa.me/${m.phoneClean}`).join("\n")
+        ? members.map((m, idx) => {
+            const memberName = (m.name || "").trim();
+            const namePrefix = memberName && memberName.toLowerCase() !== "participant" ? `${memberName} - ` : "";
+            return `${idx + 1}. ${namePrefix}https://wa.me/${m.phoneClean}`;
+          }).join("\n")
         : "No members assigned yet.";
 
       const formattedTeam = formatTeamName(displayTeamName);
