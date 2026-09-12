@@ -808,37 +808,76 @@ select option {
   .tracker-header-wrap {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 0.75rem !important;
+    gap: 0.65rem !important;
   }
 
   .tracker-header-title {
-    font-size: 1.2rem !important;
+    font-size: 1.15rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+
+  .tracker-header-title img {
+    width: 28px !important;
+    height: 28px !important;
   }
 
   .tracker-header-actions {
     width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    flex-wrap: wrap !important;
-    gap: 0.4rem !important;
+    gap: 0.45rem !important;
   }
 
-  .tracker-header-actions > *:not(.tracker-btn-icon):not(.tracker-header-divider) {
-    flex: 1 1 calc(50% - 0.4rem) !important;
-    min-width: 100px !important;
+  /* Admin Header Actions (Guide & Tour, Quiz Hub, Refresh, Logout) in 1 clean grid row */
+  .admin-header-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 2.35rem 2.35rem !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  /* Leader Header Actions (Quiz Link, Refresh, Logout) in 1 clean grid row */
+  .leader-header-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 2.35rem 2.35rem !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .tracker-header-actions > .tracker-btn-quiz {
+    width: 100% !important;
+    min-width: 0 !important;
     height: 2.35rem !important;
-    padding: 0 0.5rem !important;
-    font-size: 0.8rem !important;
+    padding: 0 0.4rem !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
     justify-content: center !important;
     text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    gap: 0.35rem !important;
+    box-sizing: border-box !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .tracker-header-actions > .tracker-btn-quiz span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 
   .tracker-header-actions > .tracker-btn-icon {
     flex: 0 0 2.35rem !important;
     width: 2.35rem !important;
     height: 2.35rem !important;
+    min-width: 2.35rem !important;
     padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
     justify-content: center !important;
+    box-sizing: border-box !important;
+    border-radius: 0.5rem !important;
   }
 
   .tracker-header-actions > .tracker-btn-logout {
@@ -848,18 +887,28 @@ select option {
     padding: 0 !important;
   }
 
+  .tracker-header-actions > button[title="Install App"] {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    height: 2.35rem !important;
+  }
+
   .tracker-header-divider {
     display: none !important;
   }
 
+  /* Tabs Bar */
   .tracker-tabs-bar {
     display: flex !important;
     flex-wrap: nowrap !important;
-    gap: 0.25rem !important;
-    padding: 0.25rem !important;
+    gap: 0.35rem !important;
+    padding: 0.3rem !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
+    margin-bottom: 1rem !important;
+    border-radius: 0.65rem !important;
+    touch-action: pan-x !important;
   }
 
   .tracker-tabs-bar::-webkit-scrollbar {
@@ -868,12 +917,14 @@ select option {
 
   .tracker-tab-pill {
     flex: 0 0 auto !important;
-    padding: 0.5rem 0.85rem !important;
-    font-size: 0.8rem !important;
+    padding: 0.45rem 0.75rem !important;
+    font-size: 0.78rem !important;
     font-weight: 600 !important;
     gap: 0.35rem !important;
     justify-content: center !important;
     text-align: center !important;
+    white-space: nowrap !important;
+    border-radius: 0.45rem !important;
   }
 
   .tracker-tab-pill span {
@@ -886,51 +937,110 @@ select option {
     flex-shrink: 0 !important;
   }
 
+  /* Active Edition Bar */
   .tracker-edition-bar {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 0.85rem !important;
-    padding: 0.85rem 1rem !important;
+    gap: 0.75rem !important;
+    padding: 0.85rem 0.95rem !important;
+    margin-bottom: 1.25rem !important;
+    border-radius: 0.75rem !important;
   }
 
   .tracker-edition-left {
     width: 100% !important;
+    flex: 0 0 auto !important;
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 0.4rem !important;
+    gap: 0.35rem !important;
+    min-height: 0 !important;
   }
 
   .tracker-edition-label {
-    font-size: 0.74rem !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    color: var(--text-secondary) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
   }
 
   .tracker-edition-select {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-    font-size: 0.85rem !important;
+    flex: 0 0 auto !important;
     height: 2.6rem !important;
-    padding: 0.45rem 2rem 0.45rem 0.75rem !important;
+    min-height: 2.6rem !important;
+    max-height: 2.6rem !important;
+    font-size: 0.82rem !important;
+    line-height: normal !important;
+    padding: 0.45rem 2.2rem 0.45rem 0.75rem !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    background-size: 0.95rem !important;
+    background-position: right 0.75rem center !important;
   }
 
   .tracker-edition-actions {
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 0.5rem !important;
+    gap: 0.45rem !important;
   }
 
   .tracker-edition-actions > * {
     width: 100% !important;
-    height: 2.5rem !important;
+    height: 2.45rem !important;
+    min-height: 2.45rem !important;
+    max-height: 2.45rem !important;
     justify-content: center !important;
     text-align: center !important;
     font-size: 0.82rem !important;
-    padding: 0 0.6rem !important;
+    padding: 0 0.75rem !important;
+    border-radius: 0.5rem !important;
+    box-sizing: border-box !important;
   }
 
   .tracker-edition-actions > .tracker-btn-archive-return {
-    flex: 1 1 100% !important;
+    flex: 0 0 auto !important;
+  }
+
+  /* Admin Sections & Action Buttons */
+  .admin-section-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .admin-section-title {
+    font-size: 1.18rem !important;
+  }
+
+  .admin-section-subtitle {
+    font-size: 0.82rem !important;
+  }
+
+  .admin-card-header-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    margin-top: 0.35rem !important;
+  }
+
+  .admin-card-header-actions > button,
+  .admin-card-header-actions > a {
+    width: 100% !important;
+    height: 2.5rem !important;
+    min-height: 2.5rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+    font-size: 0.84rem !important;
+    font-weight: 600 !important;
+    padding: 0 1rem !important;
+    box-sizing: border-box !important;
+    border-radius: 0.5rem !important;
   }
 
   .tracker-check-grid {
@@ -1504,6 +1614,37 @@ select option {
   cursor: not-allowed;
 }
 
+/* Admin Sections & Card Headers */
+.admin-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-section-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.admin-section-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0.25rem 0 0 0;
+}
+
+.admin-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 /* Edition Switcher & Archive Banner */
 .tracker-edition-bar {
   display: flex;
@@ -1522,7 +1663,7 @@ select option {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  flex: 1 1 340px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -1555,6 +1696,10 @@ select option {
   flex: 1;
   min-width: 240px;
   max-width: 480px;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  box-sizing: border-box;
+  line-height: 1.4;
 }
 
 .tracker-edition-select:focus {

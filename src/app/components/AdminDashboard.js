@@ -747,7 +747,7 @@ export default function AdminDashboard({ onLogout }) {
           <img src="/eccfbrclogo.png" alt="Logo" />
           <span>Admin Command Center</span>
         </div>
-        <div className="tracker-header-actions">
+        <div className="tracker-header-actions admin-header-actions">
           <button
             onClick={() => setShowTutorial(true)}
             title="Open Admin Guide & System Tour"
@@ -903,16 +903,16 @@ export default function AdminDashboard({ onLogout }) {
       {activeTab === 'leaders' && (
         <div className="card">
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div className="admin-section-header">
             <div>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+              <h3 className="admin-section-title">
                 Mark Daily Updates for Team Leaders
               </h3>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
+              <p className="admin-section-subtitle">
                 Tap on each leader's card to record reading progress for the day.
               </p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <div className="admin-card-header-actions">
               <button
                 type="button"
                 onClick={() => setShowAddMemberModal(true)}
@@ -1164,12 +1164,12 @@ export default function AdminDashboard({ onLogout }) {
 
       {activeTab === 'roster' && (
         <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div className="admin-section-header">
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '800' }}>Manage Team Leaders & Roster</h3>
-              <p className="label" style={{ margin: '0.2rem 0 0 0' }}>Update statuses and synchronize participant names across Google Sheets.</p>
+              <h3 className="admin-section-title">Manage Team Leaders & Roster</h3>
+              <p className="admin-section-subtitle">Update statuses and synchronize participant names across Google Sheets.</p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <div className="admin-card-header-actions">
               <button
                 type="button"
                 onClick={() => setShowAddMemberModal(true)}

@@ -503,11 +503,11 @@ export default function LeaderDashboard({ team, onLogout }) {
             })()}
           </div>
         </div>
-        <div className="tracker-header-actions">
+        <div className="tracker-header-actions leader-header-actions">
           <button 
             onClick={handleCopyQuizLink}
             title="Copy Quiz Link to share with team"
-            className="tracker-btn-icon"
+            className="tracker-btn-quiz tracker-btn-quizlink"
             style={{ 
               background: quizCopied ? 'rgba(16,185,129,0.15)' : 'var(--surface-secondary)',
               color: quizCopied ? 'var(--success)' : '#60A5FA',
