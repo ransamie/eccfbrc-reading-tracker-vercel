@@ -172,6 +172,39 @@ export default function LeaderDashboard({ team, onLogout }) {
     }
   }, [selectedDay]);
 
+  const leadershipTiles = useMemo(() => {
+    if (!data?.leadersData || data.leadersData.length === 0) return [];
+    const tiles = [];
+    const seen = new Set();
+    
+    data.leadersData.forEach((l, idx) => {
+      const rawName = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
+      const rawRole = String(l.Role || l.Position || l.Designation || '').toLowerCase();
+      const roleLabel = rawRole.includes('asst') || rawRole.includes('assistant') || idx > 0 ? 'Assistant Leader' : 'Team Leader';
+      
+      if (rawName && !seen.has(rawName.toLowerCase())) {
+        seen.add(rawName.toLowerCase());
+        tiles.push({
+          name: rawName,
+          role: roleLabel,
+          phone: l.Leader_Phone || l.Phone || ''
+        });
+      }
+
+      const asstName = String(l.Assistant || l['Assistant Leader'] || '').trim();
+      if (asstName && asstName.toLowerCase() !== 'n/a' && !seen.has(asstName.toLowerCase())) {
+        seen.add(asstName.toLowerCase());
+        tiles.push({
+          name: asstName,
+          role: 'Assistant Leader',
+          phone: l.Assistant_Phone || ''
+        });
+      }
+    });
+
+    return tiles;
+  }, [data?.leadersData]);
+
   const handleCheckbox = (name) => {
     setUpdates(prev => ({ ...prev, [name]: !prev[name] }));
   };
@@ -413,39 +446,6 @@ export default function LeaderDashboard({ team, onLogout }) {
   const allMembers = data?.trackerData || [];
   const activeMembers = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'active');
   const daysList = Array.from({length: currentDayNum}, (_, i) => `Day_${i+1}`);
-
-  const leadershipTiles = useMemo(() => {
-    if (!data?.leadersData || data.leadersData.length === 0) return [];
-    const tiles = [];
-    const seen = new Set();
-    
-    data.leadersData.forEach((l, idx) => {
-      const rawName = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
-      const rawRole = String(l.Role || l.Position || l.Designation || '').toLowerCase();
-      const roleLabel = rawRole.includes('asst') || rawRole.includes('assistant') || idx > 0 ? 'Assistant Leader' : 'Team Leader';
-      
-      if (rawName && !seen.has(rawName.toLowerCase())) {
-        seen.add(rawName.toLowerCase());
-        tiles.push({
-          name: rawName,
-          role: roleLabel,
-          phone: l.Leader_Phone || l.Phone || ''
-        });
-      }
-
-      const asstName = String(l.Assistant || l['Assistant Leader'] || '').trim();
-      if (asstName && asstName.toLowerCase() !== 'n/a' && !seen.has(asstName.toLowerCase())) {
-        seen.add(asstName.toLowerCase());
-        tiles.push({
-          name: asstName,
-          role: 'Assistant Leader',
-          phone: l.Assistant_Phone || ''
-        });
-      }
-    });
-
-    return tiles;
-  }, [data?.leadersData]);
 
   return (
     <div className="container">
