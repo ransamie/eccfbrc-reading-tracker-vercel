@@ -1030,14 +1030,14 @@ export async function POST(request) {
       }).join("\n");
       const displayTeamFormatted = formatTeamName(assignedTeam);
       const origin = request.headers.get('origin') || (request.headers.get('host') ? `https://${request.headers.get('host')}` : 'https://eccfbrc-reading-tracker.vercel.app');
-      const dashboardLink = `${origin}/?team=${encodeURIComponent(displayTeamFormatted)}&pin=${pin}`;
 
       const messageText = 
         `Good Morning Dear ECCFBRC Team Leader. I believe you've already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
         `*Your Team Dashboard Access:*\n` +
-        `🔗 *Direct Dashboard Link*: ${dashboardLink}\n` +
+        `🌐 *App Link*: ${origin}\n` +
+        `👥 *Team*: ${displayTeamFormatted}\n` +
         `🔑 *Team Login PIN*: ${pin}\n` +
-        `(Tap the link above to directly access and record reading updates for your team)\n\n` +
+        `(Open the link, select "${displayTeamFormatted}", and enter your 4-digit PIN to sign in)\n\n` +
         `Please move on to send each of your members this message;\n\n` +
         `-----------------------------------------------------------\n` +
         `Hello!\n\n` +
@@ -1052,7 +1052,7 @@ export async function POST(request) {
         `*${displayTeamFormatted}*\n` +
         `*Team Leader*: ${leaderDisplay} [${leaderWaLink}]\n` +
         `*Assistant*: ${assistantText}\n` +
-        `*Team Dashboard Link*: ${dashboardLink}\n` +
+        `*App Link*: ${origin}\n` +
         `*Team Login PIN*: ${pin}\n\n` +
         `*Members:*\n` +
         `${membersList}\n\n` +
@@ -1078,9 +1078,9 @@ export async function POST(request) {
           assistantPhone,
           assistantWaLink,
           pin,
-          dashboardLink
+          appLink: origin
         },
-        dashboardLink,
+        appLink: origin,
         updatedMessage: messageText,
         assignedTeam: displayTeamFormatted,
         totalTeamMembers: assignedMembers.length,

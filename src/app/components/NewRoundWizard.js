@@ -314,8 +314,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
       ? `${team.assistantName} [${team.assistantWaLink || "https://wa.me/"}]` 
       : "[ASSISTANT NAME] [https://wa.me/]";
 
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const dashboardLink = `${baseUrl}/?team=${encodeURIComponent(formattedTeam)}&pin=${team.pin}`;
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://eccfbrc-reading-tracker.vercel.app';
 
     const membersList = team.members.map((m, idx) => {
       const memberName = (m.name || "").trim();
@@ -325,9 +324,10 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
 
     return `Good Morning Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
       `*Your Team Dashboard Access:*\n` +
-      `🔗 *Direct Dashboard Link*: ${dashboardLink}\n` +
+      `🌐 *App Link*: ${baseUrl}\n` +
+      `👥 *Team*: ${formattedTeam}\n` +
       `🔑 *Team Login PIN*: ${team.pin}\n` +
-      `(Tap the link above to directly access and record reading updates for your team)\n\n` +
+      `(Open the link, select "${formattedTeam}", and enter your 4-digit PIN to sign in)\n\n` +
       `Please move on to send each of your members this message;\n\n` +
       `-----------------------------------------------------------\n` +
       `Hello!\n\n` +
@@ -342,7 +342,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
       `*${formattedTeam}*\n` +
       `*Team Leader*: ${leaderName} [${team.leaderWaLink || "https://wa.me/"}]\n` +
       `*Assistant*: ${assistantText}\n` +
-      `*Team Dashboard Link*: ${dashboardLink}\n` +
+      `*App Link*: ${baseUrl}\n` +
       `*Team Login PIN*: ${team.pin}\n\n` +
       `*Members:*\n` +
       `${membersList}\n\n` +
