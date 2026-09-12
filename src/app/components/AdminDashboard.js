@@ -912,33 +912,8 @@ export default function AdminDashboard({ onLogout }) {
                 Tap on each leader's card to record reading progress for the day.
               </p>
             </div>
-            <div className="admin-card-header-actions">
-              <button
-                type="button"
-                onClick={() => setShowAddMemberModal(true)}
-                className="btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', background: '#059669', color: 'white', padding: '0.5rem 0.95rem' }}
-                title="Manually register and assign a new participant to a team"
-              >
-                <UserPlus size={16} />
-                <span>+ Add Member</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setWhatsAppFilterTeam("");
-                  setShowWhatsAppModal(true);
-                }}
-                className="btn-secondary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', padding: '0.5rem 0.95rem' }}
-                title="View & copy WhatsApp onboarding messages with member links for all team leaders"
-              >
-                <MessageSquare size={16} color="#22C55E" />
-                <span>Team Leader WhatsApp Messages</span>
-              </button>
-
-              {isReadingCompleted && (
+            {isReadingCompleted && (
+              <div className="admin-card-header-actions">
                 <button
                   onClick={() => setShowPdfModal(true)}
                   className="tracker-btn-pdf"
@@ -946,8 +921,8 @@ export default function AdminDashboard({ onLogout }) {
                 >
                   <FileDown size={16} /> <span>PDF Reports</span>
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
           
           {/* Modern Date Stepper Card */}
@@ -1659,8 +1634,45 @@ export default function AdminDashboard({ onLogout }) {
 
       {activeTab === 'settings' && (
         <div className="card">
+          <div className="admin-section-header" style={{ marginBottom: '1.25rem' }}>
+            <div>
+              <h3 className="admin-section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Users size={20} color="#60A5FA" />
+                <span>Team Directory & Communications</span>
+              </h3>
+              <p className="admin-section-subtitle">
+                Manage team leadership, access PINs, participant onboarding, and leader communications.
+              </p>
+            </div>
+            <div className="admin-card-header-actions">
+              <button
+                type="button"
+                onClick={() => setShowAddMemberModal(true)}
+                className="btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', background: '#059669', color: 'white', padding: '0.5rem 0.95rem' }}
+                title="Manually register and assign a new participant to a team"
+              >
+                <UserPlus size={16} />
+                <span>+ Add Member</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setWhatsAppFilterTeam("");
+                  setShowWhatsAppModal(true);
+                }}
+                className="btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', padding: '0.5rem 0.95rem' }}
+                title="View & copy WhatsApp onboarding messages with member links for all team leaders"
+              >
+                <MessageSquare size={16} color="#22C55E" />
+                <span>Team Leader WhatsApp Messages</span>
+              </button>
+            </div>
+          </div>
+
           <div className="mb-4">
-            <h3 className="mb-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.4rem' }}>Team Directory</h3>
             <div style={{ overflowX: 'auto', background: 'var(--surface)', borderRadius: '0.5rem', border: '1px solid var(--border-light)' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                 <thead>
@@ -1669,6 +1681,7 @@ export default function AdminDashboard({ onLogout }) {
                     <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Leader</th>
                     <th style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>Assistant</th>
                     <th style={{ padding: '0.4rem 0.6rem', textAlign: 'right', border: '1px solid var(--border-light)' }}>PIN</th>
+                    <th style={{ padding: '0.4rem 0.6rem', textAlign: 'center', border: '1px solid var(--border-light)', width: '85px' }}>WhatsApp</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1695,6 +1708,21 @@ export default function AdminDashboard({ onLogout }) {
                         <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{leaderName}</td>
                         <td style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-light)' }}>{assistantName}</td>
                         <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', fontFamily: 'monospace', border: '1px solid var(--border-light)' }}>{c.PIN}</td>
+                        <td style={{ padding: '0.3rem 0.4rem', textAlign: 'center', border: '1px solid var(--border-light)' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setWhatsAppFilterTeam(c.Team_Name);
+                              setShowWhatsAppModal(true);
+                            }}
+                            className="btn-secondary"
+                            style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                            title={`View WhatsApp message for ${c.Team_Name}`}
+                          >
+                            <MessageSquare size={13} color="#22C55E" />
+                            <span>Msg</span>
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
