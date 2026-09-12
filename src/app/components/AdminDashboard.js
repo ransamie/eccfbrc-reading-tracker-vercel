@@ -764,6 +764,7 @@ export default function AdminDashboard({ onLogout }) {
             <Trophy size={16} /> <span>Quiz Hub</span>
           </a>
           <InstallPwaButton />
+          <div className="tracker-header-divider" />
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
@@ -778,7 +779,7 @@ export default function AdminDashboard({ onLogout }) {
             className="tracker-btn-logout"
             title="Logout"
           >
-            <LogOut size={16} /> <span>Logout</span>
+            <LogOut size={15} /> <span>Logout</span>
           </button>
         </div>
       </div>
@@ -788,7 +789,7 @@ export default function AdminDashboard({ onLogout }) {
           className={`tracker-tab-pill ${activeTab === 'wizard' ? 'active' : ''}`} 
           onClick={() => setActiveTab('wizard')}
         >
-          <PlusCircle size={15} /> <span>Start New Round</span>
+          <PlusCircle size={15} /> <span>Start New Edition</span>
         </button>
         <button className={`tracker-tab-pill ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
           <BarChart3 size={15} /> <span>Overview</span>

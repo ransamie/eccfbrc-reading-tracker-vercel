@@ -522,6 +522,7 @@ export default function LeaderDashboard({ team, onLogout }) {
             <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{quizCopied ? 'Copied!' : 'Quiz Link'}</span>
           </button>
           <InstallPwaButton />
+          <div className="tracker-header-divider" />
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
@@ -536,7 +537,7 @@ export default function LeaderDashboard({ team, onLogout }) {
             className="tracker-btn-logout"
             title="Logout"
           >
-            <LogOut size={16} /> <span>Logout</span>
+            <LogOut size={15} /> <span>Logout</span>
           </button>
         </div>
       </div>

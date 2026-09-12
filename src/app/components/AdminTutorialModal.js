@@ -14,16 +14,16 @@ export default function AdminTutorialModal({ isOpen, onClose }) {
   const tourSections = [
     {
       id: "wizard",
-      title: "Start a New Round",
+      title: "Start a New Edition",
       icon: <Layers size={18} color="#38BDF8" />,
       badge: "Core Feature",
-      heading: "How to Launch a New Bible Reading Round",
-      description: "A step-by-step wizard that guides you through setting up a round from an Excel/CSV contacts file, grouping members, assigning leaders, generating 4-digit PINs, and updating the live database.",
+      heading: "How to Launch a New Bible Reading Edition",
+      description: "A step-by-step wizard that guides you through setting up an edition from an Excel/CSV contacts file, grouping members, assigning leaders, generating 4-digit PINs, and updating the live database.",
       steps: [
         {
           num: "1",
-          title: "Round Configuration & Mode",
-          text: "Enter your Edition Name (e.g. \"June - Aug New Testament 2026\"), start date, duration (e.g. 30 days), and shift windows. Choose whether to Start Fresh (archives current challenge to Google Sheets archives) or Append to current roster."
+          title: "Edition Configuration & Mode",
+          text: "Enter your Edition Name (e.g. \"September - December 2026 Edition\"), start date, duration (e.g. 30 days), and shift windows. Choose whether to Start Fresh (archives current challenge to Google Sheets archives) or Append to current roster."
         },
         {
           num: "2",

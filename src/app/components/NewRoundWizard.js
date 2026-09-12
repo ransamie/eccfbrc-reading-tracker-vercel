@@ -413,7 +413,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
     }
 
     const confirmMsg = settings.mode === "fresh"
-      ? `Are you sure you want to Launch "${settings.challengeEdition}"?\n\nThis will ARCHIVE the current active challenge in Google Sheets and reset the live tracker for the new round.`
+      ? `Are you sure you want to Launch "${settings.challengeEdition}"?\n\nThis will ARCHIVE the current active challenge in Google Sheets and reset the live tracker for the new edition.`
       : `Are you sure you want to append ${cleanValidMembers.length} members across ${groupedTeams.length} teams to the active challenge?`;
 
     if (!window.confirm(confirmMsg)) return;
@@ -497,7 +497,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.message || data.error || "Failed to launch new round");
+        throw new Error(data.message || data.error || "Failed to launch new edition");
       }
 
       setLaunchResult({
@@ -507,8 +507,8 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
       advanceToStep(5);
       // Do not auto-close here: keep user on Step 5 so they can copy WhatsApp messages and download Excel.
     } catch (err) {
-      console.error("Error launching round:", err);
-      alert("Error launching round: " + err.message);
+      console.error("Error launching edition:", err);
+      alert("Error launching edition: " + err.message);
     } finally {
       setLaunching(false);
     }
@@ -600,7 +600,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
               </span>
             </div>
             <h2 style={{ fontSize: "1.4rem", fontWeight: "800", margin: 0, color: "#F9FAFB" }}>
-              Start a New Bible Reading Round
+              Start a New Bible Reading Edition
             </h2>
           </div>
 
@@ -621,7 +621,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
         {/* Stepper Navigator */}
         <div className="wizard-stepper-bar no-scrollbar" style={{ paddingBottom: "0.5rem" }}>
           {[
-            { s: 1, label: "1. Round Details", icon: <Sliders size={14} /> },
+            { s: 1, label: "1. Edition Details", icon: <Sliders size={14} /> },
             { s: 2, label: "2. Upload & Group", icon: <UploadCloud size={14} /> },
             { s: 3, label: "3. Leaders & PINs", icon: <KeyRound size={14} /> },
             { s: 4, label: "4. Readiness Audit", icon: <ShieldCheck size={14} /> },
@@ -683,19 +683,19 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
         </div>
       </div>
 
-      {/* STEP 1: ROUND CONFIGURATION & MODE */}
+      {/* STEP 1: EDITION CONFIGURATION & MODE */}
       {step === 1 && (
         <div className="card" style={{ padding: "1.5rem" }}>
           <h3 style={{ fontSize: "1.15rem", fontWeight: "700", marginBottom: "0.4rem" }}>
-            Step 1: Round Configuration & Mode Selection
+            Step 1: Edition Configuration & Mode Selection
           </h3>
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
-            Specify the name, dates, duration, and whether you are initiating a fresh round or appending to existing records.
+            Specify the name, dates, duration, and whether you are initiating a fresh edition or appending to existing records.
           </p>
 
           <div style={{ marginBottom: "1.5rem" }}>
             <label className="label" style={{ fontWeight: "700", marginBottom: "0.5rem", display: "block" }}>
-              Round Launch Mode:
+              Edition Launch Mode:
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
               <div 
@@ -710,7 +710,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.35rem" }}>
                   <span style={{ fontWeight: "700", fontSize: "0.95rem", color: settings.mode === "fresh" ? "#93C5FD" : "#F9FAFB", display: "inline-flex", alignItems: "center", gap: "0.45rem" }}>
-                    <RefreshCw size={15} color="#3B82F6" /> <span>Start Fresh Round (Recommended)</span>
+                    <RefreshCw size={15} color="#3B82F6" /> <span>Start Fresh Edition (Recommended)</span>
                   </span>
                   {settings.mode === "fresh" && <CheckCircle2 size={16} color="#3B82F6" />}
                 </div>
@@ -753,11 +753,11 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
               />
             </div>
             <div>
-              <label className="label">Challenge Edition / Round Name:</label>
+              <label className="label">Challenge Edition Name:</label>
               <input 
                 type="text" 
                 className="input-field" 
-                placeholder="e.g. June - August New Testament 2026 Edition"
+                placeholder="e.g. September - December 2026 Edition"
                 value={settings.challengeEdition}
                 onChange={e => setSettings({ ...settings, challengeEdition: e.target.value })}
               />
@@ -1041,7 +1041,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                 </div>
 
                 <div>
-                  <label className="label">Round System ID Prefix:</label>
+                  <label className="label">Edition System ID Prefix:</label>
                   <input 
                     type="text" 
                     className="input-field" 
@@ -1392,7 +1392,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
                   Action Required Before Launch
                 </h4>
                 <p style={{ margin: 0, fontSize: "0.82rem", color: "#FEE2E2" }}>
-                  Please resolve the highlighted red warnings above before launching the round.
+                  Please resolve the highlighted red warnings above before launching the edition.
                 </p>
               </div>
             </div>
@@ -1427,7 +1427,7 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
               ) : (
                 <>
                   <Play size={16} />
-                  <span>Launch New Round & Sync Live</span>
+                  <span>Launch New Edition & Sync Live</span>
                 </>
               )}
             </button>
