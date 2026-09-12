@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatTeamName, formatTeamUpper } from './teamUtils';
 
 // Clean all emojis and non-standard characters that break standard PDF fonts
 function cleanText(str) {
@@ -708,7 +709,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
-  doc.text(`TEAM ${cleanTeam.toUpperCase()} SUMMARY`, margin, currentY);
+  doc.text(`${formatTeamUpper(cleanTeam)} SUMMARY`, margin, currentY);
   currentY += 8;
 
   const cards = [
@@ -834,7 +835,7 @@ export async function generateTeamPdfReport({ teamName, trackerData = [], settin
     doc.setDrawColor(226, 232, 240);
     doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
 
-    doc.text(`ECCF Bible Reading Club  |  Team ${cleanTeam} Report`, margin, pageHeight - 10);
+    doc.text(`ECCF Bible Reading Club  |  ${formatTeamName(cleanTeam)} Report`, margin, pageHeight - 10);
     doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
   }
 

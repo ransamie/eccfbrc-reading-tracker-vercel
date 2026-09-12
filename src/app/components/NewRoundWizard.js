@@ -430,15 +430,31 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
         Current_Reflection: ""
       }));
 
-      const leadersTrackerPayload = groupedTeams.map(t => ({
-        "Team Leader": t.leaderName,
-        Status: "Active",
-        Team: t.teamName,
-        Assistant: t.assistantName || "",
-        Assistant_Status: t.assistantName ? "Active" : "",
-        Leader_Phone: normalizePhone(t.leaderPhone),
-        Assistant_Phone: normalizePhone(t.assistantPhone)
-      }));
+      const leadersTrackerPayload = [];
+      groupedTeams.forEach(t => {
+        leadersTrackerPayload.push({
+          "Team Leader": t.leaderName,
+          Role: "Team Leader",
+          Status: "Active",
+          Team: t.teamName,
+          Assistant: t.assistantName || "",
+          Assistant_Status: t.assistantName ? "Active" : "",
+          Leader_Phone: normalizePhone(t.leaderPhone),
+          Assistant_Phone: normalizePhone(t.assistantPhone)
+        });
+        if (t.assistantName && t.assistantName.trim()) {
+          leadersTrackerPayload.push({
+            "Team Leader": t.assistantName.trim(),
+            Role: "Assistant Leader",
+            Status: "Active",
+            Team: t.teamName,
+            Assistant: "",
+            Assistant_Status: "",
+            Leader_Phone: normalizePhone(t.assistantPhone),
+            Assistant_Phone: ""
+          });
+        }
+      });
 
       const payload = {
         action: "admin_launch_new_round",

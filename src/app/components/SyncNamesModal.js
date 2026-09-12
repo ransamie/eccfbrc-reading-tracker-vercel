@@ -192,76 +192,32 @@ export default function SyncNamesModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.78)",
-      backdropFilter: "blur(6px)",
-      zIndex: 9999,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "1rem"
-    }}>
-      <div style={{
-        backgroundColor: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "0.85rem",
-        maxWidth: "680px",
-        width: "100%",
-        maxHeight: "92vh",
-        display: "flex",
-        flexDirection: "column",
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.75)",
-        overflow: "hidden"
-      }}>
+    <div className="modal-backdrop-responsive">
+      <div className="modal-dialog-responsive" style={{ maxWidth: "680px" }}>
         {/* Header */}
-        <div style={{
-          padding: "1.25rem 1.5rem",
-          borderBottom: "1px solid var(--border-light)",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          background: "rgba(255, 255, 255, 0.02)"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "0.5rem",
-              background: "rgba(56, 189, 248, 0.18)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}>
-              <FileSpreadsheet size={20} color="#38BDF8" />
-            </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "800", color: "#F9FAFB" }}>
-                Sync Member Full Names from Spreadsheet
+        <div className="modal-header-responsive">
+          <div className="modal-header-top-row">
+            <div className="modal-header-title-wrap">
+              <div className="modal-header-icon-box" style={{ background: "rgba(56, 189, 248, 0.18)" }}>
+                <FileSpreadsheet size={18} color="#38BDF8" />
+              </div>
+              <h3 className="modal-header-title">
+                Sync Member Full Names
               </h3>
-              <p style={{ margin: "0.15rem 0 0 0", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-                Match by phone number and update live member names across Google Sheets Tracker_Data
-              </p>
             </div>
+
+            <button
+              onClick={onClose}
+              className="modal-close-button"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
           </div>
 
-          <button
-            onClick={onClose}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "var(--text-secondary)",
-              cursor: "pointer",
-              padding: "0.35rem",
-              borderRadius: "0.35rem"
-            }}
-          >
-            <X size={20} />
-          </button>
+          <p className="modal-header-subtitle">
+            Match by phone number and update live member names across Google Sheets Tracker_Data
+          </p>
         </div>
 
         {/* Content */}

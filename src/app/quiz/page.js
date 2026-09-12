@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, User, Phone, Users, Play, ShieldAlert, ArrowLeft, Clock, Sparkles } from "lucide-react";
+import { formatTeamName } from "@/lib/teamUtils";
 
 export default function QuizLandingPage() {
   const router = useRouter();
@@ -478,7 +479,7 @@ export default function QuizLandingPage() {
               <option value="" disabled>Tap to select your assigned team...</option>
               {teams.map((t) => (
                 <option key={t} value={t}>
-                  Team {t}
+                  {formatTeamName(t)}
                 </option>
               ))}
             </select>

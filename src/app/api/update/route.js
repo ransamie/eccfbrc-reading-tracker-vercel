@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, fetchGlobalData, invalidateCache, archiveAndResetChallenge, getActiveTrackerSheet, getActiveLeadersSheet } from '@/lib/googleSheets';
+import { formatTeamName } from '@/lib/teamUtils';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -722,7 +723,7 @@ export async function POST(request) {
       if (leadersSheet) {
         await leadersSheet.loadHeaderRow();
         const ldHeaders = leadersSheet.headerValues;
-        const neededCols = ['Team Leader', 'Status', 'Team', 'Assistant', 'Assistant_Status', 'Leader_Phone', 'Assistant_Phone'];
+        const neededCols = ['Team Leader', 'Role', 'Status', 'Team', 'Assistant', 'Assistant_Status', 'Leader_Phone', 'Assistant_Phone'];
         let updatedCols = [...ldHeaders];
         let needsHeaderUpdate = false;
         neededCols.forEach(col => {
@@ -740,6 +741,7 @@ export async function POST(request) {
 
         const sanitizedLeaders = (leaders || []).map(l => ({
           "Team Leader": l["Team Leader"] || l.leaderName || "",
+          Role: l.Role || "Team Leader",
           Status: l.Status || "Active",
           Team: l.Team || l.Team_Name || l.teamName || "",
           Assistant: l.Assistant || l.assistantName || "",
@@ -829,6 +831,241 @@ export async function POST(request) {
         updatedCount, 
         totalProcessed: rows.length, 
         matchedCount: phoneMap.size 
+      });
+    }
+
+    if (action === 'admin_add_member') {
+      const { fullName, phone, team } = payload || {};
+
+      const cleanName = String(fullName || '').trim();
+      if (!cleanName || cleanName.length < 2) {
+        return NextResponse.json({ success: false, message: 'Please provide a valid participant name (at least 2 characters).' }, { status: 400 });
+      }
+
+      const cleanPhone = sanitizePhoneForSheets(phone);
+      if (!cleanPhone || cleanPhone.length < 7) {
+        return NextResponse.json({ success: false, message: 'Please provide a valid WhatsApp phone number.' }, { status: 400 });
+      }
+
+      const trackerSheet = await getActiveTrackerSheet(db);
+      if (!trackerSheet) {
+        return NextResponse.json({ success: false, message: 'Active Tracker sheet not found.' }, { status: 404 });
+      }
+
+      await trackerSheet.loadHeaderRow();
+      const currentHeaders = [...trackerSheet.headerValues];
+      if (!currentHeaders.includes('System_ID')) {
+        currentHeaders.push('System_ID');
+        if (currentHeaders.length > trackerSheet.columnCount) {
+          await trackerSheet.resize({ rowCount: trackerSheet.rowCount, columnCount: currentHeaders.length + 5 });
+        }
+        await trackerSheet.setHeaderRow(currentHeaders);
+      }
+
+      const existingRows = await trackerSheet.getRows();
+
+      // Check for duplicate phone
+      const duplicate = existingRows.find(r => sanitizePhoneForSheets(r.get('WhatsApp_Number')) === cleanPhone);
+      if (duplicate) {
+        const dupName = duplicate.get('Member_Name');
+        const dupTeam = duplicate.get('Team_Name') || duplicate.get('Team');
+        return NextResponse.json({ 
+          success: false, 
+          message: `Phone number ${cleanPhone} is already registered under ${dupName} in ${dupTeam}.` 
+        }, { status: 400 });
+      }
+
+      // 1. Gather all active teams & PINs
+      const credsSheet = db.sheetsByTitle["Team_Credentials"];
+      let allTeams = [];
+      const teamPinMap = new Map();
+      if (credsSheet) {
+        const credRows = await credsSheet.getRows();
+        credRows.forEach(r => {
+          const tName = String(r.get('Team_Name') || r.get('Team') || '').trim();
+          if (tName && tName.toLowerCase() !== 'admin') {
+            allTeams.push(tName);
+            teamPinMap.set(normalizeTeamName(tName), String(r.get('PIN') || '1234').trim());
+          }
+        });
+      }
+
+      if (allTeams.length === 0) {
+        const uniqueFromTracker = Array.from(new Set(
+          existingRows.map(r => String(r.get('Team_Name') || r.get('Team') || '').trim()).filter(Boolean)
+        ));
+        allTeams = uniqueFromTracker;
+      }
+
+      if (allTeams.length === 0) {
+        allTeams = ['Team 01'];
+      }
+
+      // 2. Determine target team
+      let assignedTeam = '';
+      if (team && String(team).trim().toLowerCase() !== 'auto') {
+        const reqNorm = normalizeTeamName(team);
+        const match = allTeams.find(t => normalizeTeamName(t) === reqNorm);
+        assignedTeam = match || team.trim();
+      } else {
+        // Calculate member counts per team and auto-assign to team with fewest members
+        const counts = {};
+        allTeams.forEach(t => { counts[t] = 0; });
+
+        existingRows.forEach(r => {
+          const rTeam = String(r.get('Team_Name') || r.get('Team') || '').trim();
+          for (const t of allTeams) {
+            if (normalizeTeamName(t) === normalizeTeamName(rTeam)) {
+              counts[t] = (counts[t] || 0) + 1;
+              break;
+            }
+          }
+        });
+
+        // Pick team with lowest count, tie-breaker: natural alphanumeric sort
+        const sortedTeams = [...allTeams].sort((a, b) => {
+          const countDiff = (counts[a] || 0) - (counts[b] || 0);
+          if (countDiff !== 0) return countDiff;
+          return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+        });
+
+        assignedTeam = sortedTeams[0];
+      }
+
+      // 3. Generate sequential System_ID
+      let prefix = "ECCFBRC";
+      let maxSeq = 0;
+      const idRegex = /^([A-Za-z0-9_-]+)-(\d+)$/;
+      existingRows.forEach(r => {
+        const sid = String(r.get('System_ID') || '').trim();
+        const m = sid.match(idRegex);
+        if (m) {
+          prefix = m[1];
+          const num = parseInt(m[2], 10);
+          if (num > maxSeq) maxSeq = num;
+        }
+      });
+
+      if (maxSeq === 0) {
+        maxSeq = existingRows.length;
+      }
+
+      const nextSeq = maxSeq + 1;
+      const padLength = Math.max(3, String(nextSeq).length);
+      const generatedSystemId = `${prefix}-${String(nextSeq).padStart(padLength, '0')}`;
+
+      // 4. Add row to Tracker_Data
+      const newMemberRow = {
+        Team_Name: assignedTeam,
+        Member_Name: cleanName,
+        WhatsApp_Number: cleanPhone,
+        Status: 'Active',
+        System_ID: generatedSystemId
+      };
+
+      await trackerSheet.addRow(newMemberRow);
+
+      // 5. Build the updated Team Leader WhatsApp message
+      const globalData = await fetchGlobalData();
+      const editionTitle = globalData.settings?.Challenge_Edition || globalData.settings?.Challenge_Name || "ECCF Bible Reading Challenge";
+      const pin = teamPinMap.get(normalizeTeamName(assignedTeam)) || "1234";
+
+      // Fetch leader & assistant info for assignedTeam
+      let leaderName = "";
+      let leaderPhone = "";
+      let assistantName = "";
+      let assistantPhone = "";
+
+      const leadersSheet = await getActiveLeadersSheet(db);
+      if (leadersSheet) {
+        const ldRows = await leadersSheet.getRows();
+        const normAssigned = normalizeTeamName(assignedTeam);
+        for (const row of ldRows) {
+          const rTeam = normalizeTeamName(row.get('Team') || row.get('Team_Name'));
+          if (rTeam === normAssigned) {
+            const role = String(row.get('Role') || '').trim().toLowerCase();
+            if (role === 'assistant leader') {
+              assistantName = row.get('Team Leader') || '';
+              assistantPhone = sanitizePhoneForSheets(row.get('Leader_Phone') || row.get('Leader Phone'));
+            } else if (role === 'team leader' || !leaderName) {
+              leaderName = row.get('Team Leader') || '';
+              leaderPhone = sanitizePhoneForSheets(row.get('Leader_Phone') || row.get('Leader Phone'));
+              if (!assistantName && row.get('Assistant')) {
+                assistantName = row.get('Assistant');
+                assistantPhone = sanitizePhoneForSheets(row.get('Assistant_Phone'));
+              }
+            }
+          }
+        }
+      }
+
+      // Collect all members in assigned team including the new one
+      const assignedMembers = [];
+      existingRows.forEach(r => {
+        const rTeam = normalizeTeamName(r.get('Team_Name') || r.get('Team'));
+        if (rTeam === normalizeTeamName(assignedTeam)) {
+          const p = sanitizePhoneForSheets(r.get('WhatsApp_Number'));
+          if (p) assignedMembers.push(p);
+        }
+      });
+      // Add the new member's phone
+      assignedMembers.push(cleanPhone);
+
+      const leaderDisplay = leaderName || "[TEAM LEADER'S NAME]";
+      const leaderWaLink = leaderPhone ? `https://wa.me/${leaderPhone}` : "https://wa.me/";
+      const assistantWaLink = assistantPhone ? `https://wa.me/${assistantPhone}` : "https://wa.me/";
+      const assistantText = assistantName 
+        ? `${assistantName} [${assistantWaLink}]`
+        : "[ASSISTANT NAME] [https://wa.me/]";
+
+      const membersList = assignedMembers.map((p, idx) => `${idx + 1}. https://wa.me/${p}`).join("\n");
+      const displayTeamFormatted = formatTeamName(assignedTeam);
+
+      const messageText = 
+        `Good Morning Dear ECCFBRC Team Leader. I believe you've already created your Group chat, and have added your Assistant, if not please do that as soon as possible, and then move on to send each of your members this message;\n\n` +
+        `-----------------------------------------------------------\n` +
+        `Hello!\n\n` +
+        `I am ${leaderDisplay}, your Team Leader for ${displayTeamFormatted} in the ECCF Bible Reading Challenge (${editionTitle}).\n\n` +
+        `I am reaching out to welcome you and to request your permission to add you to our team's group chat for mutual follow-up and accountability.\n\n` +
+        `If you are happy to proceed, you can join the group directly using the invite link below:\n\n` +
+        `[LINK TO TEAM GROUP CHAT]\n\n` +
+        `I look forward to welcoming you to the team!\n` +
+        `-----------------------------------------------------------\n` +
+        `Ensure to replace the brackets with your actual details.\n\n` +
+        `-----------------------------------------------------------\n` +
+        `*${displayTeamFormatted}*\n` +
+        `*Team Leader*: ${leaderDisplay} [${leaderWaLink}]\n` +
+        `*Assistant*: ${assistantText}\n` +
+        `*Team Login PIN*: ${pin}\n\n` +
+        `*Members:*\n` +
+        `${membersList}\n\n` +
+        `Click their links to access their DMs and paste the edited message in each of them.\n` +
+        `If you have any question, please feel free to ask.`;
+
+      invalidateCache();
+
+      return NextResponse.json({
+        success: true,
+        member: {
+          name: cleanName,
+          phone: cleanPhone,
+          team: displayTeamFormatted,
+          systemId: generatedSystemId,
+          status: 'Active'
+        },
+        leaderInfo: {
+          leaderName,
+          leaderPhone,
+          leaderWaLink,
+          assistantName,
+          assistantPhone,
+          assistantWaLink,
+          pin
+        },
+        updatedMessage: messageText,
+        assignedTeam: displayTeamFormatted,
+        totalTeamMembers: assignedMembers.length,
+        message: `Successfully added ${cleanName} to ${displayTeamFormatted} (${generatedSystemId}).`
       });
     }
 

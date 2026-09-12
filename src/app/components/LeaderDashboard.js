@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import { generateTeamPdfReport } from "@/lib/pdfReportGenerator";
+import { formatTeamName, formatTeamUpper } from "@/lib/teamUtils";
 
 export default function LeaderDashboard({ team, onLogout }) {
   const [data, setData] = useState(null);
@@ -122,11 +123,17 @@ export default function LeaderDashboard({ team, onLogout }) {
         if (d.leadersData) {
           d.leadersData.forEach(l => {
             const lName = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
-            initialLeaderUpdates[lName] = String(l[selectedDay || calcCurrentDay] || '').toUpperCase() === 'TRUE';
+            if (lName) {
+              initialLeaderUpdates[lName] = String(l[selectedDay || calcCurrentDay] || '').toUpperCase() === 'TRUE';
+            }
+            const aName = String(l.Assistant || l['Assistant Leader'] || '').trim();
+            if (aName && aName.toLowerCase() !== 'n/a' && initialLeaderUpdates[aName] === undefined) {
+              initialLeaderUpdates[aName] = String(l[selectedDay || calcCurrentDay] || '').toUpperCase() === 'TRUE';
+            }
           });
         }
         setLeaderUpdates(initialLeaderUpdates);
-
+        
         if (isManualRefresh === true) showToast("Dashboard is up-to-date!");
         return d;
       })
@@ -153,7 +160,13 @@ export default function LeaderDashboard({ team, onLogout }) {
       const newLeaderUpdates = {};
       data.leadersData.forEach(l => {
         const lName = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
-        newLeaderUpdates[lName] = String(l[selectedDay] || '').toUpperCase() === 'TRUE';
+        if (lName) {
+          newLeaderUpdates[lName] = String(l[selectedDay] || '').toUpperCase() === 'TRUE';
+        }
+        const aName = String(l.Assistant || l['Assistant Leader'] || '').trim();
+        if (aName && aName.toLowerCase() !== 'n/a' && newLeaderUpdates[aName] === undefined) {
+          newLeaderUpdates[aName] = String(l[selectedDay] || '').toUpperCase() === 'TRUE';
+        }
       });
       setLeaderUpdates(newLeaderUpdates);
     }
@@ -391,7 +404,7 @@ export default function LeaderDashboard({ team, onLogout }) {
     }
 
     const challengeHeader = useData?.settings?.Challenge_Name || 'ECCF Bible Reading Club';
-    const text = `*${challengeHeader}*\n\n*Daily Reading Report*\n\n*TEAM ${team.toUpperCase()}*\n\n*Team Status Update*\n- *Number Assigned*: ${numAssigned.toString().padStart(2,'0')}\n- *Number Committed*: ${numCommitted.toString().padStart(2,'0')}\n- *Number Declined*: ${numDeclined.toString().padStart(2,'0')}\n- *Number Left*: ${numLeft.toString().padStart(2,'0')}\n- *Number Evicted*: ${numEvicted.toString().padStart(2,'0')}\n- *Number Settled*: ${numCommitted.toString().padStart(2,'0')}\n\n*Bible Reading Team Report 📃*\n\n${previousRoundsStr}   *ROUND ${currentRound} ✅*\n${roundBreakdownStr}\n\n*YET TO UPDATE 🤲✨*\n${yetToUpdateStr}\n\n*UP-TO-DATE 🤩🚀*\n${upToDateStr}${evictionSection}\n\n*REFLECTION*\n*${reflection}*`;
+    const text = `*${challengeHeader}*\n\n*Daily Reading Report*\n\n*${formatTeamUpper(team)}*\n\n*Team Status Update*\n- *Number Assigned*: ${numAssigned.toString().padStart(2,'0')}\n- *Number Committed*: ${numCommitted.toString().padStart(2,'0')}\n- *Number Declined*: ${numDeclined.toString().padStart(2,'0')}\n- *Number Left*: ${numLeft.toString().padStart(2,'0')}\n- *Number Evicted*: ${numEvicted.toString().padStart(2,'0')}\n- *Number Settled*: ${numCommitted.toString().padStart(2,'0')}\n\n*Bible Reading Team Report 📃*\n\n${previousRoundsStr}   *ROUND ${currentRound} ✅*\n${roundBreakdownStr}\n\n*YET TO UPDATE 🤲✨*\n${yetToUpdateStr}\n\n*UP-TO-DATE 🤩🚀*\n${upToDateStr}${evictionSection}\n\n*REFLECTION*\n*${reflection}*`;
     setReportText(text.replace(/\\n/g, '\n'));
   };
 
@@ -400,6 +413,39 @@ export default function LeaderDashboard({ team, onLogout }) {
   const allMembers = data?.trackerData || [];
   const activeMembers = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'active');
   const daysList = Array.from({length: currentDayNum}, (_, i) => `Day_${i+1}`);
+
+  const leadershipTiles = useMemo(() => {
+    if (!data?.leadersData || data.leadersData.length === 0) return [];
+    const tiles = [];
+    const seen = new Set();
+    
+    data.leadersData.forEach((l, idx) => {
+      const rawName = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
+      const rawRole = String(l.Role || l.Position || l.Designation || '').toLowerCase();
+      const roleLabel = rawRole.includes('asst') || rawRole.includes('assistant') || idx > 0 ? 'Assistant Leader' : 'Team Leader';
+      
+      if (rawName && !seen.has(rawName.toLowerCase())) {
+        seen.add(rawName.toLowerCase());
+        tiles.push({
+          name: rawName,
+          role: roleLabel,
+          phone: l.Leader_Phone || l.Phone || ''
+        });
+      }
+
+      const asstName = String(l.Assistant || l['Assistant Leader'] || '').trim();
+      if (asstName && asstName.toLowerCase() !== 'n/a' && !seen.has(asstName.toLowerCase())) {
+        seen.add(asstName.toLowerCase());
+        tiles.push({
+          name: asstName,
+          role: 'Assistant Leader',
+          phone: l.Assistant_Phone || ''
+        });
+      }
+    });
+
+    return tiles;
+  }, [data?.leadersData]);
 
   return (
     <div className="container">
@@ -418,7 +464,7 @@ export default function LeaderDashboard({ team, onLogout }) {
           <img src="/eccfbrclogo.png" alt="Logo" />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <div style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: '1.2' }}>Team {team}</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: '1.2' }}>{formatTeamName(team)}</div>
               {data?.settings?.Challenge_Edition && (
                 <span style={{ 
                   fontSize: '0.74rem', 
@@ -433,12 +479,28 @@ export default function LeaderDashboard({ team, onLogout }) {
                 </span>
               )}
             </div>
-            {data?.leadersData && (
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                Leader: <strong style={{ color: 'var(--text-primary)' }}>{data.leadersData[0]?.Member_Name || data.leadersData[0]?.Name || data.leadersData[0]?.['Team Leader'] || 'N/A'}</strong>
-                {data.leadersData[1] && ` • Asst: ${data.leadersData[1]?.Member_Name || data.leadersData[1]?.Name || data.leadersData[1]?.['Team Leader']}`}
-              </div>
-            )}
+            {data?.leadersData && (() => {
+              const leaderRow = data.leadersData.find(l => {
+                const r = String(l.Role || '').toLowerCase();
+                return !r.includes('asst') && !r.includes('assistant');
+              }) || data.leadersData[0];
+              const asstRow = data.leadersData.find(l => {
+                const r = String(l.Role || '').toLowerCase();
+                return r.includes('asst') || r.includes('assistant');
+              }) || (data.leadersData.length > 1 ? data.leadersData[1] : null);
+
+              const lName = leaderRow?.['Team Leader'] || leaderRow?.Member_Name || leaderRow?.Name || 'N/A';
+              const aName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || '';
+
+              return (
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                  Leader: <strong style={{ color: 'var(--text-primary)' }}>{lName}</strong>
+                  {aName && aName.toLowerCase() !== 'n/a' && (
+                    <span> &bull; Asst: <strong style={{ color: 'var(--text-primary)' }}>{aName}</strong></span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
         <div className="tracker-header-actions">
@@ -578,31 +640,28 @@ export default function LeaderDashboard({ team, onLogout }) {
           </div>
 
           {/* Team Leadership Daily Reading Ticks */}
-          {data?.leadersData && data.leadersData.length > 0 && (
+          {leadershipTiles.length > 0 && (
             <div style={{ marginBottom: '1.25rem' }}>
               <div style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.45rem' }}>
                 Team Leadership
               </div>
               <div className="tracker-check-grid" style={{ marginBottom: 0 }}>
-                {data.leadersData.map((l, idx) => {
-                  const lName = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
-                  const isChecked = !!leaderUpdates[lName];
-                  const rawRole = String(l.Role || l.Position || l.Designation || '').toLowerCase();
-                  const roleLabel = rawRole.includes('asst') || rawRole.includes('assistant') || idx > 0 ? 'Assistant Leader' : 'Team Leader';
+                {leadershipTiles.map(item => {
+                  const isChecked = !!leaderUpdates[item.name];
 
                   return (
                     <div
-                      key={lName || idx}
-                      onClick={() => handleLeaderCheckbox(lName)}
+                      key={item.name}
+                      onClick={() => handleLeaderCheckbox(item.name)}
                       className={`tracker-check-tile ${isChecked ? 'active' : ''}`}
                     >
                       <div className="tracker-tile-checkbox">
                         {isChecked && <Check size={14} strokeWidth={3} />}
                       </div>
                       <div className="tracker-tile-info">
-                        <span className="tracker-tile-name">{lName}</span>
+                        <span className="tracker-tile-name">{item.name}</span>
                         <span style={{ fontSize: '0.76rem', color: isChecked ? '#93C5FD' : 'var(--text-secondary)', fontWeight: '600' }}>
-                          {roleLabel}
+                          {item.role}
                         </span>
                       </div>
                     </div>
@@ -917,7 +976,7 @@ export default function LeaderDashboard({ team, onLogout }) {
               <Trophy size={22} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700' }}>Team {team} Quiz Link</h3>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700' }}>{formatTeamName(team)} Quiz Link</h3>
               <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                 Share this link with your team members on WhatsApp
               </p>
@@ -996,7 +1055,7 @@ export default function LeaderDashboard({ team, onLogout }) {
               1. Copy this link and send it to your WhatsApp reading group.
             </p>
             <p style={{ margin: 0 }}>
-              2. Members will enter their name, WhatsApp number, and select <strong>Team {team}</strong> to start.
+              2. Members will enter their name, WhatsApp number, and select <strong>{formatTeamName(team)}</strong> to start.
             </p>
             <p style={{ margin: 0 }}>
               3. If the Super Admin has not activated the quiz yet, members will see a <strong>"Coming Soon"</strong> screen.

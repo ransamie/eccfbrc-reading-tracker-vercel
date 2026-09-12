@@ -1,9 +1,10 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   X, MessageSquare, Copy, Check, ExternalLink, Search, 
   Users, KeyRound, Phone, ShieldCheck, Download
 } from "lucide-react";
+import { formatTeamName } from "@/lib/teamUtils";
 
 function normalizePhone(raw) {
   if (raw === null || raw === undefined) return "";
@@ -25,9 +26,15 @@ function normalizePhone(raw) {
 
 const normalizeTeamName = (name) => String(name || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
 
-export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
-  const [searchQuery, setSearchQuery] = useState("");
+export default function LeaderWhatsAppModal({ isOpen, onClose, data, initialTeam = "" }) {
+  const [searchQuery, setSearchQuery] = useState(initialTeam || "");
   const [copyFeedback, setCopyFeedback] = useState({});
+
+  useEffect(() => {
+    if (initialTeam) {
+      setSearchQuery(initialTeam);
+    }
+  }, [initialTeam, isOpen]);
 
   const handleCopy = (key, text) => {
     navigator.clipboard.writeText(text);
@@ -38,23 +45,26 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
   };
 
   const teamsData = useMemo(() => {
-    if (!data || !data.dfTracker) return [];
+    if (!data) return [];
 
-    const dfTracker = data.dfTracker || [];
-    const dfLeaders = data.dfLeaders || [];
-    const dfCredentials = data.dfCredentials || [];
+    const trackerRows = data.trackerData || data.dfTracker || [];
+    const leadersRows = data.leadersData || data.dfLeaders || [];
+    const credentialsRows = data.credentialsData || data.dfCredentials || [];
+    const validTeams = data.validTeams || [];
     const settings = data.settings || {};
 
     const editionTitle = settings.Challenge_Edition || settings.Challenge_Name || "ECCF Bible Reading Challenge";
 
     // Map leaders by team
     const leadersMap = new Map();
-    dfLeaders.forEach(ld => {
-      const tKey = normalizeTeamName(ld.Team || ld.Team_Name || ld.team);
+    leadersRows.forEach(ld => {
+      const rawTeam = ld.Team || ld.Team_Name || ld.team || "";
+      const tKey = normalizeTeamName(rawTeam);
       if (tKey) {
         leadersMap.set(tKey, {
-          leaderName: ld["Team Leader"] || ld.leaderName || "",
-          leaderPhone: ld.Leader_Phone || ld["Leader Phone"] || "",
+          rawTeam,
+          leaderName: ld["Team Leader"] || ld.leaderName || ld.Member_Name || ld.Name || "",
+          leaderPhone: ld.Leader_Phone || ld["Leader Phone"] || ld.Phone_Number || ld.Phone || "",
           leaderStatus: ld.Status || "Active",
           assistantName: ld.Assistant || ld.assistantName || "",
           assistantPhone: ld.Assistant_Phone || ld["Assistant Phone"] || "",
@@ -65,43 +75,82 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
 
     // Map creds by team
     const credsMap = new Map();
-    dfCredentials.forEach(cr => {
-      const tKey = normalizeTeamName(cr.Team_Name || cr.Team);
+    credentialsRows.forEach(cr => {
+      const rawTeam = cr.Team_Name || cr.Team || "";
+      const tKey = normalizeTeamName(rawTeam);
       if (tKey) {
-        credsMap.set(tKey, cr.PIN || "1234");
+        credsMap.set(tKey, {
+          rawTeam,
+          pin: cr.PIN || "1234"
+        });
+      }
+    });
+
+    // Seed all known teams
+    const allKnownTeams = new Map();
+
+    // From validTeams
+    validTeams.forEach(t => {
+      if (t && String(t).toLowerCase() !== 'admin') {
+        allKnownTeams.set(normalizeTeamName(t), String(t).trim());
+      }
+    });
+
+    // From credentialsRows
+    credentialsRows.forEach(cr => {
+      const rawTeam = cr.Team_Name || cr.Team;
+      if (rawTeam && String(rawTeam).toLowerCase() !== 'admin') {
+        const k = normalizeTeamName(rawTeam);
+        if (!allKnownTeams.has(k)) allKnownTeams.set(k, String(rawTeam).trim());
+      }
+    });
+
+    // From leadersRows
+    leadersRows.forEach(ld => {
+      const rawTeam = ld.Team || ld.Team_Name || ld.team;
+      if (rawTeam && String(rawTeam).toLowerCase() !== 'admin') {
+        const k = normalizeTeamName(rawTeam);
+        if (!allKnownTeams.has(k)) allKnownTeams.set(k, String(rawTeam).trim());
+      }
+    });
+
+    // From trackerRows
+    trackerRows.forEach(m => {
+      const rawTeam = m.Team_Name || m.Team;
+      if (rawTeam && String(rawTeam).toLowerCase() !== 'admin') {
+        const k = normalizeTeamName(rawTeam);
+        if (!allKnownTeams.has(k)) allKnownTeams.set(k, String(rawTeam).trim());
       }
     });
 
     // Group members by team
-    const teamsGrouped = new Map();
-    dfTracker.forEach(m => {
+    const teamMembersMap = new Map();
+    trackerRows.forEach(m => {
       const rawTeam = m.Team_Name || m.Team || "Unassigned";
       const tKey = normalizeTeamName(rawTeam);
-      if (!teamsGrouped.has(tKey)) {
-        teamsGrouped.set(tKey, {
-          teamName: rawTeam,
-          members: []
-        });
+      if (!teamMembersMap.has(tKey)) {
+        teamMembersMap.set(tKey, []);
       }
       const pClean = normalizePhone(m.WhatsApp_Number || m.Phone_Number || m.Phone);
-      teamsGrouped.get(tKey).members.push({
+      teamMembersMap.get(tKey).push({
         name: m.Member_Name || m.Name || "Participant",
         phoneClean: pClean,
-        phoneRaw: m.WhatsApp_Number || "",
+        phoneRaw: m.WhatsApp_Number || m.Phone_Number || "",
         status: m.Status || "Active",
         systemId: m.System_ID || ""
       });
     });
 
     const result = [];
-    teamsGrouped.forEach((group, tKey) => {
+    allKnownTeams.forEach((displayTeamName, tKey) => {
       const leaderInfo = leadersMap.get(tKey) || {
         leaderName: "",
         leaderPhone: "",
         assistantName: "",
         assistantPhone: ""
       };
-      const pin = credsMap.get(tKey) || "1234";
+      const pin = credsMap.get(tKey)?.pin || "1234";
+      const members = teamMembersMap.get(tKey) || [];
 
       const leaderPhoneClean = normalizePhone(leaderInfo.leaderPhone);
       const assistantPhoneClean = normalizePhone(leaderInfo.assistantPhone);
@@ -114,15 +163,17 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
         ? `${leaderInfo.assistantName} [${assistantWaLink}]`
         : "[ASSISTANT NAME] [https://wa.me/]";
 
-      const membersList = group.members
-        .map((m, idx) => `${idx + 1}. https://wa.me/${m.phoneClean}`)
-        .join("\n");
+      const membersList = members.length > 0
+        ? members.map((m, idx) => `${idx + 1}. https://wa.me/${m.phoneClean}`).join("\n")
+        : "No members assigned yet.";
+
+      const formattedTeam = formatTeamName(displayTeamName);
 
       const messageText = 
         `Good Morning Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible, and then move on to send each of your members this message;\n\n` +
         `-----------------------------------------------------------\n` +
         `Hello!\n\n` +
-        `I am ${leaderDisplay}, your Team Leader for ${group.teamName} in the ECCF Bible Reading Challenge (${editionTitle}).\n\n` +
+        `I am ${leaderDisplay}, your Team Leader for ${formattedTeam} in the ECCF Bible Reading Challenge (${editionTitle}).\n\n` +
         `I am reaching out to welcome you and to request your permission to add you to our team\'s group chat for mutual follow-up and accountability.\n\n` +
         `If you are happy to proceed, you can join the group directly using the invite link below:\n\n` +
         `[LINK TO TEAM GROUP CHAT]\n\n` +
@@ -130,7 +181,7 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
         `-----------------------------------------------------------\n` +
         `Ensure to replace the brackets with your actual details.\n\n` +
         `-----------------------------------------------------------\n` +
-        `*${group.teamName}*\n` +
+        `*${formattedTeam}*\n` +
         `*Team Leader*: ${leaderDisplay} [${leaderWaLink}]\n` +
         `*Assistant*: ${assistantText}\n` +
         `*Team Login PIN*: ${pin}\n\n` +
@@ -140,7 +191,7 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
         `If you have any question, please feel free to ask.`;
 
       result.push({
-        teamName: group.teamName,
+        teamName: formattedTeam,
         leaderName: leaderInfo.leaderName,
         leaderPhone: leaderInfo.leaderPhone,
         leaderPhoneClean,
@@ -149,8 +200,8 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
         assistantPhone: leaderInfo.assistantPhone,
         assistantPhoneClean,
         pin,
-        membersCount: group.members.length,
-        members: group.members,
+        membersCount: members.length,
+        members: members,
         messageText
       });
     });
@@ -182,111 +233,75 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.78)",
-      backdropFilter: "blur(6px)",
-      zIndex: 9999,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "1rem"
-    }}>
-      <div style={{
-        backgroundColor: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "0.85rem",
-        maxWidth: "920px",
-        width: "100%",
-        maxHeight: "92vh",
-        display: "flex",
-        flexDirection: "column",
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.75)",
-        overflow: "hidden"
-      }}>
+    <div className="modal-backdrop-responsive">
+      <div className="modal-dialog-responsive">
         {/* Modal Header */}
-        <div style={{
-          padding: "1.25rem 1.5rem",
-          borderBottom: "1px solid var(--border-light)",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          background: "rgba(255, 255, 255, 0.02)"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "0.5rem",
-              background: "rgba(34, 197, 94, 0.18)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center"
-            }}>
-              <MessageSquare size={20} color="#22C55E" />
-            </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "800", color: "#F9FAFB" }}>
-                Team Leader WhatsApp Onboarding Messages
+        <div className="modal-header-responsive">
+          <div className="modal-header-top-row">
+            <div className="modal-header-title-wrap">
+              <div className="modal-header-icon-box">
+                <MessageSquare size={18} color="#22C55E" />
+              </div>
+              <h3 className="modal-header-title">
+                Team Leader WhatsApp Messages
               </h3>
-              <p style={{ margin: "0.15rem 0 0 0", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-                {teamsData.length} teams in active challenge &middot; Includes copy-ready message, PIN, and member DM links
-              </p>
             </div>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <button
-              onClick={copyAllPinsDirectory}
-              className="btn-secondary"
-              style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8rem", padding: "0.45rem 0.85rem" }}
-            >
-              {copyFeedback["all_pins"] ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
-              <span>{copyFeedback["all_pins"] ? "Copied PINs!" : "Copy PIN Directory"}</span>
-            </button>
 
             <button
               onClick={onClose}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--text-secondary)",
-                cursor: "pointer",
-                padding: "0.35rem",
-                borderRadius: "0.35rem"
-              }}
+              className="modal-close-button"
+              aria-label="Close"
             >
               <X size={20} />
+            </button>
+          </div>
+
+          <p className="modal-header-subtitle">
+            {teamsData.length} teams in active challenge &middot; Includes copy-ready message, PIN, and member DM links
+          </p>
+
+          <div className="modal-header-actions">
+            <button
+              onClick={copyAllPinsDirectory}
+              className="btn-secondary"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.4rem",
+                fontSize: "0.82rem",
+                padding: "0.5rem 1rem",
+                width: "100%"
+              }}
+            >
+              {copyFeedback["all_pins"] ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
+              <span>{copyFeedback["all_pins"] ? "Copied All PINs!" : "Copy All Leader PINs Directory"}</span>
             </button>
           </div>
         </div>
 
         {/* Search & Filter Bar */}
-        <div style={{ padding: "0.85rem 1.5rem", borderBottom: "1px solid var(--border-light)", background: "rgba(0, 0, 0, 0.2)" }}>
+        <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid var(--border-light)", background: "rgba(0, 0, 0, 0.2)" }}>
           <div style={{ position: "relative" }}>
             <Search size={16} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary)" }} />
             <input
               type="text"
               className="input-field"
-              placeholder="Search by team name or leader name..."
+              placeholder="Search by team or leader name..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: "2.35rem", height: "38px", fontSize: "0.88rem", margin: 0 }}
+              style={{ paddingLeft: "2.35rem", height: "38px", fontSize: "0.88rem", margin: 0, width: "100%" }}
             />
           </div>
         </div>
 
         {/* Content List */}
         <div style={{
-          padding: "1.5rem",
+          padding: "1rem",
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
-          gap: "1.25rem"
+          gap: "1rem"
         }}>
           {filteredTeams.length === 0 ? (
             <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--text-secondary)" }}>
@@ -300,16 +315,11 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
                 : null;
 
               return (
-                <div key={team.teamName} style={{
-                  background: "rgba(255, 255, 255, 0.02)",
-                  border: "1px solid var(--border-light)",
-                  borderRadius: "0.75rem",
-                  padding: "1.25rem"
-                }}>
+                <div key={team.teamName} className="team-card-responsive">
                   {/* Team Card Header */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.85rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                  <div className="team-card-header-responsive">
                     <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
                         <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "800", color: "#F9FAFB" }}>
                           {team.teamName}
                         </h4>
@@ -317,14 +327,14 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
                           {team.membersCount} Members
                         </span>
                       </div>
-                      <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginTop: "0.2rem" }}>
+                      <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginTop: "0.25rem" }}>
                         Leader: <strong style={{ color: "var(--text-primary)" }}>{team.leaderName || "Not Designated"}</strong>
                         {team.leaderPhone ? ` (${team.leaderPhone})` : ""}
                         &middot; PIN: <strong style={{ fontFamily: "monospace", color: "#38BDF8" }}>{team.pin}</strong>
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <div className="team-card-btn-group-responsive">
                       <button
                         onClick={() => handleCopy(`team_${idx}`, team.messageText)}
                         className="btn-secondary"
@@ -358,19 +368,7 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
                   </div>
 
                   {/* Message Preview Box */}
-                  <div style={{
-                    background: "rgba(10, 15, 29, 0.8)",
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
-                    borderRadius: "0.5rem",
-                    padding: "1rem",
-                    fontFamily: "monospace",
-                    fontSize: "0.8rem",
-                    lineHeight: "1.5",
-                    whiteSpace: "pre-wrap",
-                    maxHeight: "220px",
-                    overflowY: "auto",
-                    color: "#E2E8F0"
-                  }}>
+                  <div className="message-preview-box-responsive">
                     {team.messageText}
                   </div>
                 </div>
@@ -381,7 +379,7 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data }) {
 
         {/* Modal Footer */}
         <div style={{
-          padding: "1rem 1.5rem",
+          padding: "0.85rem 1rem",
           borderTop: "1px solid var(--border-light)",
           display: "flex",
           justifyContent: "flex-end",

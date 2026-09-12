@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, AlertTriangle, ShieldCheck, CheckCircle2, ChevronRight, WifiOff, Users, ArrowLeft, HelpCircle } from "lucide-react";
+import { formatTeamName } from "@/lib/teamUtils";
 
 export default function QuizTakePage() {
   const router = useRouter();
@@ -509,7 +510,7 @@ export default function QuizTakePage() {
                     borderRadius: '0.35rem',
                     whiteSpace: 'nowrap'
                   }}>
-                    Team {participant.team}
+                    {formatTeamName(participant.team)}
                   </span>
                 )}
               </div>

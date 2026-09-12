@@ -369,7 +369,7 @@ export async function archiveAndResetChallenge({ newChallengeName, newEdition, n
 
   // 5. Reset Active Leaders_Tracker_Data to Clean Slate
   await leadersSheet.clearRows();
-  await leadersSheet.setHeaderRow(['Team Leader', 'Status', 'Team']);
+  await leadersSheet.setHeaderRow(['Team Leader', 'Role', 'Status', 'Team', 'Assistant', 'Leader_Phone', 'Assistant_Phone']);
 
   // 6. Reset Team Credentials to Clean Slate (Blank slate for new edition teams)
   if (credentialsSheet) {

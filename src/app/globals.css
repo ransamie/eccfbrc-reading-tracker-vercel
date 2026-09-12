@@ -794,6 +794,16 @@ select option {
     font-size: 1.05rem !important;
   }
 
+  /* Container & Card Mobile Optimization */
+  .container {
+    padding: 1rem 0.65rem !important;
+  }
+
+  .card {
+    padding: 1.15rem 0.85rem !important;
+    margin-bottom: 1rem !important;
+  }
+
   /* Tracker Dashboard Mobile Overrides */
   .tracker-header-wrap {
     flex-direction: column !important;
@@ -809,23 +819,24 @@ select option {
     width: 100% !important;
     display: flex !important;
     align-items: center !important;
+    flex-wrap: wrap !important;
     gap: 0.4rem !important;
   }
 
   .tracker-header-actions > *:not(.tracker-btn-icon) {
-    flex: 1 1 0px !important;
-    min-width: 0 !important;
-    height: 2.25rem !important;
+    flex: 1 1 calc(50% - 0.4rem) !important;
+    min-width: 100px !important;
+    height: 2.35rem !important;
     padding: 0 0.5rem !important;
-    font-size: 0.78rem !important;
+    font-size: 0.8rem !important;
     justify-content: center !important;
     text-align: center !important;
   }
 
   .tracker-header-actions > .tracker-btn-icon {
-    flex: 0 0 2.25rem !important;
-    width: 2.25rem !important;
-    height: 2.25rem !important;
+    flex: 0 0 2.35rem !important;
+    width: 2.35rem !important;
+    height: 2.35rem !important;
     padding: 0 !important;
     justify-content: center !important;
   }
@@ -1597,6 +1608,230 @@ select option {
   margin-bottom: 1.25rem;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+/* =========================================================
+   Mobile-First Modal & Responsive Architecture
+   ========================================================= */
+
+.modal-backdrop-responsive {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .modal-backdrop-responsive {
+    padding: 1.25rem;
+  }
+}
+
+.modal-dialog-responsive {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  max-width: 920px;
+  width: 100%;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+  overflow: hidden;
+}
+
+@media (max-width: 639px) {
+  .modal-dialog-responsive {
+    max-height: 96vh;
+    border-radius: 0.75rem;
+  }
+}
+
+.modal-header-responsive {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+@media (min-width: 640px) {
+  .modal-header-responsive {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+.modal-header-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.modal-header-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.modal-header-icon-box {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 0.5rem;
+  background: rgba(34, 197, 94, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.modal-header-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #F9FAFB;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 639px) {
+  .modal-header-title {
+    font-size: 1rem;
+  }
+}
+
+.modal-close-button {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.modal-close-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.modal-header-subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 639px) {
+  .modal-header-actions > * {
+    flex: 1 1 100%;
+  }
+}
+
+.team-card-responsive {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-light);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .team-card-responsive {
+    padding: 1.25rem;
+  }
+}
+
+.team-card-header-responsive {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+@media (min-width: 640px) {
+  .team-card-header-responsive {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.team-card-btn-group-responsive {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .team-card-btn-group-responsive {
+    width: auto;
+  }
+}
+
+.team-card-btn-group-responsive > button,
+.team-card-btn-group-responsive > a {
+  flex: 1 1 140px;
+  justify-content: center;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .team-card-btn-group-responsive > button,
+  .team-card-btn-group-responsive > a {
+    flex: 0 0 auto;
+  }
+}
+
+.message-preview-box-responsive {
+  background: rgba(10, 15, 29, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.5rem;
+  padding: 0.85rem;
+  font-family: monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+  color: #E2E8F0;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 640px) {
+  .message-preview-box-responsive {
+    padding: 1rem;
+    max-height: 240px;
+  }
 }
 
 

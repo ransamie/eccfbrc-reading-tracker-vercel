@@ -4,6 +4,7 @@ import AdminDashboard from "./components/AdminDashboard";
 import LeaderDashboard from "./components/LeaderDashboard";
 import ActivityTracker from "./components/ActivityTracker";
 import { Eye, EyeOff } from "lucide-react";
+import { formatTeamName } from "@/lib/teamUtils";
 
 export default function Home() {
   const [session, setSession] = useState(null); // { role: 'admin' | 'leader', team?: string }
@@ -187,7 +188,7 @@ export default function Home() {
                       >
                         <option value="" disabled>Tap to select your team...</option>
                         {teams.map((t) => (
-                          <option key={t} value={t}>{t}</option>
+                          <option key={t} value={t}>{formatTeamName(t)}</option>
                         ))}
                       </select>
                     )}

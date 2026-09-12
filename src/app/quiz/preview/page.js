@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   ExternalLink
 } from "lucide-react";
+import { formatTeamName } from "@/lib/teamUtils";
 
 function QuizPreviewContent() {
   const router = useRouter();
@@ -432,7 +433,7 @@ function QuizPreviewContent() {
                 >
                   {teams.length > 0 ? (
                     teams.map((t) => (
-                      <option key={t} value={t}>Team {t}</option>
+                      <option key={t} value={t}>{formatTeamName(t)}</option>
                     ))
                   ) : (
                     <option value="1">Team 1</option>
@@ -548,7 +549,7 @@ function QuizPreviewContent() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', fontSize: '0.9rem' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Team & Round:</span>
-                  <strong>Team {participant.team} • {selectedRound}</strong>
+                  <strong>{formatTeamName(participant.team)} • {selectedRound}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Questions Count:</span>
@@ -655,7 +656,7 @@ function QuizPreviewContent() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <div>
                   <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--accent-hover)' }}>
-                    {selectedRound} • Team {participant.team}
+                    {selectedRound} • {formatTeamName(participant.team)}
                   </span>
                   <h2 className="quiz-take-title" style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0 }}>
                     {participant.fullName}
@@ -915,7 +916,7 @@ function QuizPreviewContent() {
                 Preview Assessment Completed!
               </h1>
               <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.95rem' }}>
-                Candidate: <strong>{previewResult.fullName}</strong> • Team {previewResult.team}
+                Candidate: <strong>{previewResult.fullName}</strong> • {formatTeamName(previewResult.team)}
               </p>
 
               {/* Big Score Display */}

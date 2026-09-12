@@ -6,6 +6,7 @@ import NewRoundWizard from "./NewRoundWizard";
 import AdminTutorialModal from "./AdminTutorialModal";
 import LeaderWhatsAppModal from "./LeaderWhatsAppModal";
 import SyncNamesModal from "./SyncNamesModal";
+import AddMemberModal from "./AddMemberModal";
 import { HelpCircle } from "lucide-react";
 import { generateGeneralPdfReport, generateTeamPdfReport, generateLeadersPdfReport } from "@/lib/pdfReportGenerator";
 import { AgGridReact } from 'ag-grid-react';
@@ -78,6 +79,8 @@ export default function AdminDashboard({ onLogout }) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [showSyncNamesModal, setShowSyncNamesModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [whatsAppFilterTeam, setWhatsAppFilterTeam] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Data
@@ -910,7 +913,21 @@ export default function AdminDashboard({ onLogout }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                onClick={() => setShowWhatsAppModal(true)}
+                onClick={() => setShowAddMemberModal(true)}
+                className="btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', background: '#059669', color: 'white', padding: '0.5rem 0.95rem' }}
+                title="Manually register and assign a new participant to a team"
+              >
+                <UserPlus size={16} />
+                <span>+ Add Member</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setWhatsAppFilterTeam("");
+                  setShowWhatsAppModal(true);
+                }}
                 className="btn-secondary"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', padding: '0.5rem 0.95rem' }}
                 title="View & copy WhatsApp onboarding messages with member links for all team leaders"
@@ -1150,16 +1167,29 @@ export default function AdminDashboard({ onLogout }) {
               <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '800' }}>Manage Team Leaders & Roster</h3>
               <p className="label" style={{ margin: '0.2rem 0 0 0' }}>Update statuses and synchronize participant names across Google Sheets.</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowSyncNamesModal(true)}
-              className="btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', background: '#0284C7', color: 'white', padding: '0.5rem 1rem' }}
-              title="Upload your registration spreadsheet to match and update full names in Google Sheets"
-            >
-              <FileSpreadsheet size={16} />
-              <span>Sync Full Names from Excel</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setShowAddMemberModal(true)}
+                className="btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', background: '#059669', color: 'white', padding: '0.5rem 1rem' }}
+                title="Manually register and assign a new participant to a team"
+              >
+                <UserPlus size={16} />
+                <span>+ Add Member</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowSyncNamesModal(true)}
+                className="btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem', background: '#0284C7', color: 'white', padding: '0.5rem 1rem' }}
+                title="Upload your registration spreadsheet to match and update full names in Google Sheets"
+              >
+                <FileSpreadsheet size={16} />
+                <span>Sync Full Names from Excel</span>
+              </button>
+            </div>
           </div>
           
           <input 
@@ -1303,8 +1333,17 @@ export default function AdminDashboard({ onLogout }) {
               const lTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'];
               return norm(lTeam) === norm(t);
             });
-            const leaderName = teamLeadersInfo[0]?.Member_Name || teamLeadersInfo[0]?.Name || teamLeadersInfo[0]?.['Team Leader'] || 'N/A';
-            const assistantName = teamLeadersInfo[1]?.Member_Name || teamLeadersInfo[1]?.Name || teamLeadersInfo[1]?.['Team Leader'] || 'N/A';
+            const leaderRow = teamLeadersInfo.find(l => {
+              const r = String(l.Role || '').toLowerCase();
+              return !r.includes('asst') && !r.includes('assistant');
+            }) || teamLeadersInfo[0];
+            const asstRow = teamLeadersInfo.find(l => {
+              const r = String(l.Role || '').toLowerCase();
+              return r.includes('asst') || r.includes('assistant');
+            }) || (teamLeadersInfo.length > 1 ? teamLeadersInfo[1] : null);
+
+            const leaderName = leaderRow?.['Team Leader'] || leaderRow?.Member_Name || leaderRow?.Name || 'N/A';
+            const assistantName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || 'N/A';
             teamsMap[t] = { active: 0, evicted: 0, declined: 0, total: 0, todayReads: 0, leaderName, assistantName };
           }
           teamsMap[t].total++;
@@ -1332,8 +1371,17 @@ export default function AdminDashboard({ onLogout }) {
               const leadTeam = lead.Team_Name || lead.Team || lead['Team Name'] || lead['Team Leader Team Name'];
               return norm(leadTeam) === norm(matchedKey);
             });
-            const leaderName = teamLeadersInfo[0]?.Member_Name || teamLeadersInfo[0]?.Name || teamLeadersInfo[0]?.['Team Leader'] || 'N/A';
-            const assistantName = teamLeadersInfo[1]?.Member_Name || teamLeadersInfo[1]?.Name || teamLeadersInfo[1]?.['Team Leader'] || 'N/A';
+            const leaderRow = teamLeadersInfo.find(lead => {
+              const r = String(lead.Role || '').toLowerCase();
+              return !r.includes('asst') && !r.includes('assistant');
+            }) || teamLeadersInfo[0];
+            const asstRow = teamLeadersInfo.find(lead => {
+              const r = String(lead.Role || '').toLowerCase();
+              return r.includes('asst') || r.includes('assistant');
+            }) || (teamLeadersInfo.length > 1 ? teamLeadersInfo[1] : null);
+
+            const leaderName = leaderRow?.['Team Leader'] || leaderRow?.Member_Name || leaderRow?.Name || 'N/A';
+            const assistantName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || 'N/A';
             teamsMap[matchedKey] = { active: 0, evicted: 0, declined: 0, total: 0, todayReads: 0, leaderName, assistantName };
           }
           teamsMap[matchedKey].total++;
@@ -1627,8 +1675,17 @@ export default function AdminDashboard({ onLogout }) {
                       const lTeam = l.Team_Name || l.Team || l['Team Name'] || l['Team Leader Team Name'];
                       return String(lTeam || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase() === String(c.Team_Name || '').replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
                     });
-                    const leaderName = teamLeadersInfo[0]?.Member_Name || teamLeadersInfo[0]?.Name || teamLeadersInfo[0]?.['Team Leader'] || 'N/A';
-                    const assistantName = teamLeadersInfo[1]?.Member_Name || teamLeadersInfo[1]?.Name || teamLeadersInfo[1]?.['Team Leader'] || 'N/A';
+                    const leaderRow = teamLeadersInfo.find(l => {
+                      const r = String(l.Role || '').toLowerCase();
+                      return !r.includes('asst') && !r.includes('assistant');
+                    }) || teamLeadersInfo[0];
+                    const asstRow = teamLeadersInfo.find(l => {
+                      const r = String(l.Role || '').toLowerCase();
+                      return r.includes('asst') || r.includes('assistant');
+                    }) || (teamLeadersInfo.length > 1 ? teamLeadersInfo[1] : null);
+
+                    const leaderName = leaderRow?.['Team Leader'] || leaderRow?.Member_Name || leaderRow?.Name || 'N/A';
+                    const assistantName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || 'N/A';
                     
                     return (
                       <tr key={c.Team_Name} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -2584,14 +2641,29 @@ export default function AdminDashboard({ onLogout }) {
 
       <LeaderWhatsAppModal 
         isOpen={showWhatsAppModal} 
-        onClose={() => setShowWhatsAppModal(false)} 
-        data={data} 
+        onClose={() => {
+          setShowWhatsAppModal(false);
+          setWhatsAppFilterTeam("");
+        }} 
+        data={data}
+        initialTeam={whatsAppFilterTeam}
       />
 
       <SyncNamesModal 
         isOpen={showSyncNamesModal} 
         onClose={() => setShowSyncNamesModal(false)} 
         onSuccess={() => loadData(true)} 
+      />
+
+      <AddMemberModal
+        isOpen={showAddMemberModal}
+        onClose={() => setShowAddMemberModal(false)}
+        data={data}
+        onSuccess={() => loadData(true)}
+        onOpenWhatsAppHub={(teamName) => {
+          setWhatsAppFilterTeam(teamName || "");
+          setShowWhatsAppModal(true);
+        }}
       />
     </div>
   );
