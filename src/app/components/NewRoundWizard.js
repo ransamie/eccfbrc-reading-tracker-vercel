@@ -8,6 +8,7 @@ import {
   Sliders, ArrowRight, ExternalLink, Sparkles, UserPlus, Info, Trash2,
   Plus, Minus, Lock
 } from "lucide-react";
+import { formatTeamName } from "@/lib/teamUtils";
 
 function normalizePhone(raw) {
   if (raw === null || raw === undefined) return "";
@@ -307,18 +308,26 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
   // -------------------------------------------------------------
   const generateLeaderWhatsAppMessage = (team) => {
     const leaderName = team.leaderName || "[TEAM LEADER'S NAME]";
-    const teamName = team.teamName;
+    const formattedTeam = formatTeamName(team.teamName);
     const edition = settings.challengeEdition || settings.challengeName || "ECCF Bible Reading Challenge";
     const assistantText = team.assistantName 
       ? `${team.assistantName} [${team.assistantWaLink || "https://wa.me/"}]` 
       : "[ASSISTANT NAME] [https://wa.me/]";
 
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const dashboardLink = `${baseUrl}/?team=${encodeURIComponent(formattedTeam)}&pin=${team.pin}`;
+
     const membersList = team.members.map((m, idx) => `${idx + 1}. https://wa.me/${m.phoneClean}`).join("\n");
 
-    return `Good Morning Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible, and then move on to send each of your members this message;\n\n` +
+    return `Good Morning Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
+      `*Your Team Dashboard Access:*\n` +
+      `🔗 *Direct Dashboard Link*: ${dashboardLink}\n` +
+      `🔑 *Team Login PIN*: ${team.pin}\n` +
+      `(Tap the link above to directly access and record reading updates for your team)\n\n` +
+      `Please move on to send each of your members this message;\n\n` +
       `-----------------------------------------------------------\n` +
       `Hello!\n\n` +
-      `I am ${leaderName}, your Team Leader for ${teamName} in the ECCF Bible Reading Challenge (${edition}).\n\n` +
+      `I am ${leaderName}, your Team Leader for ${formattedTeam} in the ECCF Bible Reading Challenge (${edition}).\n\n` +
       `I am reaching out to welcome you and to request your permission to add you to our team\'s group chat for mutual follow-up and accountability.\n\n` +
       `If you are happy to proceed, you can join the group directly using the invite link below:\n\n` +
       `[LINK TO TEAM GROUP CHAT]\n\n` +
@@ -326,9 +335,10 @@ export default function NewRoundWizard({ onComplete, currentEditionInfo }) {
       `-----------------------------------------------------------\n` +
       `Ensure to replace the brackets with your actual details.\n\n` +
       `-----------------------------------------------------------\n` +
-      `*${teamName}*\n` +
+      `*${formattedTeam}*\n` +
       `*Team Leader*: ${leaderName} [${team.leaderWaLink || "https://wa.me/"}]\n` +
       `*Assistant*: ${assistantText}\n` +
+      `*Team Dashboard Link*: ${dashboardLink}\n` +
       `*Team Login PIN*: ${team.pin}\n\n` +
       `*Members:*\n` +
       `${membersList}\n\n` +

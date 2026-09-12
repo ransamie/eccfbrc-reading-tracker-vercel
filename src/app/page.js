@@ -32,6 +32,35 @@ export default function Home() {
       .then((data) => {
         if (data.validTeams) {
           setTeams(data.validTeams);
+
+          // Support one-click direct access via ?team=...&pin=... links from WhatsApp
+          if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const teamQuery = params.get("team");
+            const pinQuery = params.get("pin");
+
+            if (teamQuery) {
+              const cleanQ = String(teamQuery).trim().toLowerCase();
+              const matchedTeam = data.validTeams.find(
+                (t) => String(t).trim().toLowerCase() === cleanQ ||
+                       formatTeamName(t).trim().toLowerCase() === cleanQ
+              ) || teamQuery;
+
+              setSelectedTeam(matchedTeam);
+              setLoginType("Team Leader");
+
+              if (pinQuery) {
+                setPin(pinQuery);
+                // Clean the PIN from the URL so it's not saved in browser history
+                if (window.history && window.history.replaceState) {
+                  const cleanUrl = window.location.pathname + `?team=${encodeURIComponent(matchedTeam)}`;
+                  window.history.replaceState({}, document.title, cleanUrl);
+                }
+                // Auto-authenticate leader
+                performLogin("Team Leader", matchedTeam, pinQuery);
+              }
+            }
+          }
         }
         if (data.settings) {
           setAppSettings(data.settings);
@@ -45,8 +74,7 @@ export default function Home() {
       });
   }, []);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const performLogin = async (type, targetTeam, targetPin) => {
     setError("");
     setLoading(true);
 
@@ -55,9 +83,9 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          loginType,
-          teamName: loginType === "Team Leader" ? selectedTeam : undefined,
-          pin,
+          loginType: type,
+          teamName: type === "Team Leader" ? targetTeam : undefined,
+          pin: targetPin,
         }),
       });
 
@@ -75,6 +103,11 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogin = async (e) => {
+    if (e) e.preventDefault();
+    await performLogin(loginType, selectedTeam, pin);
   };
 
   const handleLogout = () => {

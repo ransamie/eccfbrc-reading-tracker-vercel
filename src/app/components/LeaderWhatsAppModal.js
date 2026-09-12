@@ -192,9 +192,16 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data, initialTeam
         : "No members assigned yet.";
 
       const formattedTeam = formatTeamName(displayTeamName);
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const dashboardLink = `${baseUrl}/?team=${encodeURIComponent(formattedTeam)}&pin=${pin}`;
 
       const messageText = 
-        `Good Morning Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible, and then move on to send each of your members this message;\n\n` +
+        `Good Morning Dear ECCFBRC Team Leader. I believe you\'ve already created your Group chat, and have added your Assistant, if not please do that as soon as possible.\n\n` +
+        `*Your Team Dashboard Access:*\n` +
+        `🔗 *Direct Dashboard Link*: ${dashboardLink}\n` +
+        `🔑 *Team Login PIN*: ${pin}\n` +
+        `(Tap the link above to directly access and record reading updates for your team)\n\n` +
+        `Please move on to send each of your members this message;\n\n` +
         `-----------------------------------------------------------\n` +
         `Hello!\n\n` +
         `I am ${leaderDisplay}, your Team Leader for ${formattedTeam} in the ECCF Bible Reading Challenge (${editionTitle}).\n\n` +
@@ -208,6 +215,7 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data, initialTeam
         `*${formattedTeam}*\n` +
         `*Team Leader*: ${leaderDisplay} [${leaderWaLink}]\n` +
         `*Assistant*: ${assistantText}\n` +
+        `*Team Dashboard Link*: ${dashboardLink}\n` +
         `*Team Login PIN*: ${pin}\n\n` +
         `*Members:*\n` +
         `${membersList}\n\n` +
@@ -224,6 +232,7 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data, initialTeam
         assistantPhone: leaderInfo.assistantPhone,
         assistantPhoneClean,
         pin,
+        dashboardLink,
         membersCount: members.length,
         members: members,
         messageText
