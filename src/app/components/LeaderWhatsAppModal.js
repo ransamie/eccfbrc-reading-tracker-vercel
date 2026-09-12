@@ -60,17 +60,41 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data, initialTeam
     leadersRows.forEach(ld => {
       const rawTeam = ld.Team || ld.Team_Name || ld.team || "";
       const tKey = normalizeTeamName(rawTeam);
-      if (tKey) {
-        leadersMap.set(tKey, {
-          rawTeam,
-          leaderName: ld["Team Leader"] || ld.leaderName || ld.Member_Name || ld.Name || "",
-          leaderPhone: ld.Leader_Phone || ld["Leader Phone"] || ld.Phone_Number || ld.Phone || "",
-          leaderStatus: ld.Status || "Active",
-          assistantName: ld.Assistant || ld.assistantName || "",
-          assistantPhone: ld.Assistant_Phone || ld["Assistant Phone"] || "",
-          assistantStatus: ld.Assistant_Status || ""
-        });
+      if (!tKey) return;
+
+      const role = String(ld.Role || "").trim().toLowerCase();
+      const isAssistant = role.includes("asst") || role.includes("assistant");
+      const name = String(ld["Team Leader"] || ld.leaderName || ld.Member_Name || ld.Name || "").trim();
+      const phone = String(ld.Leader_Phone || ld["Leader Phone"] || ld.Phone_Number || ld.Phone || "").trim();
+      const status = String(ld.Status || "Active").trim();
+      const asstNameFromCol = String(ld.Assistant || ld.assistantName || "").trim();
+      const asstPhoneFromCol = String(ld.Assistant_Phone || ld["Assistant Phone"] || "").trim();
+
+      const existing = leadersMap.get(tKey) || {
+        rawTeam,
+        leaderName: "",
+        leaderPhone: "",
+        leaderStatus: "Active",
+        assistantName: "",
+        assistantPhone: "",
+        assistantStatus: ""
+      };
+
+      if (isAssistant) {
+        // This row represents the Assistant Leader
+        existing.assistantName = name || existing.assistantName;
+        existing.assistantPhone = phone || existing.assistantPhone;
+        existing.assistantStatus = status || existing.assistantStatus;
+      } else {
+        // This row represents the Team Leader
+        existing.leaderName = name || existing.leaderName;
+        existing.leaderPhone = phone || existing.leaderPhone;
+        existing.leaderStatus = status || existing.leaderStatus;
+        if (asstNameFromCol) existing.assistantName = asstNameFromCol;
+        if (asstPhoneFromCol) existing.assistantPhone = asstPhoneFromCol;
       }
+
+      leadersMap.set(tKey, existing);
     });
 
     // Map creds by team
@@ -327,10 +351,10 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data, initialTeam
                           {team.membersCount} Members
                         </span>
                       </div>
-                      <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginTop: "0.25rem" }}>
-                        Leader: <strong style={{ color: "var(--text-primary)" }}>{team.leaderName || "Not Designated"}</strong>
-                        {team.leaderPhone ? ` (${team.leaderPhone})` : ""}
-                        &middot; PIN: <strong style={{ fontFamily: "monospace", color: "#38BDF8" }}>{team.pin}</strong>
+                      <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginTop: "0.25rem", display: "flex", flexWrap: "wrap", gap: "0.3rem 0.6rem" }}>
+                        <span>Leader: <strong style={{ color: "var(--text-primary)" }}>{team.leaderName || "Not Designated"}</strong>{team.leaderPhone ? ` (${team.leaderPhone})` : ""}</span>
+                        {team.assistantName && <span>&bull; Asst: <strong style={{ color: "var(--text-primary)" }}>{team.assistantName}</strong>{team.assistantPhone ? ` (${team.assistantPhone})` : ""}</span>}
+                        <span>&bull; PIN: <strong style={{ fontFamily: "monospace", color: "#38BDF8" }}>{team.pin}</strong></span>
                       </div>
                     </div>
 

@@ -984,16 +984,20 @@ export async function POST(request) {
           const rTeam = normalizeTeamName(row.get('Team') || row.get('Team_Name'));
           if (rTeam === normAssigned) {
             const role = String(row.get('Role') || '').trim().toLowerCase();
-            if (role === 'assistant leader') {
-              assistantName = row.get('Team Leader') || '';
-              assistantPhone = sanitizePhoneForSheets(row.get('Leader_Phone') || row.get('Leader Phone'));
-            } else if (role === 'team leader' || !leaderName) {
-              leaderName = row.get('Team Leader') || '';
-              leaderPhone = sanitizePhoneForSheets(row.get('Leader_Phone') || row.get('Leader Phone'));
-              if (!assistantName && row.get('Assistant')) {
-                assistantName = row.get('Assistant');
-                assistantPhone = sanitizePhoneForSheets(row.get('Assistant_Phone'));
-              }
+            const isAsst = role.includes('asst') || role.includes('assistant');
+            const rowLeaderCol = String(row.get('Team Leader') || row.get('Name') || '').trim();
+            const rowLeaderPhone = sanitizePhoneForSheets(row.get('Leader_Phone') || row.get('Leader Phone') || row.get('Phone'));
+            const rowAsstCol = String(row.get('Assistant') || '').trim();
+            const rowAsstPhone = sanitizePhoneForSheets(row.get('Assistant_Phone'));
+
+            if (isAsst) {
+              assistantName = rowLeaderCol || assistantName;
+              assistantPhone = rowLeaderPhone || assistantPhone;
+            } else {
+              leaderName = rowLeaderCol || leaderName;
+              leaderPhone = rowLeaderPhone || leaderPhone;
+              if (rowAsstCol) assistantName = rowAsstCol;
+              if (rowAsstPhone) assistantPhone = rowAsstPhone;
             }
           }
         }
