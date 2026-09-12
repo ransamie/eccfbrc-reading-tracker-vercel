@@ -1701,23 +1701,29 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       {/* Main Container */}
       <main style={{ maxWidth: '1000px', margin: '1.5rem auto 0 auto', padding: '0 1rem' }}>
         
-        {/* TOP READING TRACK SELECTOR BAR */}
+        {/* TOP READING TRACK SELECTOR BAR (Clean, Modern, Uncluttered) */}
         <div style={{
-          backgroundColor: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: '0.85rem',
-          padding: '0.75rem 1.15rem',
-          marginBottom: '1rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '0.75rem',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+          gap: '0.65rem',
+          padding: '0.4rem 0.2rem',
+          marginBottom: '1rem'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '0.35rem', marginRight: '0.25rem' }}>
-              <BookOpen size={14} style={{ color: 'var(--accent)' }} /> Reading Track:
+            <span style={{
+              fontSize: '0.76rem',
+              fontWeight: 800,
+              color: 'var(--text-secondary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              marginRight: '0.2rem'
+            }}>
+              <BookOpen size={13} style={{ color: 'var(--accent)' }} /> Track:
             </span>
 
             {availableEditions.map(ed => {
@@ -1739,41 +1745,51 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '0.45rem',
-                    padding: '0.4rem 0.8rem',
+                    gap: '0.4rem',
+                    padding: '0.42rem 0.8rem',
                     borderRadius: '0.5rem',
-                    backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.2)' : 'var(--surface-secondary)',
-                    border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border-light)'}`,
+                    backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.14)' : 'transparent',
+                    border: `1px solid ${isSelected ? 'rgba(59, 130, 246, 0.35)' : 'transparent'}`,
                     color: isSelected ? '#fff' : 'var(--text-secondary)',
-                    fontSize: '0.82rem',
+                    fontSize: '0.84rem',
                     fontWeight: isSelected ? '700' : '500',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                    }
                   }}
                 >
                   <span>{ed.includes("New Testament") ? "📖" : (ed.includes("Entire") ? "📜" : "📚")}</span>
                   <span>{ed}</span>
                   <span style={{
-                    fontSize: '0.72rem',
-                    padding: '0.1rem 0.4rem',
-                    borderRadius: '9999px',
-                    backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                    color: isSelected ? '#fff' : 'var(--text-secondary)',
-                    fontWeight: 700
+                    fontSize: '0.78rem',
+                    color: isSelected ? 'rgba(255, 255, 255, 0.65)' : 'var(--text-secondary)',
+                    fontWeight: 500
                   }}>
-                    {questionCount} Qs
+                    ({questionCount} Qs)
                   </span>
                   {isLiveEdition && (
                     <span style={{
-                      fontSize: '0.68rem',
-                      padding: '0.1rem 0.4rem',
-                      borderRadius: '9999px',
-                      backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                      fontSize: '0.74rem',
                       color: '#34D399',
-                      fontWeight: 800,
-                      border: '1px solid rgba(16, 185, 129, 0.35)'
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      marginLeft: '0.15rem'
                     }}>
-                      Live Active
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', boxShadow: '0 0 6px rgba(16, 185, 129, 0.6)' }}></span>
+                      Live
                     </span>
                   )}
                 </button>
@@ -1786,23 +1802,26 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.4rem 0.75rem',
-                borderRadius: '0.5rem',
+                gap: '0.3rem',
+                padding: '0.4rem 0.65rem',
+                borderRadius: '0.45rem',
                 backgroundColor: 'transparent',
-                border: '1px dashed var(--border-light)',
-                color: 'var(--text-secondary)',
-                fontSize: '0.8rem',
+                border: 'none',
+                color: 'var(--accent)',
+                fontSize: '0.82rem',
                 fontWeight: 600,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
               }}
+              onMouseOver={(e) => { e.currentTarget.style.color = 'var(--accent-hover)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.color = 'var(--accent)'; }}
             >
               <PlusCircle size={13} /> Add Track
             </button>
           </div>
 
           {showCustomEditionInput && (
-            <div style={{ width: '100%', display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
+            <div style={{ width: '100%', display: 'flex', gap: '0.5rem', marginTop: '0.4rem', alignItems: 'center' }}>
               <input
                 type="text"
                 placeholder="Enter custom reading schedule name..."
@@ -1813,7 +1832,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   padding: '0.5rem 0.75rem',
                   backgroundColor: 'var(--surface-secondary)',
                   border: '1px solid var(--border)',
-                  borderRadius: '0.4rem',
+                  borderRadius: '0.45rem',
                   color: 'var(--text-primary)',
                   fontSize: '0.85rem',
                   outline: 'none'
@@ -1838,7 +1857,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   backgroundColor: 'var(--accent)',
                   color: '#fff',
                   border: 'none',
-                  borderRadius: '0.4rem',
+                  borderRadius: '0.45rem',
                   fontSize: '0.85rem',
                   fontWeight: 700,
                   cursor: 'pointer'
@@ -1868,13 +1887,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
         <div className="quiz-tab-bar" style={{
           display: 'flex',
           flexWrap: 'wrap',
-          backgroundColor: 'var(--surface)',
-          border: '1px solid var(--border)',
-          padding: '0.35rem',
+          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '0.3rem',
           borderRadius: '0.75rem',
           marginBottom: '1.5rem',
-          gap: '0.35rem',
-          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
+          gap: '0.35rem'
         }}>
           {[
             { id: 'control', label: 'Settings & Launch', icon: Settings },
@@ -1893,22 +1911,22 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.45rem',
-                  padding: '0.65rem 1rem',
+                  padding: '0.6rem 1rem',
                   backgroundColor: isActive ? 'var(--accent)' : 'transparent',
                   border: 'none',
-                  borderRadius: '0.5rem',
+                  borderRadius: '0.55rem',
                   color: isActive ? '#fff' : 'var(--text-secondary)',
-                  fontSize: '0.88rem',
+                  fontSize: '0.86rem',
                   fontWeight: isActive ? '700' : '500',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
-                  boxShadow: isActive ? '0 4px 15px rgba(37, 99, 235, 0.3)' : 'none',
+                  boxShadow: isActive ? '0 2px 10px rgba(37, 99, 235, 0.35)' : 'none',
                   flex: '1 1 auto',
                   minWidth: '130px',
                   textAlign: 'center'
                 }}
               >
-                <Icon size={16} style={{ color: isActive ? (tab.id === 'ai' ? '#F59E0B' : '#fff') : 'inherit', flexShrink: 0 }} />
+                <Icon size={15} style={{ color: isActive ? '#fff' : 'inherit', flexShrink: 0 }} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -1930,21 +1948,20 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 <div style={{
                   backgroundColor: 'var(--surface)',
                   borderRadius: '0.85rem',
-                  border: `1.5px solid ${serverIsLive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
+                  border: `1px solid ${serverIsLive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.08)'}`,
                   padding: '1.25rem',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   gap: '1rem',
-                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
-                  position: 'relative',
-                  overflow: 'hidden'
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)',
+                  position: 'relative'
                 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                        <Power size={18} color={isQuizLive ? "#10B981" : "#F59E0B"} />
-                        <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                        <Power size={17} color={isQuizLive ? "#10B981" : "#F59E0B"} />
+                        <h3 style={{ fontSize: '0.98rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                           Server Status
                         </h3>
                       </div>
@@ -1953,15 +1970,17 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '0.35rem',
-                        padding: '0.2rem 0.6rem',
-                        borderRadius: '9999px',
-                        backgroundColor: serverIsLive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                        border: `1px solid ${serverIsLive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-                        fontSize: '0.75rem',
-                        fontWeight: 800,
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
                         color: serverIsLive ? '#34D399' : '#FCD34D'
                       }}>
-                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: serverIsLive ? '#10B981' : '#F59E0B' }}></span>
+                        <span style={{
+                          width: '7px',
+                          height: '7px',
+                          borderRadius: '50%',
+                          backgroundColor: serverIsLive ? '#10B981' : '#F59E0B',
+                          boxShadow: serverIsLive ? '0 0 8px #10B981' : '0 0 8px #F59E0B'
+                        }}></span>
                         {serverIsLive ? "LIVE & OPEN" : "IN MAINTENANCE"}
                       </span>
                     </div>
@@ -1973,7 +1992,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     </p>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-light)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', paddingTop: '0.65rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                       Target Mode: <strong style={{ color: isQuizLive ? '#34D399' : '#FCD34D' }}>{isQuizLive ? "LIVE" : "MAINTENANCE"}</strong>
                     </span>
@@ -1982,12 +2001,11 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       type="button"
                       onClick={() => setIsQuizLive(!isQuizLive)}
                       style={{
-                        padding: '0.45rem 1rem',
+                        padding: '0.45rem 0.95rem',
                         borderRadius: '0.5rem',
-                        border: 'none',
-                        backgroundColor: isQuizLive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.18)',
+                        backgroundColor: isQuizLive ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.14)',
                         color: isQuizLive ? '#F87171' : '#34D399',
-                        border: `1px solid ${isQuizLive ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.35)'}`,
+                        border: `1px solid ${isQuizLive ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
                         fontSize: '0.82rem',
                         fontWeight: '700',
                         cursor: 'pointer',
@@ -2006,23 +2024,23 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 <div style={{
                   backgroundColor: 'var(--surface)',
                   borderRadius: '0.85rem',
-                  border: '1px solid var(--border)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
                   padding: '1.25rem',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   gap: '1rem',
-                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)'
                 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                        <Share2 size={17} style={{ color: 'var(--accent)' }} />
-                        <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                        <Share2 size={16} style={{ color: 'var(--accent)' }} />
+                        <h3 style={{ fontSize: '0.98rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                           Participant Quiz Link
                         </h3>
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Direct Access</span>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>Direct Access</span>
                     </div>
 
                     <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
@@ -2086,13 +2104,13 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               <div style={{
                 backgroundColor: 'var(--surface)',
                 borderRadius: '0.85rem',
-                border: '1px solid var(--border)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
                 padding: '1.5rem',
-                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
                   <Settings size={18} style={{ color: 'var(--accent)' }} />
-                  <h3 style={{ fontSize: '1.08rem', fontWeight: '800', margin: 0 }}>Quiz Configuration Parameters</h3>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0 }}>Quiz Configuration Parameters</h3>
                 </div>
 
                 <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -2102,7 +2120,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     
                     {/* Active Reading Schedule */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
                         Active Reading Schedule / Edition
                       </label>
                       <select
@@ -2133,7 +2151,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     {/* Active Round Tag */}
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                        <label style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                        <label style={{ fontSize: '0.84rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                           Active Round Tag
                         </label>
                         {uniqueRoundsInEdition.length > 0 && (
@@ -2196,7 +2214,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
                     {/* Time Limit */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
                         Time Limit (Minutes)
                       </label>
                       <div style={{ position: 'relative' }}>
@@ -2228,7 +2246,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
                     {/* Planned Total Rounds */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
                         Total Planned Rounds in Track
                       </label>
                       <div style={{ position: 'relative' }}>
@@ -2265,25 +2283,25 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       </span>
                     </div>
 
-                    {/* Target Summary Card */}
+                    {/* Target Summary Line */}
                     <div style={{
-                      backgroundColor: 'var(--surface-secondary)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.02)',
                       borderRadius: '0.55rem',
-                      border: '1px solid var(--border-light)',
+                      border: '1px solid rgba(255, 255, 255, 0.06)',
                       padding: '0.75rem 1rem',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'center',
                       gap: '0.25rem'
                     }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
-                        Deployment Target Summary
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Target Summary
                       </span>
                       <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                        {settings.Active_Round || 'Round 1'} • {isQuizLive ? '🟢 LIVE ACCESS' : '🟡 MAINTENANCE HOLD'}
+                        {settings.Active_Round || 'Round 1'} • {isQuizLive ? '🟢 LIVE ACCESS' : '🟡 MAINTENANCE'}
                       </span>
                       <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
-                        {settings.Active_Edition || 'New Testament'}
+                        {settings.Active_Edition || 'New Testament (3 chapters daily)'}
                       </span>
                     </div>
 
@@ -2470,8 +2488,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                           gap: '0.35rem',
                           padding: '0.4rem 0.85rem',
                           borderRadius: '0.5rem',
-                          backgroundColor: isSelected ? 'var(--accent)' : (isActiveLive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)'),
-                          border: `1px solid ${isSelected ? 'var(--accent)' : (isActiveLive ? 'rgba(16, 185, 129, 0.35)' : 'transparent')}`,
+                          backgroundColor: isSelected ? 'var(--accent)' : (isActiveLive ? 'rgba(16, 185, 129, 0.12)' : 'transparent'),
+                          border: `1px solid ${isSelected ? 'var(--accent)' : (isActiveLive ? 'rgba(16, 185, 129, 0.3)' : 'transparent')}`,
                           color: isSelected ? '#fff' : (isActiveLive ? '#34D399' : 'var(--text-primary)'),
                           fontSize: '0.84rem',
                           fontWeight: isSelected || isActiveLive ? 700 : 500,
@@ -2481,14 +2499,11 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       >
                         <span>{r}</span>
                         <span style={{
-                          fontSize: '0.72rem',
-                          opacity: 0.9,
-                          backgroundColor: 'rgba(0,0,0,0.25)',
-                          padding: '0.05rem 0.4rem',
-                          borderRadius: '999px',
-                          fontWeight: 700
+                          fontSize: '0.76rem',
+                          opacity: isSelected ? 0.8 : 0.6,
+                          fontWeight: 600
                         }}>
-                          {count}
+                          ({count})
                         </span>
                         {isActiveLive && !isSelected && (
                           <span style={{ fontSize: '0.65rem', color: '#34D399' }}>●</span>
