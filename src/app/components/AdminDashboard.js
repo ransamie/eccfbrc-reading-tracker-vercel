@@ -776,10 +776,11 @@ export default function AdminDashboard({ onLogout }) {
           </button>
           <button 
             onClick={onLogout} 
-            className="tracker-btn-logout"
+            className="tracker-btn-icon tracker-btn-logout"
             title="Logout"
+            aria-label="Logout"
           >
-            <LogOut size={15} /> <span>Logout</span>
+            <LogOut size={16} />
           </button>
         </div>
       </div>
