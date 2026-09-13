@@ -270,8 +270,8 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data, initialTeam
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop-responsive">
-      <div className="modal-dialog-responsive">
+    <div className="modal-backdrop-responsive" onClick={onClose}>
+      <div className="modal-dialog-responsive" onClick={e => e.stopPropagation()}>
         {/* Modal Header */}
         <div className="modal-header-responsive">
           <div className="modal-header-top-row">
@@ -333,13 +333,7 @@ export default function LeaderWhatsAppModal({ isOpen, onClose, data, initialTeam
         </div>
 
         {/* Content List */}
-        <div style={{
-          padding: "1rem",
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1rem"
-        }}>
+        <div className="modal-body-responsive" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {filteredTeams.length === 0 ? (
             <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--text-secondary)" }}>
               <p style={{ margin: 0, fontSize: "0.95rem" }}>No matching teams found.</p>

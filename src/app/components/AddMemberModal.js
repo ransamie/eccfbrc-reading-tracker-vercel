@@ -209,9 +209,13 @@ export default function AddMemberModal({ isOpen, onClose, data, onSuccess, onOpe
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop-responsive">
-      <div className="modal-dialog-responsive" style={{ maxWidth: successData ? "780px" : "640px" }}>
-        {/* Header */}
+    <div className="modal-backdrop-responsive" onClick={handleClose}>
+      <div 
+        className="modal-dialog-responsive" 
+        style={{ maxWidth: successData ? "780px" : "640px" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Pinned Header */}
         <div className="modal-header-responsive">
           <div className="modal-header-top-row">
             <div className="modal-header-title-wrap">
@@ -232,7 +236,7 @@ export default function AddMemberModal({ isOpen, onClose, data, onSuccess, onOpe
                 <p className="modal-header-subtitle">
                   {successData 
                     ? `Assigned to ${successData.assignedTeam} & Leader WhatsApp message updated`
-                    : "Register a participant manually with instant auto-assignment and WhatsApp message sync."
+                    : "Register participant manually with auto-assignment and WhatsApp sync."
                   }
                 </p>
               </div>
@@ -244,459 +248,421 @@ export default function AddMemberModal({ isOpen, onClose, data, onSuccess, onOpe
           </div>
         </div>
 
-        {/* Modal Body */}
-        <div className="modal-body-responsive" style={{ padding: "1.25rem 1.5rem" }}>
-          {errorMessage && (
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.6rem",
-              background: "rgba(239, 68, 68, 0.12)",
-              border: "1px solid rgba(239, 68, 68, 0.3)",
-              color: "#FCA5A5",
-              padding: "0.75rem 1rem",
-              borderRadius: "0.5rem",
-              marginBottom: "1.25rem",
-              fontSize: "0.88rem"
-            }}>
-              <AlertCircle size={18} style={{ flexShrink: 0 }} />
-              <span>{errorMessage}</span>
-            </div>
-          )}
+        {!successData ? (
+          /* Registration Form */
+          <form onSubmit={handleSubmit} className="modal-form-layout">
+            {/* Scrollable Body */}
+            <div className="modal-body-responsive">
+              {errorMessage && (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.6rem",
+                  background: "rgba(239, 68, 68, 0.12)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  color: "#FCA5A5",
+                  padding: "0.75rem 1rem",
+                  borderRadius: "0.5rem",
+                  marginBottom: "1rem",
+                  fontSize: "0.86rem"
+                }}>
+                  <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
 
-          {!successData ? (
-            /* Registration Form */
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              {/* Full Name */}
-              <div>
-                <label className="label" style={{ fontWeight: "700", display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.4rem" }}>
-                  <UserCheck size={16} color="var(--primary)" />
-                  <span>Participant Full Name</span>
-                  <span style={{ color: "#EF4444" }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Sister Miracle Imaru"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="input-field"
-                  style={{ width: "100%", fontSize: "0.95rem" }}
-                  autoFocus
-                />
-              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {/* Full Name */}
+                <div>
+                  <label className="label" style={{ fontWeight: "700", display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.35rem" }}>
+                    <UserCheck size={16} color="var(--primary)" />
+                    <span>Participant Full Name</span>
+                    <span style={{ color: "#EF4444" }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Sister Miracle Imaru"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="input-field"
+                    style={{ width: "100%", fontSize: "0.95rem" }}
+                    autoFocus
+                  />
+                </div>
 
-              {/* WhatsApp Phone Number */}
-              <div>
-                <label className="label" style={{ fontWeight: "700", display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.4rem" }}>
-                  <Phone size={16} color="#22C55E" />
-                  <span>WhatsApp Phone Number</span>
-                  <span style={{ color: "#EF4444" }}>*</span>
-                </label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="e.g. 08012345678 or +234 801 234 5678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="input-field"
-                  style={{ width: "100%", fontSize: "0.95rem" }}
-                />
+                {/* WhatsApp Phone Number */}
+                <div>
+                  <label className="label" style={{ fontWeight: "700", display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.35rem" }}>
+                    <Phone size={16} color="#22C55E" />
+                    <span>WhatsApp Phone Number</span>
+                    <span style={{ color: "#EF4444" }}>*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="e.g. 08012345678 or +234 801 234 5678"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="input-field"
+                    style={{ width: "100%", fontSize: "0.95rem" }}
+                  />
 
-                {/* Live Phone Helper Feedback */}
-                <div style={{ marginTop: "0.35rem", fontSize: "0.82rem" }}>
-                  {duplicateMember ? (
-                    <span style={{ color: "#EF4444", display: "inline-flex", alignItems: "center", gap: "0.35rem", fontWeight: "600" }}>
-                      <AlertCircle size={14} />
-                      Already registered: {duplicateMember.name} ({duplicateMember.team}) - {duplicateMember.id}
-                    </span>
-                  ) : isPhoneValid ? (
-                    <span style={{ color: "#10B981", display: "inline-flex", alignItems: "center", gap: "0.35rem", fontWeight: "600" }}>
-                      <Check size={14} />
-                      Cleaned for WhatsApp: +{phoneClean} (wa.me/{phoneClean})
-                    </span>
-                  ) : phone.trim().length > 0 ? (
-                    <span style={{ color: "var(--text-secondary)" }}>
-                      Entering number... will normalize to international format (234...)
-                    </span>
-                  ) : (
-                    <span style={{ color: "var(--text-secondary)" }}>
-                      Accepts Nigerian formats (080..., 234...) and international numbers.
-                    </span>
+                  {/* Live Phone Helper Feedback */}
+                  <div style={{ marginTop: "0.3rem", fontSize: "0.8rem" }}>
+                    {duplicateMember ? (
+                      <span style={{ color: "#EF4444", display: "inline-flex", alignItems: "center", gap: "0.35rem", fontWeight: "600" }}>
+                        <AlertCircle size={14} />
+                        Already registered: {duplicateMember.name} ({duplicateMember.team}) - {duplicateMember.id}
+                      </span>
+                    ) : isPhoneValid ? (
+                      <span style={{ color: "#10B981", display: "inline-flex", alignItems: "center", gap: "0.35rem", fontWeight: "600" }}>
+                        <Check size={14} />
+                        Cleaned for WhatsApp: +{phoneClean} (wa.me/{phoneClean})
+                      </span>
+                    ) : phone.trim().length > 0 ? (
+                      <span style={{ color: "var(--text-secondary)" }}>
+                        Entering number... normalizes to international format (234...)
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--text-secondary)" }}>
+                        Accepts Nigerian formats (080..., 234...) and international numbers.
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Team Assignment Method */}
+                <div>
+                  <label className="label" style={{ fontWeight: "700", display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.4rem" }}>
+                    <Users size={16} color="#60A5FA" />
+                    <span>Team Assignment</span>
+                  </label>
+
+                  <div className="add-member-assign-grid">
+                    {/* Auto-assign card */}
+                    <div
+                      onClick={() => setAssignMode("auto")}
+                      className={`add-member-assign-card ${assignMode === "auto" ? "active-auto" : ""}`}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontWeight: "700", fontSize: "0.88rem", color: assignMode === "auto" ? "#10B981" : "var(--text-primary)" }}>
+                          Auto-Assign (Recommended)
+                        </span>
+                        {assignMode === "auto" && <Check size={16} color="#10B981" />}
+                      </div>
+                      <span style={{ fontSize: "0.76rem", color: "var(--text-secondary)", lineHeight: 1.35 }}>
+                        Balances roster evenly into team with fewest participants.
+                      </span>
+                      {predictedAutoTeam && (
+                        <div style={{ marginTop: "0.2rem", fontSize: "0.78rem", color: "#34D399", fontWeight: "700" }}>
+                          🎯 Target: {formatTeamName(predictedAutoTeam)} ({teamCounts[predictedAutoTeam] || 0} members)
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Manual selection card */}
+                    <div
+                      onClick={() => {
+                        setAssignMode("manual");
+                        if (!selectedTeam && allTeams.length) setSelectedTeam(allTeams[0]);
+                      }}
+                      className={`add-member-assign-card ${assignMode === "manual" ? "active-manual" : ""}`}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontWeight: "700", fontSize: "0.88rem", color: assignMode === "manual" ? "#60A5FA" : "var(--text-primary)" }}>
+                          Specific Team Selection
+                        </span>
+                        {assignMode === "manual" && <Check size={16} color="#60A5FA" />}
+                      </div>
+                      <span style={{ fontSize: "0.76rem", color: "var(--text-secondary)", lineHeight: 1.35 }}>
+                        Explicitly choose which team to place this member into.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Team dropdown if manual mode */}
+                  {assignMode === "manual" && (
+                    <div style={{ marginTop: "0.45rem" }}>
+                      <select
+                        value={selectedTeam}
+                        onChange={(e) => setSelectedTeam(e.target.value)}
+                        className="input-field"
+                        style={{ width: "100%", fontSize: "0.9rem", padding: "0.5rem 0.75rem" }}
+                      >
+                        {allTeams.map(t => {
+                          const count = teamCounts[t] || 0;
+                          const isMin = minCountTeams.includes(t);
+                          return (
+                            <option key={t} value={t}>
+                              {formatTeamName(t)} ({count} members {isMin ? "• lowest" : ""})
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
                   )}
                 </div>
+
+                {/* Assignment Summary Box */}
+                <div className="add-member-summary-box">
+                  <div className="summary-item">
+                    <span className="summary-label">Assigned Team:</span>
+                    <strong className="summary-val">{formatTeamName(targetTeam)}</strong>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Projected System ID:</span>
+                    <strong className="summary-val highlight">{nextSystemId}</strong>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Initial Status:</span>
+                    <span className="summary-badge">Active</span>
+                  </div>
+                </div>
               </div>
+            </div>
 
-              {/* Team Assignment Method */}
-              <div>
-                <label className="label" style={{ fontWeight: "700", display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.5rem" }}>
-                  <Users size={16} color="#60A5FA" />
-                  <span>Team Assignment</span>
-                </label>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                  {/* Auto-assign card */}
-                  <div
-                    onClick={() => setAssignMode("auto")}
-                    style={{
-                      padding: "0.85rem",
-                      borderRadius: "0.6rem",
-                      border: assignMode === "auto" ? "2px solid #10B981" : "1px solid var(--border-light)",
-                      background: assignMode === "auto" ? "rgba(16, 185, 129, 0.08)" : "var(--surface)",
-                      cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.3rem",
-                      transition: "all 0.15s ease"
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontWeight: "700", fontSize: "0.9rem", color: assignMode === "auto" ? "#10B981" : "var(--text-primary)" }}>
-                        Auto-Assign (Recommended)
-                      </span>
-                      {assignMode === "auto" && <Check size={16} color="#10B981" />}
-                    </div>
-                    <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-                      Balances roster evenly. Will assign to least populated team.
-                    </span>
-                    {predictedAutoTeam && (
-                      <div style={{ marginTop: "0.3rem", fontSize: "0.8rem", color: "#34D399", fontWeight: "700" }}>
-                        🎯 Target: {formatTeamName(predictedAutoTeam)} ({teamCounts[predictedAutoTeam] || 0} members)
+            {/* Pinned Form Footer */}
+            <div className="modal-footer-responsive">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="btn-secondary add-member-cancel-btn"
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || !fullName.trim() || !isPhoneValid || duplicateMember}
+                className="btn-primary add-member-submit-btn"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  background: "#059669",
+                  color: "white",
+                  fontWeight: "700"
+                }}
+              >
+                {submitting ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    <span>Adding & Assigning...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus size={16} />
+                    <span>+ Register Participant</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* Success State with Updated Team Leader WhatsApp Message */
+          <div className="modal-form-layout">
+            {/* Scrollable Body */}
+            <div className="modal-body-responsive">
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {/* Member Confirmation Card */}
+                <div style={{
+                  background: "rgba(16, 185, 129, 0.08)",
+                  border: "1px solid rgba(16, 185, 129, 0.25)",
+                  borderRadius: "0.75rem",
+                  padding: "0.85rem 1rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.5rem"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.4rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                      <div style={{ width: "26px", height: "26px", borderRadius: "50%", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
+                        <Check size={15} />
                       </div>
+                      <span style={{ fontWeight: "800", fontSize: "1rem", color: "#34D399" }}>
+                        {successData.member.name}
+                      </span>
+                    </div>
+                    <span style={{
+                      background: "rgba(56, 189, 248, 0.15)",
+                      color: "#38BDF8",
+                      padding: "0.15rem 0.55rem",
+                      borderRadius: "0.4rem",
+                      fontWeight: "700",
+                      fontSize: "0.8rem"
+                    }}>
+                      {successData.member.systemId}
+                    </span>
+                  </div>
+
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                    gap: "0.5rem",
+                    fontSize: "0.84rem"
+                  }}>
+                    <div>
+                      <span style={{ color: "var(--text-secondary)" }}>Assigned Team: </span>
+                      <strong style={{ color: "var(--text-primary)" }}>{successData.assignedTeam}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: "var(--text-secondary)" }}>WhatsApp: </span>
+                      <a
+                        href={`https://wa.me/${successData.member.phone}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#34D399", textDecoration: "none", fontWeight: "700" }}
+                      >
+                        +{successData.member.phone} ↗
+                      </a>
+                    </div>
+                    <div>
+                      <span style={{ color: "var(--text-secondary)" }}>Team Total: </span>
+                      <strong style={{ color: "var(--text-primary)" }}>{successData.totalTeamMembers} members</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Updated Team Leader WhatsApp Message Section */}
+                <div style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "0.75rem",
+                  padding: "0.95rem 1rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.65rem"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.4rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                      <MessageSquare size={17} color="#22C55E" />
+                      <span style={{ fontWeight: "800", fontSize: "0.92rem" }}>
+                        Updated Leader WhatsApp Message
+                      </span>
+                    </div>
+
+                    {successData.leaderInfo?.leaderName && (
+                      <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                        Leader: <strong style={{ color: "var(--text-primary)" }}>{successData.leaderInfo.leaderName}</strong>
+                        {successData.leaderInfo.leaderPhone ? ` (${successData.leaderInfo.leaderPhone})` : ""}
+                      </span>
                     )}
                   </div>
 
-                  {/* Manual selection card */}
-                  <div
-                    onClick={() => {
-                      setAssignMode("manual");
-                      if (!selectedTeam && allTeams.length) setSelectedTeam(allTeams[0]);
-                    }}
-                    style={{
-                      padding: "0.85rem",
-                      borderRadius: "0.6rem",
-                      border: assignMode === "manual" ? "2px solid #60A5FA" : "1px solid var(--border-light)",
-                      background: assignMode === "manual" ? "rgba(96, 165, 250, 0.08)" : "var(--surface)",
-                      cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.3rem",
-                      transition: "all 0.15s ease"
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontWeight: "700", fontSize: "0.9rem", color: assignMode === "manual" ? "#60A5FA" : "var(--text-primary)" }}>
-                        Specific Team Selection
-                      </span>
-                      {assignMode === "manual" && <Check size={16} color="#60A5FA" />}
-                    </div>
-                    <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
-                      Explicitly choose which team to place this member into.
-                    </span>
-                  </div>
-                </div>
+                  <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                    Message is dynamically updated with the participant&apos;s link. Send or copy to the Team Leader:
+                  </p>
 
-                {/* Team dropdown if manual mode */}
-                {assignMode === "manual" && (
-                  <div style={{ marginTop: "0.5rem" }}>
-                    <select
-                      value={selectedTeam}
-                      onChange={(e) => setSelectedTeam(e.target.value)}
-                      className="input-field"
-                      style={{ width: "100%", fontSize: "0.92rem", padding: "0.55rem 0.75rem" }}
-                    >
-                      {allTeams.map(t => {
-                        const count = teamCounts[t] || 0;
-                        const isMin = minCountTeams.includes(t);
-                        return (
-                          <option key={t} value={t}>
-                            {formatTeamName(t)} ({count} members {isMin ? "• lowest" : ""})
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              {/* Assignment Summary Box */}
-              <div style={{
-                background: "rgba(255, 255, 255, 0.03)",
-                border: "1px dashed var(--border-light)",
-                borderRadius: "0.6rem",
-                padding: "0.85rem 1rem",
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                gap: "0.75rem",
-                fontSize: "0.82rem"
-              }}>
-                <div>
-                  <span style={{ color: "var(--text-secondary)", display: "block" }}>Assigned Team:</span>
-                  <strong style={{ color: "var(--text-primary)", fontSize: "0.92rem" }}>
-                    {formatTeamName(targetTeam)}
-                  </strong>
-                </div>
-                <div>
-                  <span style={{ color: "var(--text-secondary)", display: "block" }}>Projected System ID:</span>
-                  <strong style={{ color: "#38BDF8", fontSize: "0.92rem" }}>
-                    {nextSystemId}
-                  </strong>
-                </div>
-                <div>
-                  <span style={{ color: "var(--text-secondary)", display: "block" }}>Initial Status:</span>
-                  <span style={{
-                    display: "inline-block",
-                    padding: "0.15rem 0.5rem",
-                    borderRadius: "0.3rem",
-                    background: "rgba(16, 185, 129, 0.15)",
-                    color: "#10B981",
-                    fontWeight: "700",
-                    fontSize: "0.78rem"
+                  {/* Message preview box */}
+                  <div style={{
+                    background: "rgba(0, 0, 0, 0.45)",
+                    border: "1px solid var(--border-light)",
+                    borderRadius: "0.5rem",
+                    padding: "0.75rem",
+                    maxHeight: "140px",
+                    overflowY: "auto",
+                    whiteSpace: "pre-wrap",
+                    fontFamily: "monospace",
+                    fontSize: "0.76rem",
+                    lineHeight: "1.45",
+                    color: "#E2E8F0"
                   }}>
-                    Active
-                  </span>
-                </div>
-              </div>
-
-              {/* Form Actions */}
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="btn-secondary"
-                  disabled={submitting}
-                  style={{ minWidth: "90px" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting || !fullName.trim() || !isPhoneValid || duplicateMember}
-                  className="btn-primary"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    background: "#059669",
-                    color: "white",
-                    padding: "0.6rem 1.25rem",
-                    fontWeight: "700"
-                  }}
-                >
-                  {submitting ? (
-                    <>
-                      <RefreshCw size={16} className="animate-spin" />
-                      <span>Adding & Assigning...</span>
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus size={16} />
-                      <span>+ Register Participant</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          ) : (
-            /* Success State with Updated Team Leader WhatsApp Message */
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              {/* Member Confirmation Card */}
-              <div style={{
-                background: "rgba(16, 185, 129, 0.08)",
-                border: "1px solid rgba(16, 185, 129, 0.25)",
-                borderRadius: "0.75rem",
-                padding: "1rem 1.25rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.6rem"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
-                      <Check size={16} />
-                    </div>
-                    <span style={{ fontWeight: "800", fontSize: "1.05rem", color: "#34D399" }}>
-                      {successData.member.name}
-                    </span>
-                  </div>
-                  <span style={{
-                    background: "rgba(56, 189, 248, 0.15)",
-                    color: "#38BDF8",
-                    padding: "0.2rem 0.6rem",
-                    borderRadius: "0.4rem",
-                    fontWeight: "700",
-                    fontSize: "0.82rem"
-                  }}>
-                    {successData.member.systemId}
-                  </span>
-                </div>
-
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                  gap: "0.6rem",
-                  fontSize: "0.86rem",
-                  marginTop: "0.25rem"
-                }}>
-                  <div>
-                    <span style={{ color: "var(--text-secondary)" }}>Assigned Team: </span>
-                    <strong style={{ color: "var(--text-primary)" }}>{successData.assignedTeam}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: "var(--text-secondary)" }}>WhatsApp: </span>
-                    <a
-                      href={`https://wa.me/${successData.member.phone}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "#34D399", textDecoration: "none", fontWeight: "700" }}
-                    >
-                      +{successData.member.phone} ↗
-                    </a>
-                  </div>
-                  <div>
-                    <span style={{ color: "var(--text-secondary)" }}>Team Total: </span>
-                    <strong style={{ color: "var(--text-primary)" }}>{successData.totalTeamMembers} members</strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* Updated Team Leader WhatsApp Message Section */}
-              <div style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "0.75rem",
-                padding: "1.1rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.75rem"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                    <MessageSquare size={18} color="#22C55E" />
-                    <span style={{ fontWeight: "800", fontSize: "0.95rem" }}>
-                      Updated Team Leader WhatsApp Message
-                    </span>
+                    {successData.updatedMessage}
                   </div>
 
-                  {successData.leaderInfo?.leaderName && (
-                    <span style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-                      Leader: <strong style={{ color: "var(--text-primary)" }}>{successData.leaderInfo.leaderName}</strong>
-                      {successData.leaderInfo.leaderPhone ? ` (${successData.leaderInfo.leaderPhone})` : ""}
-                    </span>
-                  )}
-                </div>
-
-                <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-                  This message is dynamically updated with the participant's direct link. Send or copy it to the Team Leader:
-                </p>
-
-                {/* Message preview box */}
-                <div style={{
-                  background: "rgba(0, 0, 0, 0.45)",
-                  border: "1px solid var(--border-light)",
-                  borderRadius: "0.5rem",
-                  padding: "0.85rem",
-                  maxHeight: "170px",
-                  overflowY: "auto",
-                  whiteSpace: "pre-wrap",
-                  fontFamily: "monospace",
-                  fontSize: "0.78rem",
-                  lineHeight: "1.45",
-                  color: "#E2E8F0"
-                }}>
-                  {successData.updatedMessage}
-                </div>
-
-                {/* Quick actions for leader message */}
-                <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyMessage(successData.updatedMessage)}
-                    className="btn-secondary"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.4rem",
-                      fontSize: "0.82rem",
-                      padding: "0.45rem 0.85rem",
-                      background: copied ? "rgba(16, 185, 129, 0.15)" : undefined,
-                      color: copied ? "#10B981" : undefined
-                    }}
-                  >
-                    {copied ? <Check size={14} /> : <Copy size={14} />}
-                    <span>{copied ? "Copied Message!" : "Copy Leader Message"}</span>
-                  </button>
-
-                  {successData.leaderInfo?.leaderPhone ? (
-                    <a
-                      href={`https://wa.me/${successData.leaderInfo.leaderPhone}?text=${encodeURIComponent(successData.updatedMessage)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-primary"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.4rem",
-                        fontSize: "0.82rem",
-                        padding: "0.45rem 0.85rem",
-                        background: "#22C55E",
-                        color: "white",
-                        textDecoration: "none"
-                      }}
-                    >
-                      <ExternalLink size={14} />
-                      <span>Send to Leader on WhatsApp</span>
-                    </a>
-                  ) : null}
-
-                  {onOpenWhatsAppHub && (
+                  {/* Quick actions for leader message */}
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      onClick={() => {
-                        handleClose();
-                        onOpenWhatsAppHub(successData.assignedTeam);
-                      }}
+                      onClick={() => handleCopyMessage(successData.updatedMessage)}
                       className="btn-secondary"
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "0.4rem",
-                        fontSize: "0.82rem",
-                        padding: "0.45rem 0.85rem"
+                        fontSize: "0.8rem",
+                        padding: "0.4rem 0.75rem",
+                        background: copied ? "rgba(16, 185, 129, 0.15)" : undefined,
+                        color: copied ? "#10B981" : undefined
                       }}
-                      title="Open in full Team Leader WhatsApp Hub"
                     >
-                      <Layers size={14} />
-                      <span>View All in WhatsApp Hub</span>
+                      {copied ? <Check size={13} /> : <Copy size={13} />}
+                      <span>{copied ? "Copied Message!" : "Copy Leader Message"}</span>
                     </button>
-                  )}
+
+                    {successData.leaderInfo?.leaderPhone ? (
+                      <a
+                        href={`https://wa.me/${successData.leaderInfo.leaderPhone}?text=${encodeURIComponent(successData.updatedMessage)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-primary"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          fontSize: "0.8rem",
+                          padding: "0.4rem 0.75rem",
+                          background: "#22C55E",
+                          color: "white",
+                          textDecoration: "none"
+                        }}
+                      >
+                        <ExternalLink size={13} />
+                        <span>Send on WhatsApp</span>
+                      </a>
+                    ) : null}
+
+                    {onOpenWhatsAppHub && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleClose();
+                          onOpenWhatsAppHub(successData.assignedTeam);
+                        }}
+                        className="btn-secondary"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          fontSize: "0.8rem",
+                          padding: "0.4rem 0.75rem"
+                        }}
+                        title="Open in full Team Leader WhatsApp Hub"
+                      >
+                        <Layers size={13} />
+                        <span>WhatsApp Hub</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* Footer Actions */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="btn-secondary"
-                  style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}
-                >
-                  <UserPlus size={15} />
-                  <span>Add Another Member</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="btn-primary"
-                  style={{ minWidth: "100px", padding: "0.55rem 1.25rem", fontSize: "0.88rem" }}
-                >
-                  Done
-                </button>
-              </div>
             </div>
-          )}
-        </div>
+
+            {/* Pinned Success Footer */}
+            <div className="modal-footer-responsive" style={{ justifyContent: "space-between" }}>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="btn-secondary"
+                style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", fontSize: "0.84rem", padding: "0.55rem 0.95rem" }}
+              >
+                <UserPlus size={14} />
+                <span>Add Another Member</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClose}
+                className="btn-primary"
+                style={{ minWidth: "90px", padding: "0.55rem 1.25rem", fontSize: "0.88rem" }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

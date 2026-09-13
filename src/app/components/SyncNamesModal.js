@@ -192,8 +192,8 @@ export default function SyncNamesModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop-responsive">
-      <div className="modal-dialog-responsive" style={{ maxWidth: "680px" }}>
+    <div className="modal-backdrop-responsive" onClick={onClose}>
+      <div className="modal-dialog-responsive" style={{ maxWidth: "680px" }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header-responsive">
           <div className="modal-header-top-row">
@@ -221,7 +221,7 @@ export default function SyncNamesModal({ isOpen, onClose, onSuccess }) {
         </div>
 
         {/* Content */}
-        <div style={{ padding: "1.5rem", overflowY: "auto" }}>
+        <div className="modal-body-responsive">
           {/* File Upload Area */}
           <div style={{
             border: "2px dashed var(--border)",
@@ -404,14 +404,7 @@ export default function SyncNamesModal({ isOpen, onClose, onSuccess }) {
         </div>
 
         {/* Footer */}
-        <div style={{
-          padding: "1rem 1.5rem",
-          borderTop: "1px solid var(--border-light)",
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: "0.75rem",
-          background: "rgba(255, 255, 255, 0.02)"
-        }}>
+        <div className="modal-footer-responsive">
           <button
             onClick={onClose}
             disabled={syncing}
