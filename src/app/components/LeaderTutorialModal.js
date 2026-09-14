@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   X, Play
 } from "lucide-react";
@@ -19,12 +19,15 @@ export default function LeaderTutorialModal({
   initialTab = "workflow"
 }) {
   const [activeTourTab, setActiveTourTab] = useState(initialTab || "workflow");
+  const prevOpenRef = useRef(false);
 
   useEffect(() => {
-    if (initialTab) {
-      setActiveTourTab(initialTab);
+    // Only set active tab when modal transitions from closed to open
+    if (isOpen && !prevOpenRef.current) {
+      setActiveTourTab(initialTab || "workflow");
     }
-  }, [initialTab, isOpen]);
+    prevOpenRef.current = isOpen;
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 

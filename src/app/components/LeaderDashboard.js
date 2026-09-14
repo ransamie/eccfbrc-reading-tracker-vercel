@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle, HelpCircle, Compass } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import LeaderTutorialModal from "./LeaderTutorialModal";
@@ -445,6 +445,12 @@ export default function LeaderDashboard({ team, onLogout }) {
     const text = `*${challengeHeader}*\n\n*Daily Reading Report*\n\n*${formatTeamUpper(team)}*\n\n*Team Status Update*\n- *Number Assigned*: ${numAssigned.toString().padStart(2,'0')}\n- *Number Committed*: ${numCommitted.toString().padStart(2,'0')}\n- *Number Declined*: ${numDeclined.toString().padStart(2,'0')}\n- *Number Left*: ${numLeft.toString().padStart(2,'0')}\n- *Number Evicted*: ${numEvicted.toString().padStart(2,'0')}\n- *Number Settled*: ${numCommitted.toString().padStart(2,'0')}\n\n*Bible Reading Team Report 📃*\n\n${previousRoundsStr}   *ROUND ${currentRound} ✅*\n${roundBreakdownStr}\n\n*YET TO UPDATE 🤲✨*\n${yetToUpdateStr}\n\n*UP-TO-DATE 🤩🚀*\n${upToDateStr}${evictionSection}\n\n*REFLECTION*\n*${reflectionText}*`;
     setReportText(text.replace(/\\n/g, '\n'));
   };
+
+  const handleEnsureReportPreview = useCallback(() => {
+    if (!reportText) {
+      generateWhatsappText();
+    }
+  }, [reportText, data, currentDayNum, reflection, team]);
 
   if (loading && !data) return <div className="loader-container"><div className="spinner"></div><p>Loading Team Dashboard...</p></div>;
 
@@ -1172,11 +1178,7 @@ export default function LeaderDashboard({ team, onLogout }) {
         eveStart={eveStart}
         eveEnd={eveEnd}
         reportText={reportText}
-        onEnsureReportPreview={() => {
-          if (!reportText) {
-            generateWhatsappText();
-          }
-        }}
+        onEnsureReportPreview={handleEnsureReportPreview}
       />
     </div>
   );

@@ -110,27 +110,41 @@ export default function LeaderTourSpotlight({
   ];
 
   const currentStep = tourSteps[currentStepIndex];
+  const onEnsureReportPreviewRef = useRef(onEnsureReportPreview);
+  const timersRef = useRef([]);
+
+  useEffect(() => {
+    onEnsureReportPreviewRef.current = onEnsureReportPreview;
+  });
+
+  const clearTimers = () => {
+    timersRef.current.forEach(t => clearTimeout(t));
+    timersRef.current = [];
+  };
+
+  // Synchronize dashboard tab ONLY when the tour step changes, never in a reactive loop!
+  useEffect(() => {
+    if (!isOpen || !currentStep) return;
+    if (currentStep.tab && activeTab !== currentStep.tab) {
+      setActiveTab(currentStep.tab);
+    }
+  }, [isOpen, currentStepIndex]);
 
   // Update target rect & calculate tooltip position
   const updatePosition = useCallback(() => {
     if (!isOpen || !currentStep) return;
 
-    // Switch tab if step requires a different tab
-    if (currentStep.tab && activeTab !== currentStep.tab) {
-      setActiveTab(currentStep.tab);
-      setTimeout(updatePosition, 180);
-      return;
-    }
-
     // Automatically ensure report preview is generated when reaching step 5
-    if (currentStep.id === 'step-copy-tag' && onEnsureReportPreview) {
-      onEnsureReportPreview();
+    if (currentStep.id === 'step-copy-tag' && onEnsureReportPreviewRef.current) {
+      onEnsureReportPreviewRef.current();
     }
 
     let element = document.querySelector(currentStep.selector);
     if (!element && currentStep.id === 'step-copy-tag') {
-      if (onEnsureReportPreview) onEnsureReportPreview();
-      setTimeout(updatePosition, 100);
+      if (onEnsureReportPreviewRef.current) onEnsureReportPreviewRef.current();
+      clearTimers();
+      const retryTimer = setTimeout(updatePosition, 120);
+      timersRef.current.push(retryTimer);
       return;
     }
 
@@ -139,10 +153,6 @@ export default function LeaderTourSpotlight({
       return;
     }
 
-    // Scroll smoothly with intelligent vertical alignment:
-    // If preferred placement is 'top', scroll target towards the bottom of the viewport ('end')
-    // so there is ample room ABOVE the element for the tooltip card without crowding!
-    // If preferred placement is 'bottom', scroll target towards the top ('start')
     const blockAlignment = currentStep.preferredPlacement === 'top' ? 'end' : 'start';
     element.scrollIntoView({ behavior: 'smooth', block: blockAlignment, inline: 'nearest' });
 
@@ -198,13 +208,20 @@ export default function LeaderTourSpotlight({
       let left = targetCenterX - tooltipWidth / 2;
       left = Math.max(padding, Math.min(window.innerWidth - tooltipWidth - padding, left));
 
-      setTooltipPos({ top, left, arrowPlacement: placement });
+      setTooltipPos(prev => {
+        if (prev.top === top && prev.left === left && prev.arrowPlacement === placement) {
+          return prev;
+        }
+        return { top, left, arrowPlacement: placement };
+      });
     };
 
     measureAndPosition();
-    setTimeout(measureAndPosition, 80);
-    setTimeout(measureAndPosition, 250);
-  }, [isOpen, currentStep, activeTab, setActiveTab, onEnsureReportPreview]);
+    clearTimers();
+    const t1 = setTimeout(measureAndPosition, 80);
+    const t2 = setTimeout(measureAndPosition, 250);
+    timersRef.current.push(t1, t2);
+  }, [isOpen, currentStep]);
 
   useEffect(() => {
     if (isOpen) {
@@ -215,6 +232,7 @@ export default function LeaderTourSpotlight({
     return () => {
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
+      clearTimers();
     };
   }, [isOpen, currentStepIndex, updatePosition]);
 

@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { formatTeamName } from "@/lib/teamUtils";
 
 export default function Home() {
+  const [isMounted, setIsMounted] = useState(false);
   const [session, setSession] = useState(null); // { role: 'admin' | 'leader', team?: string }
   const [loginType, setLoginType] = useState("Team Leader");
   const [teams, setTeams] = useState([]);
@@ -18,13 +19,15 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const savedSession = localStorage.getItem("eccf_session");
-    if (savedSession) {
-      try {
+    try {
+      const savedSession = localStorage.getItem("eccf_session");
+      if (savedSession) {
         setSession(JSON.parse(savedSession));
-      } catch (e) {
-        console.error("Failed to parse session");
       }
+    } catch (e) {
+      console.error("Failed to parse session", e);
+    } finally {
+      setIsMounted(true);
     }
 
     fetch("/api/data?type=valid_teams")
@@ -82,6 +85,15 @@ export default function Home() {
     setPin("");
     localStorage.removeItem("eccf_session");
   };
+
+  if (!isMounted) {
+    return (
+      <div className="loader-container" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
+        <div className="spinner" />
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>Loading ECCFBRC Tracker...</p>
+      </div>
+    );
+  }
 
   if (session?.role === "admin") {
     return (
