@@ -836,7 +836,7 @@ select option {
     width: 100% !important;
   }
 
-  /* Leader Header Actions (Quiz Link, Refresh, Logout) in 1 clean grid row */
+  /* Leader Header Actions (Guide, Refresh, Logout) in 1 clean grid row */
   .leader-header-actions {
     display: grid !important;
     grid-template-columns: 1fr 2.35rem 2.35rem !important;
@@ -844,12 +844,13 @@ select option {
     width: 100% !important;
   }
 
-  .tracker-header-actions > .tracker-btn-quiz {
+  .tracker-header-actions > .tracker-btn-quiz,
+  .tracker-header-actions > .tracker-btn-guide {
     width: 100% !important;
     min-width: 0 !important;
     height: 2.35rem !important;
-    padding: 0 0.4rem !important;
-    font-size: 0.76rem !important;
+    padding: 0 0.5rem !important;
+    font-size: 0.8rem !important;
     font-weight: 700 !important;
     justify-content: center !important;
     text-align: center !important;
@@ -861,7 +862,8 @@ select option {
     border-radius: 0.5rem !important;
   }
 
-  .tracker-header-actions > .tracker-btn-quiz span {
+  .tracker-header-actions > .tracker-btn-quiz span,
+  .tracker-header-actions > .tracker-btn-guide span {
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;

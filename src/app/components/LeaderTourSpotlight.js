@@ -91,11 +91,11 @@ export default function LeaderTourSpotlight({
     },
     {
       id: "feature-quiz",
-      tab: "report",
-      selector: '[data-tour="quiz-link"]',
+      tab: "quiz",
+      selector: '[data-tour="quiz-tab"]',
       badge: "Feature Spotlight • Quiz",
       title: "Quiz Hub & Milestone Rounds",
-      description: "Use this button to copy your team's direct quiz link. Important: The quiz is milestone-based and activates only after completing each 10-day round once enabled by the Super Admin.",
+      description: "Switch to the Quiz tab to copy your team's direct quiz link and view candidate guidelines. Important: The quiz is milestone-based and activates only after completing each 10-day round once enabled by the Super Admin.",
       preferredPlacement: "bottom"
     },
     {
