@@ -16,7 +16,9 @@ export default function LeaderTourSpotlight({
   mornStart = "04:00 AM",
   mornEnd = "11:00 AM",
   eveStart = "06:00 PM",
-  eveEnd = "11:00 PM"
+  eveEnd = "11:00 PM",
+  reportText,
+  onEnsureReportPreview
 }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
@@ -63,10 +65,10 @@ export default function LeaderTourSpotlight({
     {
       id: "step-copy-tag",
       tab: "report",
-      selector: '[data-tour="report-btn"]',
+      selector: '[data-tour="copy-report-btn"]',
       badge: "Step 5 of 8 • WhatsApp Protocol",
       title: "5. Copy, Tag & Broadcast",
-      description: "Copy your report and paste it into your specific Team WhatsApp Group (e.g. Team Goodness, Team Endurance, Team Praise). In the readers list, replace each printed name with their WhatsApp '@mention' tag so they get directly notified. Send the finalized post to both: 1) Your specific Team Group, and 2) The General Reading Group!",
+      description: "Tap 'Copy to Clipboard' to copy this formatted daily broadcast. Next, open your specific Team WhatsApp Group (e.g. Team Goodness, Team Endurance, Team Praise), paste the report, and replace each printed name with their WhatsApp '@mention' tag. Send the finalized post to both: 1) Your specific Team Group, and 2) The General Reading Group!",
       preferredPlacement: "top"
     },
     {
@@ -116,68 +118,93 @@ export default function LeaderTourSpotlight({
     // Switch tab if step requires a different tab
     if (currentStep.tab && activeTab !== currentStep.tab) {
       setActiveTab(currentStep.tab);
-      // Give React time to render new tab content
       setTimeout(updatePosition, 180);
       return;
     }
 
-    const element = document.querySelector(currentStep.selector);
+    // Automatically ensure report preview is generated when reaching step 5
+    if (currentStep.id === 'step-copy-tag' && onEnsureReportPreview) {
+      onEnsureReportPreview();
+    }
+
+    let element = document.querySelector(currentStep.selector);
+    if (!element && currentStep.id === 'step-copy-tag') {
+      if (onEnsureReportPreview) onEnsureReportPreview();
+      setTimeout(updatePosition, 100);
+      return;
+    }
+
     if (!element) {
-      // If element not found in DOM, fallback gracefully
       setTargetRect(null);
       return;
     }
 
-    // Smoothly scroll element into center view
-    element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    // Scroll smoothly with intelligent vertical alignment:
+    // If preferred placement is 'top', scroll target towards the bottom of the viewport ('end')
+    // so there is ample room ABOVE the element for the tooltip card without crowding!
+    // If preferred placement is 'bottom', scroll target towards the top ('start')
+    const blockAlignment = currentStep.preferredPlacement === 'top' ? 'end' : 'start';
+    element.scrollIntoView({ behavior: 'smooth', block: blockAlignment, inline: 'nearest' });
 
-    // Measure bounding rect
-    const rect = element.getBoundingClientRect();
-    setTargetRect({
-      top: rect.top,
-      left: rect.left,
-      width: rect.width,
-      height: rect.height,
-      bottom: rect.bottom,
-      right: rect.right
-    });
+    const measureAndPosition = () => {
+      const el = document.querySelector(currentStep.selector) || element;
+      if (!el) return;
 
-    // Compute tooltip position
-    const tooltipWidth = Math.min(380, window.innerWidth - 32);
-    const tooltipHeight = 240; // Approximate
-    const gap = 16;
-    const padding = 16;
+      const rect = el.getBoundingClientRect();
+      setTargetRect({
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+        bottom: rect.bottom,
+        right: rect.right
+      });
 
-    let placement = currentStep.preferredPlacement || 'bottom';
-    let top = 0;
-    let left = 0;
+      // Get accurate tooltip card height directly from DOM element
+      const cardEl = tooltipRef.current;
+      const actualHeight = cardEl && cardEl.offsetHeight > 0 ? cardEl.offsetHeight : 310;
+      const tooltipWidth = Math.min(380, window.innerWidth - 32);
+      const gap = 20; // 20px gap ensures the pointer arrow NEVER touches or covers the target button
+      const padding = 14;
 
-    // Check vertical room
-    const roomBelow = window.innerHeight - rect.bottom;
-    const roomAbove = rect.top;
+      let placement = currentStep.preferredPlacement || 'bottom';
 
-    if (placement === 'bottom' && roomBelow < tooltipHeight + gap && roomAbove > tooltipHeight + gap) {
-      placement = 'top';
-    } else if (placement === 'top' && roomAbove < tooltipHeight + gap && roomBelow > tooltipHeight + gap) {
-      placement = 'bottom';
-    }
+      // Check vertical room
+      const roomBelow = window.innerHeight - rect.bottom;
+      const roomAbove = rect.top;
 
-    if (placement === 'bottom') {
-      top = rect.bottom + gap;
-    } else {
-      top = rect.top - tooltipHeight - gap;
-    }
+      if (placement === 'top') {
+        if (roomAbove < actualHeight + gap && roomBelow > roomAbove) {
+          placement = 'bottom';
+        }
+      } else if (placement === 'bottom') {
+        if (roomBelow < actualHeight + gap && roomAbove > roomBelow) {
+          placement = 'top';
+        }
+      }
 
-    // Clamp top within viewport
-    top = Math.max(padding, Math.min(window.innerHeight - tooltipHeight - padding, top));
+      let top = 0;
+      if (placement === 'bottom') {
+        top = rect.bottom + gap;
+      } else {
+        top = rect.top - actualHeight - gap;
+      }
 
-    // Align horizontally with target center, clamped to screen margins
-    const targetCenterX = rect.left + rect.width / 2;
-    left = targetCenterX - tooltipWidth / 2;
-    left = Math.max(padding, Math.min(window.innerWidth - tooltipWidth - padding, left));
+      // Clamp top within visible viewport
+      top = Math.max(padding, Math.min(window.innerHeight - actualHeight - padding, top));
 
-    setTooltipPos({ top, left, arrowPlacement: placement });
-  }, [isOpen, currentStep, activeTab, setActiveTab]);
+      // Align horizontally with target center, clamped to screen margins
+      const targetCenterX = rect.left + rect.width / 2;
+      let left = targetCenterX - tooltipWidth / 2;
+      left = Math.max(padding, Math.min(window.innerWidth - tooltipWidth - padding, left));
+
+      setTooltipPos({ top, left, arrowPlacement: placement });
+    };
+
+    measureAndPosition();
+    setTimeout(measureAndPosition, 80);
+    setTimeout(measureAndPosition, 250);
+  }, [isOpen, currentStep, activeTab, setActiveTab, onEnsureReportPreview]);
 
   useEffect(() => {
     if (isOpen) {

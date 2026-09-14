@@ -1,9 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { 
-  X, BookOpen, Layers, Users, HelpCircle, CheckCircle2, 
-  MessageSquare, Sparkles, ArrowRight, FileText, ChevronRight,
-  Clock, Search, ShieldCheck, Trophy, Play, Compass, FileDown
+  X, Play
 } from "lucide-react";
 import { formatTeamName } from "@/lib/teamUtils";
 
@@ -33,9 +31,8 @@ export default function LeaderTutorialModal({
   const tourSections = [
     {
       id: "workflow",
-      title: "Daily Reporting",
-      icon: <FileText size={18} color="#38BDF8" />,
-      badge: "Standard Protocol",
+      tabLabel: "Daily Workflow",
+      category: "Standard Protocol",
       heading: "The 7-Step Daily Reporting Procedure",
       description: "Follow this systematic daily routine to mark your team's completed readers, save to the database, and distribute tagged broadcasts across the community.",
       steps: [
@@ -78,9 +75,8 @@ export default function LeaderTutorialModal({
     },
     {
       id: "features",
-      title: "Tools & Features",
-      icon: <Sparkles size={18} color="#A78BFA" />,
-      badge: "App Capabilities",
+      tabLabel: "Features & Tools",
+      category: "App Capabilities",
       heading: "Complete Dashboard Features & Tools",
       description: "Everything at your fingertips to manage attendance, motivate participants, and maintain flawless records.",
       points: [
@@ -112,9 +108,8 @@ export default function LeaderTutorialModal({
     },
     {
       id: "windows",
-      title: "Reporting Windows",
-      icon: <Clock size={18} color="#34D399" />,
-      badge: "Accountability Rules",
+      tabLabel: "Reporting Windows",
+      category: "Accountability Rules",
       heading: "Understanding Live Reporting Windows",
       description: "Live daily reports are synchronized within designated morning and evening shifts to maintain structured reading discipline across all teams.",
       points: [
@@ -138,9 +133,8 @@ export default function LeaderTutorialModal({
     },
     {
       id: "whatsapp",
-      title: "WhatsApp Guidelines",
-      icon: <MessageSquare size={18} color="#FBBF24" />,
-      badge: "Communication Etiquette",
+      tabLabel: "WhatsApp Guidelines",
+      category: "Communication Etiquette",
       heading: "WhatsApp Engagement & Tagging Best Practices",
       description: "Elevate your team's engagement with professional communication and timely recognition.",
       points: [
@@ -163,204 +157,128 @@ export default function LeaderTutorialModal({
   const currentSection = tourSections.find(s => s.id === activeTourTab) || tourSections[0];
 
   return (
-    <div className="tutorial-modal-backdrop" onClick={onClose}>
+    <div className="guide-modal-backdrop" onClick={onClose}>
       <div 
-        className="tutorial-modal-dialog" 
+        className="guide-modal-dialog" 
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '940px' }}
       >
-        {/* Modal Header */}
-        <div className="tutorial-header">
-          <div className="tutorial-header-left">
-            <div className="tutorial-header-icon">
-              <BookOpen size={20} color="#38BDF8" />
-            </div>
-            <div>
-              <h3 className="tutorial-header-title">
-                {formatTeamName(team)} • Leader Guide & Handbook
-              </h3>
-              <p className="tutorial-header-subtitle">
-                Comprehensive manual for daily reporting, roster management, and accountability rules.
-              </p>
-            </div>
-          </div>
-          <button 
-            onClick={onClose} 
-            className="tutorial-close-btn"
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Live Tour Promo Hero Card */}
-        <div className="leader-tour-promo-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <div className="leader-tour-promo-icon">
-              <Compass size={22} color="#38BDF8" />
-            </div>
-            <div>
-              <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '0.98rem', fontWeight: 800, color: '#F9FAFB' }}>
-                Interactive Dashboard Tour
-              </h4>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: '#9CA3AF', lineHeight: '1.4' }}>
-                Prefer a live walkthrough? Let the app point directly to each button and feature on your screen!
-              </p>
-            </div>
-          </div>
-          <button 
-            onClick={() => {
-              onClose();
-              if (onStartInteractiveTour) onStartInteractiveTour();
-            }} 
-            className="btn-primary"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              padding: '0.55rem 1.15rem',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              background: '#0284C7',
-              color: '#FFFFFF',
-              borderRadius: '0.5rem',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              flexShrink: 0
-            }}
-          >
-            <Play size={14} />
-            <span>Start Interactive Tour</span>
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="tutorial-body">
-          {/* Navigation Tabs Sidebar / Top Bar */}
-          <div className="tutorial-nav">
-            <span className="tutorial-nav-label">
-              Leader Guide
-            </span>
-            {tourSections.map(sec => (
-              <button
-                key={sec.id}
-                onClick={() => setActiveTourTab(sec.id)}
-                className={`tutorial-nav-btn ${activeTourTab === sec.id ? 'active' : ''}`}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  {sec.icon}
-                  <span>{sec.title}</span>
-                </div>
-                {activeTourTab === sec.id && <ChevronRight size={14} color="#38BDF8" className="tutorial-nav-chevron" />}
-              </button>
-            ))}
-          </div>
-
-          {/* Active Section Content */}
-          <div className="tutorial-content">
-            <span className="tutorial-badge">
-              {currentSection.badge}
-            </span>
-
-            <h2 className="tutorial-heading">
-              {currentSection.heading}
-            </h2>
-            <p className="tutorial-description">
-              {currentSection.description}
+        {/* Minimal Header */}
+        <div className="guide-header">
+          <div className="guide-header-title-block">
+            <h3 className="guide-header-title">
+              {team ? `${formatTeamName(team)} • ` : ""}Leader Guide
+            </h3>
+            <p className="guide-header-sub">
+              Standard operations, daily workflow & rules
             </p>
+          </div>
 
-            {/* If section is reporting windows, show live status card */}
-            {currentSection.id === "windows" && (
-              <div style={{
-                background: isReportingWindow ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.1)",
-                border: `1px solid ${isReportingWindow ? "rgba(16, 185, 129, 0.3)" : "rgba(245, 158, 11, 0.3)"}`,
-                borderRadius: "0.65rem",
-                padding: "0.85rem 1.1rem",
-                marginBottom: "1.25rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: "0.75rem"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                  <Clock size={20} color={isReportingWindow ? "#34D399" : "#FBBF24"} />
-                  <div>
-                    <strong style={{ fontSize: "0.9rem", color: isReportingWindow ? "#34D399" : "#FBBF24", display: "block" }}>
-                      Current Status: {isReportingWindow ? "Reporting Window is OPEN" : "Reporting Window is CLOSED"}
-                    </strong>
-                    <span style={{ fontSize: "0.78rem", color: "#9CA3AF" }}>
-                      Morning: {mornStart} – {mornEnd} WAT &bull; Evening: {eveStart} – {eveEnd} WAT
-                    </span>
-                  </div>
-                </div>
-                <span style={{
-                  fontSize: "0.76rem",
-                  fontWeight: 700,
-                  padding: "0.2rem 0.6rem",
-                  borderRadius: "999px",
-                  background: isReportingWindow ? "rgba(16, 185, 129, 0.2)" : "rgba(245, 158, 11, 0.2)",
-                  color: isReportingWindow ? "#A7F3D0" : "#FDE68A"
-                }}>
-                  {isReportingWindow ? "Accepting Live Reports" : "Historical Backfill Only"}
+          <div className="guide-header-actions">
+            {onStartInteractiveTour && (
+              <button 
+                onClick={() => {
+                  onClose();
+                  onStartInteractiveTour();
+                }} 
+                className="guide-tour-link-btn"
+                title="Start step-by-step interactive walkthrough on the dashboard"
+              >
+                <Play size={12} fill="currentColor" />
+                <span>Interactive Tour</span>
+              </button>
+            )}
+            <button 
+              onClick={onClose} 
+              className="guide-close-btn"
+              aria-label="Close guide"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Clean Borderless Horizontal Tabs */}
+        <div className="guide-tabs-bar">
+          {tourSections.map(sec => (
+            <button
+              key={sec.id}
+              onClick={() => setActiveTourTab(sec.id)}
+              className={`guide-tab-btn ${activeTourTab === sec.id ? 'active' : ''}`}
+            >
+              {sec.tabLabel}
+            </button>
+          ))}
+        </div>
+
+        {/* Guide Body Content */}
+        <div className="guide-body">
+          <span className="guide-category-label">
+            {currentSection.category}
+          </span>
+
+          <h2 className="guide-section-heading">
+            {currentSection.heading}
+          </h2>
+          <p className="guide-section-desc">
+            {currentSection.description}
+          </p>
+
+          {/* Reporting Windows Status Line */}
+          {currentSection.id === "windows" && (
+            <div className="guide-status-bar">
+              <span className={`guide-status-dot ${isReportingWindow ? 'open' : 'closed'}`} />
+              <div className="guide-status-info">
+                <span className="guide-status-title">
+                  {isReportingWindow ? "Reporting Window is Currently OPEN" : "Reporting Window is Currently CLOSED"}
+                </span>
+                <span className="guide-status-shifts">
+                  Morning: {mornStart} – {mornEnd} WAT &bull; Evening: {eveStart} – {eveEnd} WAT
                 </span>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* If section has structured steps */}
-            {currentSection.steps && (
-              <div>
-                {currentSection.steps.map(step => (
-                  <div key={step.num} className="tutorial-step-card">
-                    <div className="tutorial-step-num">
-                      {step.num}
-                    </div>
-                    <div>
-                      <h4 className="tutorial-step-title">
-                        {step.title}
-                      </h4>
-                      <p className="tutorial-step-text">
-                        {step.text}
-                      </p>
-                    </div>
+          {/* Structured Steps List (Clean Typography, No Heavy Box Cards) */}
+          {currentSection.steps && (
+            <div className="guide-steps-list">
+              {currentSection.steps.map(step => (
+                <div key={step.num} className="guide-step-row">
+                  <span className="guide-step-num">{step.num.padStart(2, '0')}</span>
+                  <div className="guide-step-body">
+                    <h4 className="guide-step-title">{step.title}</h4>
+                    <p className="guide-step-text">{step.text}</p>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
+          )}
 
-            {/* If section has bullet points */}
-            {currentSection.points && (
-              <div>
-                {currentSection.points.map((pt, idx) => (
-                  <div key={idx} className="tutorial-point-card">
-                    <div className="tutorial-point-icon">
-                      <CheckCircle2 size={14} />
-                    </div>
-                    <div>
-                      <h4 className="tutorial-point-title">
-                        {pt.title}
-                      </h4>
-                      <p className="tutorial-point-text">
-                        {pt.text}
-                      </p>
-                    </div>
+          {/* Bullet Points List (Clean Typography, No Heavy Box Cards) */}
+          {currentSection.points && (
+            <div className="guide-points-list">
+              {currentSection.points.map((pt, idx) => (
+                <div key={idx} className="guide-point-row">
+                  <span className="guide-point-bullet">•</span>
+                  <div className="guide-point-body">
+                    <h4 className="guide-point-title">{pt.title}</h4>
+                    <p className="guide-point-text">{pt.text}</p>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="tutorial-footer">
-          <span className="tutorial-footer-tip">
-            Tip: You can re-open this handbook anytime by clicking the &ldquo;Guide & Tour&rdquo; button in the header.
+        {/* Minimal Footer */}
+        <div className="guide-footer">
+          <span className="guide-footer-tip">
+            Re-open anytime via <strong>Guide & Tour</strong> in the top header.
           </span>
           <button
             onClick={onClose}
-            className="tutorial-footer-btn"
+            className="guide-footer-btn"
           >
-            Got it, let&apos;s lead!
+            Done
           </button>
         </div>
       </div>

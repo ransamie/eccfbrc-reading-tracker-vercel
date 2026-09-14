@@ -2697,6 +2697,8 @@ select option {
   height: 0;
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .tour-arrow-bottom {
@@ -2874,37 +2876,514 @@ select option {
   text-decoration: underline;
 }
 
-/* Leader Tour Promo Card (Inside Guide Modal) */
-.leader-tour-promo-card {
-  background: linear-gradient(90deg, rgba(2, 132, 199, 0.2) 0%, rgba(15, 23, 42, 0.6) 100%);
-  border-bottom: 1px solid rgba(56, 189, 248, 0.25);
-  padding: 0.85rem 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
+/* ==========================================================================
+   Focused Minimalist Leader Guide Modal (Clean, Unboxed, High Contrast)
+   ========================================================================== */
 
-.leader-tour-promo-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 0.5rem;
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.35);
+.guide-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: rgba(10, 15, 29, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0.75rem;
+}
+
+.guide-modal-dialog {
+  background: #0D1322;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.85rem;
+  width: 100%;
+  max-width: 740px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 55px -12px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+  color: #F8FAFC;
+}
+
+@media (min-width: 640px) {
+  .guide-modal-dialog {
+    border-radius: 1rem;
+    max-height: 86vh;
+  }
+}
+
+.guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 0.75rem;
   flex-shrink: 0;
 }
 
 @media (max-width: 640px) {
-  .leader-tour-promo-card {
-    padding: 0.75rem 1rem;
+  .guide-header {
+    padding: 0.85rem 1rem;
   }
-  .leader-tour-promo-card > button {
-    width: 100%;
-    justify-content: center;
+}
+
+.guide-header-title-block {
+  min-width: 0;
+}
+
+.guide-header-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .guide-header-title {
+    font-size: 0.95rem;
+  }
+}
+
+.guide-header-sub {
+  margin: 0.15rem 0 0 0;
+  font-size: 0.78rem;
+  color: #64748B;
+}
+
+@media (max-width: 640px) {
+  .guide-header-sub {
+    font-size: 0.72rem;
+  }
+}
+
+.guide-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.guide-tour-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #38BDF8;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.guide-tour-link-btn:hover {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #7DD3FC;
+}
+
+@media (max-width: 640px) {
+  .guide-tour-link-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.74rem;
+  }
+}
+
+.guide-close-btn {
+  background: transparent;
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748B;
+  cursor: pointer;
+  border-radius: 0.4rem;
+  transition: all 0.15s ease;
+}
+
+.guide-close-btn:hover {
+  color: #F8FAFC;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Horizontal Tabs (Underline Style) */
+.guide-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(15, 23, 42, 0.4);
+  flex-shrink: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.guide-tabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .guide-tabs-bar {
+    padding: 0 0.85rem;
+    gap: 0.15rem;
+  }
+}
+
+.guide-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 0.75rem 0.85rem;
+  color: #94A3B8;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .guide-tab-btn {
+    padding: 0.65rem 0.65rem;
+    font-size: 0.8rem;
+  }
+}
+
+.guide-tab-btn:hover {
+  color: #F1F5F9;
+}
+
+.guide-tab-btn.active {
+  color: #38BDF8;
+  font-weight: 600;
+}
+
+.guide-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0.85rem;
+  right: 0.85rem;
+  height: 2px;
+  background: #38BDF8;
+  border-radius: 2px;
+}
+
+@media (max-width: 640px) {
+  .guide-tab-btn.active::after {
+    left: 0.65rem;
+    right: 0.65rem;
+  }
+}
+
+/* Body Content */
+.guide-body {
+  flex: 1;
+  padding: 1.5rem 1.5rem 2rem 1.5rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 640px) {
+  .guide-body {
+    padding: 1.15rem 1rem 1.5rem 1rem;
+  }
+}
+
+.guide-category-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #38BDF8;
+  margin-bottom: 0.35rem;
+}
+
+.guide-section-heading {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 0.35rem 0;
+  line-height: 1.3;
+}
+
+@media (max-width: 640px) {
+  .guide-section-heading {
+    font-size: 1.08rem;
+  }
+}
+
+.guide-section-desc {
+  font-size: 0.85rem;
+  color: #94A3B8;
+  line-height: 1.55;
+  margin: 0 0 1.5rem 0;
+}
+
+@media (max-width: 640px) {
+  .guide-section-desc {
+    font-size: 0.8rem;
+    margin-bottom: 1.15rem;
+  }
+}
+
+/* Status Bar for Reporting Windows */
+.guide-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.guide-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.guide-status-dot.open {
+  background: #10B981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.guide-status-dot.closed {
+  background: #F59E0B;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.guide-status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.guide-status-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #F1F5F9;
+}
+
+.guide-status-shifts {
+  font-size: 0.75rem;
+  color: #64748B;
+}
+
+/* Steps List (Clean Typography, No Heavy Box Cards) */
+.guide-steps-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.95rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.guide-step-row:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 640px) {
+  .guide-step-row {
+    gap: 0.75rem;
+    padding: 0.8rem 0;
+  }
+}
+
+.guide-step-num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #38BDF8;
+  flex-shrink: 0;
+  padding-top: 1px;
+  width: 22px;
+}
+
+@media (max-width: 640px) {
+  .guide-step-num {
+    font-size: 0.82rem;
+    width: 20px;
+  }
+}
+
+.guide-step-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-step-title {
+  margin: 0 0 0.2rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #F8FAFC;
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .guide-step-title {
+    font-size: 0.86rem;
+  }
+}
+
+.guide-step-text {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #94A3B8;
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .guide-step-text {
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+}
+
+/* Points List (Clean Typography, No Heavy Box Cards) */
+.guide-points-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-point-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.guide-point-row:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 640px) {
+  .guide-point-row {
+    padding: 0.75rem 0;
+  }
+}
+
+.guide-point-bullet {
+  color: #38BDF8;
+  font-size: 1.1rem;
+  line-height: 1;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.guide-point-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-point-title {
+  margin: 0 0 0.2rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #F8FAFC;
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .guide-point-title {
+    font-size: 0.86rem;
+  }
+}
+
+.guide-point-text {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #94A3B8;
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .guide-point-text {
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+}
+
+/* Minimal Footer */
+.guide-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(15, 23, 42, 0.3);
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .guide-footer {
+    padding: 0.65rem 1rem;
+  }
+}
+
+.guide-footer-tip {
+  font-size: 0.76rem;
+  color: #64748B;
+  line-height: 1.4;
+}
+
+.guide-footer-tip strong {
+  color: #94A3B8;
+}
+
+@media (max-width: 640px) {
+  .guide-footer-tip {
+    font-size: 0.7rem;
+  }
+}
+
+.guide-footer-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #E2E8F0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.4rem 1.15rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 0.45rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.guide-footer-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
+}
+
+@media (max-width: 640px) {
+  .guide-footer-btn {
+    padding: 0.35rem 0.95rem;
+    font-size: 0.78rem;
   }
 }
 
