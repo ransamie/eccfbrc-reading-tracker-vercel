@@ -3513,7 +3513,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                                   }}
                                 />
 
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.35rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                                   {[
                                     { key: 'option1', label: 'A' },
                                     { key: 'option2', label: 'B' },
@@ -3528,11 +3528,14 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                                         style={{
                                           display: 'flex',
                                           alignItems: 'center',
-                                          gap: '0.35rem',
-                                          backgroundColor: isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface)',
+                                          gap: '0.5rem',
+                                          backgroundColor: isCorrect ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface)',
                                           border: `1px solid ${isCorrect ? 'var(--success)' : 'var(--border-light)'}`,
-                                          borderRadius: '0.35rem',
-                                          padding: '0.25rem 0.45rem'
+                                          borderRadius: '0.45rem',
+                                          padding: '0.35rem 0.65rem',
+                                          transition: 'all 0.15s ease',
+                                          boxSizing: 'border-box',
+                                          width: '100%'
                                         }}
                                       >
                                         <input
@@ -3540,10 +3543,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                                           name={`correct_ai_mini_${idx}`}
                                           checked={isCorrect}
                                           onChange={() => handleSelectAICorrectAnswer(idx, q[opt.key])}
-                                          style={{ cursor: 'pointer', transform: 'scale(1.05)' }}
+                                          style={{ cursor: 'pointer', transform: 'scale(1.1)', flexShrink: 0 }}
                                           title="Set as correct answer"
                                         />
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{opt.label}.</span>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isCorrect ? '#34D399' : 'var(--text-secondary)', flexShrink: 0 }}>
+                                          {opt.label}.
+                                        </span>
                                         <input
                                           type="text"
                                           value={q[opt.key]}
@@ -3556,15 +3561,20 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                                           }}
                                           style={{
                                             flex: 1,
+                                            minWidth: 0,
+                                            width: '100%',
                                             backgroundColor: 'transparent',
                                             border: 'none',
                                             color: 'var(--text-primary)',
-                                            fontSize: '0.78rem',
-                                            outline: 'none'
+                                            fontSize: '0.84rem',
+                                            outline: 'none',
+                                            padding: '0.15rem 0'
                                           }}
                                         />
                                         {isCorrect && (
-                                          <span style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 800 }}>✓</span>
+                                          <span style={{ fontSize: '0.74rem', color: 'var(--success)', fontWeight: 800, flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                            ✓ Correct
+                                          </span>
                                         )}
                                       </div>
                                     );
@@ -3703,23 +3713,38 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                                   {q.question}
                                 </p>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem' }}>
-                                  {[q.option1, q.option2, q.option3, q.option4].filter(Boolean).map((opt, i) => {
-                                    const isAnswer = opt === q.correctAnswer;
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.45rem' }}>
+                                  {[
+                                    { label: 'A', text: q.option1 },
+                                    { label: 'B', text: q.option2 },
+                                    { label: 'C', text: q.option3 },
+                                    { label: 'D', text: q.option4 }
+                                  ].filter(o => o.text).map((opt, i) => {
+                                    const isAnswer = opt.text === q.correctAnswer;
                                     return (
                                       <div
                                         key={i}
                                         style={{
-                                          fontSize: '0.78rem',
+                                          fontSize: '0.8rem',
                                           padding: '0.35rem 0.6rem',
                                           borderRadius: '0.4rem',
-                                          backgroundColor: isAnswer ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+                                          backgroundColor: isAnswer ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
                                           color: isAnswer ? '#34D399' : 'var(--text-secondary)',
-                                          border: `1px solid ${isAnswer ? 'var(--success)' : 'transparent'}`,
-                                          fontWeight: isAnswer ? '700' : '400'
+                                          border: `1px solid ${isAnswer ? 'rgba(16, 185, 129, 0.35)' : 'rgba(255, 255, 255, 0.06)'}`,
+                                          fontWeight: isAnswer ? '700' : '400',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '0.35rem',
+                                          wordBreak: 'break-word',
+                                          lineHeight: '1.35'
                                         }}
                                       >
-                                        {isAnswer ? '✓ ' : ''}{opt}
+                                        <span style={{ fontWeight: 800, color: isAnswer ? '#34D399' : 'var(--text-secondary)', flexShrink: 0 }}>
+                                          {isAnswer ? '✓ ' : ''}{opt.label}.
+                                        </span>
+                                        <span style={{ flex: 1, minWidth: 0 }}>
+                                          {opt.text}
+                                        </span>
                                       </div>
                                     );
                                   })}
