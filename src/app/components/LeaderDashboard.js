@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle, HelpCircle, Compass } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
+import LeaderTutorialModal from "./LeaderTutorialModal";
+import LeaderTourSpotlight from "./LeaderTourSpotlight";
 import { generateTeamPdfReport } from "@/lib/pdfReportGenerator";
 import { formatTeamName, formatTeamUpper } from "@/lib/teamUtils";
 
 export default function LeaderDashboard({ team, onLogout }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showSpotlightTour, setShowSpotlightTour] = useState(false);
   
   const [selectedDay, setSelectedDay] = useState("");
   const [currentDay, setCurrentDay] = useState("");
@@ -478,6 +482,17 @@ export default function LeaderDashboard({ team, onLogout }) {
                   {data?.isArchive ? '📁 ' : '🟢 '}{data.settings.Challenge_Edition}
                 </span>
               )}
+              {/* Synchronized Reporting Window Status Badge */}
+              <div 
+                data-tour="reporting-windows"
+                className={`tracker-window-badge ${isReportingWindow ? 'open' : 'closed'}`}
+                title={`Daily Reporting Windows: Morning (${mornStart} - ${mornEnd}) | Evening (${eveStart} - ${eveEnd}) WAT. Click for full schedule and guidance.`}
+                onClick={() => setShowGuideModal(true)}
+                style={{ cursor: 'pointer' }}
+              >
+                <span className="status-dot-pulse" />
+                <span>{isReportingWindow ? 'Window Open' : 'Window Closed'}</span>
+              </div>
             </div>
             {data?.leadersData && (() => {
               const leaderRow = data.leadersData.find(l => {
@@ -505,6 +520,16 @@ export default function LeaderDashboard({ team, onLogout }) {
         </div>
         <div className="tracker-header-actions leader-header-actions">
           <button 
+            data-tour="guide-btn"
+            onClick={() => setShowGuideModal(true)}
+            title="Open Guide & Interactive Tour"
+            className="tracker-btn-guide"
+          >
+            <HelpCircle size={15} />
+            <span>Guide &amp; Tour</span>
+          </button>
+          <button 
+            data-tour="quiz-link"
             onClick={handleCopyQuizLink}
             title="Copy Quiz Link to share with team"
             className="tracker-btn-quiz tracker-btn-quizlink"
@@ -547,7 +572,11 @@ export default function LeaderDashboard({ team, onLogout }) {
         <button className={`tracker-tab-pill ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>
           <FileText size={15} /> <span>Report</span>
         </button>
-        <button className={`tracker-tab-pill ${activeTab === 'roster' ? 'active' : ''}`} onClick={() => setActiveTab('roster')}>
+        <button 
+          data-tour="roster-tab"
+          className={`tracker-tab-pill ${activeTab === 'roster' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('roster')}
+        >
           <Users size={15} /> <span>Roster</span>
         </button>
         <button className={`tracker-tab-pill ${activeTab === 'quiz' ? 'active' : ''}`} onClick={() => setActiveTab('quiz')}>
@@ -593,7 +622,7 @@ export default function LeaderDashboard({ team, onLogout }) {
           </div>
           
           {/* Modern Date Stepper Card */}
-          <div className="tracker-date-card">
+          <div className="tracker-date-card" data-tour="date-stepper">
             <button 
               onClick={() => {
                 const currentNum = parseInt(selectedDay.split('_')[1]);
@@ -643,7 +672,7 @@ export default function LeaderDashboard({ team, onLogout }) {
 
           {/* Team Leadership Daily Reading Ticks */}
           {leadershipTiles.length > 0 && (
-            <div style={{ marginBottom: '1.25rem' }}>
+            <div style={{ marginBottom: '1.25rem' }} data-tour="leadership-tiles">
               <div style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.45rem' }}>
                 Team Leadership
               </div>
@@ -675,7 +704,7 @@ export default function LeaderDashboard({ team, onLogout }) {
 
           <div>
             {/* Search Bar */}
-            <div className="tracker-search-wrap">
+            <div className="tracker-search-wrap" data-tour="search-bar">
               <Search className="search-icon" size={16} />
               <input 
                 type="text" 
@@ -758,7 +787,7 @@ export default function LeaderDashboard({ team, onLogout }) {
               }
 
               return (
-                <div className="tracker-check-grid">
+                <div className="tracker-check-grid" data-tour="member-tiles">
                   {filteredMembers.map(m => {
                     const nameTrimmed = String(m.Member_Name || '').trim();
                     const isChecked = !!updates[nameTrimmed];
@@ -790,7 +819,7 @@ export default function LeaderDashboard({ team, onLogout }) {
 
             {/* Daily Reflection Scripture Box */}
             {selectedDay === currentDay && (
-              <div className="tracker-scripture-box">
+              <div className="tracker-scripture-box" data-tour="reflection-box">
                 <div className="tracker-scripture-header">
                   <BookOpen size={16} color="#818CF8" />
                   <span>Daily Reflection Scripture (Auto-saved for reuse):</span>
@@ -828,6 +857,7 @@ export default function LeaderDashboard({ team, onLogout }) {
                     )}
 
                     <button 
+                      data-tour="save-btn"
                       onClick={() => handleSaveReport(false)} 
                       disabled={saving || !canSave} 
                       className="tracker-btn-save"
@@ -841,6 +871,7 @@ export default function LeaderDashboard({ team, onLogout }) {
                     
                     {selectedDay === currentDay && (
                       <button 
+                        data-tour="report-btn"
                         onClick={() => handleSaveReport(true)} 
                         disabled={saving || !canSave} 
                         className="tracker-btn-report"
@@ -857,7 +888,7 @@ export default function LeaderDashboard({ team, onLogout }) {
           </div>
 
           {reportText && (
-            <div ref={reportRef} className="card mt-4">
+            <div ref={reportRef} data-tour="report-preview" className="card mt-4">
               <div style={{ padding: '0.5rem' }}>
                 <h3 className="mb-2">📱 Copy Your Daily Report</h3>
                 <pre style={{ background: 'var(--surface-secondary)', padding: '1rem', borderRadius: '0.5rem', overflowX: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>
@@ -1095,6 +1126,38 @@ export default function LeaderDashboard({ team, onLogout }) {
           </div>
         </div>
       )}
+
+      {/* Guide & Interactive Spotlight Tour Modals */}
+      <LeaderTutorialModal 
+        isOpen={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
+        onStartInteractiveTour={() => {
+          setShowGuideModal(false);
+          setSelectedDay(currentDay);
+          setShowSpotlightTour(true);
+        }}
+        team={team}
+        settings={data?.settings}
+        mornStart={mornStart}
+        mornEnd={mornEnd}
+        eveStart={eveStart}
+        eveEnd={eveEnd}
+        isReportingWindow={isReportingWindow}
+      />
+
+      <LeaderTourSpotlight
+        isOpen={showSpotlightTour}
+        onClose={() => setShowSpotlightTour(false)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenFullGuide={() => setShowGuideModal(true)}
+        settings={data?.settings}
+        isReportingWindow={isReportingWindow}
+        mornStart={mornStart}
+        mornEnd={mornEnd}
+        eveStart={eveStart}
+        eveEnd={eveEnd}
+      />
     </div>
   );
 }
