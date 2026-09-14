@@ -38,6 +38,7 @@ export default function LeaderDashboard({ team, onLogout }) {
   const [rosterUpdates, setRosterUpdates] = useState({});
   const [showDays, setShowDays] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState("");
+  const [reportVisible, setReportVisible] = useState(true);
 
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [quizCopied, setQuizCopied] = useState(false);
@@ -445,6 +446,7 @@ export default function LeaderDashboard({ team, onLogout }) {
     const reflectionText = reflection || "'Thy word is a lamp unto my feet, and a light unto my path.' - Ps. 119:105";
     const text = `*${challengeHeader}*\n\n*Daily Reading Report*\n\n*${formatTeamUpper(team)}*\n\n*Team Status Update*\n- *Number Assigned*: ${numAssigned.toString().padStart(2,'0')}\n- *Number Committed*: ${numCommitted.toString().padStart(2,'0')}\n- *Number Declined*: ${numDeclined.toString().padStart(2,'0')}\n- *Number Left*: ${numLeft.toString().padStart(2,'0')}\n- *Number Evicted*: ${numEvicted.toString().padStart(2,'0')}\n- *Number Settled*: ${numCommitted.toString().padStart(2,'0')}\n\n*Bible Reading Team Report 📃*\n\n${previousRoundsStr}   *ROUND ${currentRound} ✅*\n${roundBreakdownStr}\n\n*YET TO UPDATE 🤲✨*\n${yetToUpdateStr}\n\n*UP-TO-DATE 🤩🚀*\n${upToDateStr}${evictionSection}\n\n*REFLECTION*\n*${reflectionText}*`;
     setReportText(text.replace(/\\n/g, '\n'));
+    setReportVisible(true);
   };
 
   const handleEnsureReportPreview = useCallback(() => {
@@ -538,29 +540,18 @@ export default function LeaderDashboard({ team, onLogout }) {
         </div>
 
         <div className="tracker-header-actions leader-header-actions">
-          {/* Unboxed contextual text link for Guide & Tour */}
+          {/* Guide button */}
           <button 
             data-tour="guide-btn"
             onClick={() => {
               setGuideInitialTab("workflow");
               setShowGuideModal(true);
             }}
-            title="Open Guide & Interactive Tour"
-            className="tracker-header-link"
+            title="Open Leader Guide & Walkthrough"
+            className="tracker-btn-guide"
           >
             <HelpCircle size={15} />
-            <span>Guide &amp; Tour</span>
-          </button>
-
-          {/* Unboxed contextual link for Quiz */}
-          <button 
-            data-tour="quiz-link"
-            onClick={handleCopyQuizLink}
-            title="Copy Quiz Link to share with team"
-            className="tracker-header-link tracker-header-quiz-link"
-          >
-            {quizCopied ? <CheckCheck size={15} color="#34D399" /> : <Share2 size={15} />}
-            <span>{quizCopied ? 'Link Copied!' : 'Quiz Link'}</span>
+            <span>Guide</span>
           </button>
 
           <InstallPwaButton />
@@ -597,8 +588,12 @@ export default function LeaderDashboard({ team, onLogout }) {
         >
           <Users size={15} /> <span>Roster</span>
         </button>
-        <button className={`tracker-tab-pill ${activeTab === 'quiz' ? 'active' : ''}`} onClick={() => setActiveTab('quiz')}>
-          <Trophy size={15} /> <span>Quiz Hub</span>
+        <button 
+          data-tour="quiz-tab"
+          className={`tracker-tab-pill ${activeTab === 'quiz' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('quiz')}
+        >
+          <Trophy size={15} /> <span>Quiz</span>
         </button>
       </div>
 
@@ -908,17 +903,41 @@ export default function LeaderDashboard({ team, onLogout }) {
           {reportText && (
             <div ref={reportRef} data-tour="report-preview" className="card mt-4">
               <div style={{ padding: '0.5rem' }}>
-                <h3 className="mb-2">📱 Copy Your Daily Report</h3>
-                <pre style={{ background: 'var(--surface-secondary)', padding: '1rem', borderRadius: '0.5rem', overflowX: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>
-                  {reportText}
-                </pre>
-                <button 
-                  data-tour="copy-report-btn"
-                  className="btn-primary mt-2" 
-                  onClick={() => { navigator.clipboard.writeText(reportText); showToast("Copied to clipboard!"); }}
-                >
-                  Copy to Clipboard
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: reportVisible ? '0.75rem' : 0 }}>
+                  <h3 style={{ margin: 0 }}>📱 Copy Your Daily Report</h3>
+                  <button
+                    onClick={() => setReportVisible(v => !v)}
+                    style={{
+                      background: 'none',
+                      border: '1px solid var(--border-light)',
+                      borderRadius: '0.4rem',
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.78rem',
+                      padding: '0.25rem 0.65rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {reportVisible ? '▲ Hide' : '▼ Show'}
+                  </button>
+                </div>
+                {reportVisible && (
+                  <>
+                    <pre style={{ background: 'var(--surface-secondary)', padding: '1rem', borderRadius: '0.5rem', overflowX: 'auto', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>
+                      {reportText}
+                    </pre>
+                    <button 
+                      data-tour="copy-report-btn"
+                      className="btn-primary mt-2" 
+                      onClick={() => { navigator.clipboard.writeText(reportText); showToast("Copied to clipboard!"); }}
+                    >
+                      Copy to Clipboard
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
