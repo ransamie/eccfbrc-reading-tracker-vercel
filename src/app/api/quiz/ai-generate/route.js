@@ -28,6 +28,7 @@ export async function POST(request) {
     const body = await request.json();
     const { 
       round = "Round 1", 
+      edition = "New Testament (3 chapters daily)",
       scripture = "", 
       questionCount = 10, 
       difficulty = "Balanced", 
@@ -176,6 +177,7 @@ JSON Schema format:
 
       return {
         id: `ai_${Date.now()}_${idx + 1}`,
+        edition: edition,
         round: round,
         question: String(q.question || "").trim(),
         option1: opt1,
@@ -188,6 +190,7 @@ JSON Schema format:
 
     return NextResponse.json({
       success: true,
+      edition,
       round,
       scripture,
       modelUsed: successfulModel,

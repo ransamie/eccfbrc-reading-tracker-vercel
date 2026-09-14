@@ -906,7 +906,7 @@ export default function AdminQuizPage() {
   };
 
   // 5. AI Question Generator Handlers
-  const handleTriggerAIGenerate = async (e) => {
+  const handleTriggerAIGenerate = async (e, targetEdition, targetRound) => {
     if (e) e.preventDefault();
     if (!aiScripture.trim()) {
       showAlert({
@@ -916,6 +916,9 @@ export default function AdminQuizPage() {
       });
       return;
     }
+
+    const effectiveEdition = targetEdition || selectedEdition || aiEdition || "New Testament (3 chapters daily)";
+    const effectiveRound = targetRound || (selectedBankRound !== "All" ? selectedBankRound : (settings.Active_Round || aiRound || "Round 1"));
 
     setAiGenerating(true);
     setAiGeneratedQuestions([]);
@@ -928,7 +931,8 @@ export default function AdminQuizPage() {
           "Authorization": pin
         },
         body: JSON.stringify({
-          round: aiRound,
+          round: effectiveRound,
+          edition: effectiveEdition,
           scripture: aiScripture,
           questionCount: aiCount,
           difficulty: aiDifficulty,
@@ -942,15 +946,17 @@ export default function AdminQuizPage() {
         throw new Error(data.error || "Failed to generate questions with AI.");
       }
 
-      // Tag all generated questions with target AI edition
+      // Tag all generated questions with target AI edition and target round explicitly
       const taggedQuestions = (data.questions || []).map(q => ({
         ...q,
-        edition: aiEdition,
-        round: aiRound
+        edition: effectiveEdition,
+        round: effectiveRound
       }));
 
       setAiGeneratedQuestions(taggedQuestions);
-      showToast(`Generated ${taggedQuestions.length} questions for ${aiRound} (${aiEdition}) from ${aiScripture}!`);
+      setAiEdition(effectiveEdition);
+      setAiRound(effectiveRound);
+      showToast(`Generated ${taggedQuestions.length} questions for ${effectiveRound} (${effectiveEdition}) from ${aiScripture}!`);
       
       if (aiApiKey) {
         setSettings(prev => ({ ...prev, GEMINI_API_KEY: aiApiKey }));
@@ -1035,14 +1041,17 @@ export default function AdminQuizPage() {
     setAiGeneratedQuestions(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSaveAIGeneratedToBank = async () => {
+  const handleSaveAIGeneratedToBank = async (targetEdition, targetRound) => {
     if (aiGeneratedQuestions.length === 0) return;
     setAiSaving(true);
     try {
+      const effectiveEdition = targetEdition || selectedEdition || aiEdition || "New Testament (3 chapters daily)";
+      const effectiveRound = targetRound || (selectedBankRound !== "All" ? selectedBankRound : (settings.Active_Round || aiRound || "Round 1"));
+
       const taggedQuestions = aiGeneratedQuestions.map(q => ({
         ...q,
-        edition: q.edition || aiEdition,
-        round: q.round || aiRound
+        edition: targetEdition || q.edition || effectiveEdition,
+        round: targetRound || q.round || effectiveRound
       }));
 
       const res = await fetch("/api/quiz/admin", {
@@ -1053,18 +1062,19 @@ export default function AdminQuizPage() {
         },
         body: JSON.stringify({
           action: "bulkAddQuestions",
-          questions: taggedQuestions
+          questions: taggedQuestions,
+          edition: effectiveEdition
         })
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save AI questions to bank.");
 
-      showToast(`Saved ${data.count} AI generated questions to ${aiRound} (${aiEdition})!`);
+      showToast(`Saved ${data.count} AI generated questions to ${effectiveRound} (${effectiveEdition})!`);
       setAiGeneratedQuestions([]);
-      fetchWorkspaceData();
-      setSelectedEdition(aiEdition);
-      setSelectedBankRound(aiRound);
+      await fetchWorkspaceData();
+      setSelectedEdition(effectiveEdition);
+      setSelectedBankRound(effectiveRound);
       setActiveTab("builder");
     } catch (e) {
       showAlert({
@@ -2480,6 +2490,9 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                         type="button"
                         onClick={() => {
                           setSelectedBankRound(r);
+                          setAiRound(r);
+                          setBulkRound(r);
+                          setQuestionForm(prev => ({ ...prev, round: r, edition: selectedEdition }));
                           if (editingQuestionId) handleCancelEdit();
                         }}
                         style={{
@@ -3143,9 +3156,22 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                           <h4 style={{ fontSize: '0.98rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#F59E0B' }}>
                             <Sparkles size={16} /> AI Scripture Generator
                           </h4>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                            Generate multiple-choice questions for {activeTargetRound} ({selectedEdition})
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                              Target Destination:
+                            </span>
+                            <span style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                              color: '#F59E0B',
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '0.35rem'
+                            }}>
+                              {activeTargetRound} • {selectedEdition}
+                            </span>
+                          </div>
                         </div>
 
                         <button
@@ -3241,7 +3267,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       <form onSubmit={(e) => {
                         setAiEdition(selectedEdition);
                         setAiRound(activeTargetRound);
-                        handleTriggerAIGenerate(e);
+                        handleTriggerAIGenerate(e, selectedEdition, activeTargetRound);
                       }} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
 
                         {/* Scripture Passage Input */}
@@ -3421,7 +3447,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                                 onClick={async () => {
                                   setAiEdition(selectedEdition);
                                   setAiRound(activeTargetRound);
-                                  await handleSaveAIGeneratedToBank();
+                                  await handleSaveAIGeneratedToBank(selectedEdition, activeTargetRound);
                                 }}
                                 style={{
                                   display: 'flex',

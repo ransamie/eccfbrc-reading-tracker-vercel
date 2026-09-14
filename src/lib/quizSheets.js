@@ -434,7 +434,7 @@ export async function bulkAddQuizQuestions(questionsList, defaultEdition) {
   const rowsToAdd = questionsList.map((q, idx) => ({
     ID: q.id || `q_${now}_${idx + 1}`,
     Edition: q.edition || defaultEdition || "New Testament (3 chapters daily)",
-    Round: q.round,
+    Round: q.round || "Round 1",
     Question: q.question,
     Option_1: q.option1,
     Option_2: q.option2,
