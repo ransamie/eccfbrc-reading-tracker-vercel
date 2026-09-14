@@ -334,20 +334,20 @@ export default function LeaderDashboard({ team, onLogout }) {
   };
 
   const generateWhatsappText = (freshData = null) => {
-    const useData = freshData || data;
+    const useData = freshData || data || {};
     const allMembers = useData.trackerData || [];
-    const activeMembers = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'active');
+    const activeMembers = allMembers.filter(m => String(m?.Status || '').trim().toLowerCase() === 'active');
     
     const numAssigned = allMembers.length;
     const numCommitted = activeMembers.length;
-    const numDeclined = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'declined').length;
-    const numLeft = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'left').length;
-    const numEvicted = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'evicted').length;
+    const numDeclined = allMembers.filter(m => String(m?.Status || '').trim().toLowerCase() === 'declined').length;
+    const numLeft = allMembers.filter(m => String(m?.Status || '').trim().toLowerCase() === 'left').length;
+    const numEvicted = allMembers.filter(m => String(m?.Status || '').trim().toLowerCase() === 'evicted').length;
 
     const daysPerRound = 10;
-    const currentRound = Math.floor((currentDayNum - 1) / daysPerRound) + 1;
-    const evictionThreshold = parseInt(useData.settings?.Eviction_Threshold || 5);
-    const currentRoundStart = Math.floor((currentDayNum - 1) / daysPerRound) * daysPerRound + 1;
+    const currentRound = Math.floor(((currentDayNum || 1) - 1) / daysPerRound) + 1;
+    const evictionThreshold = parseInt(useData.settings?.Eviction_Threshold || 5, 10);
+    const currentRoundStart = Math.floor(((currentDayNum || 1) - 1) / daysPerRound) * daysPerRound + 1;
     
     // Previous rounds formatting
     let previousRoundsStr = "";
@@ -364,7 +364,7 @@ export default function LeaderDashboard({ team, onLogout }) {
           const dayCol = `Day_${d}`;
           let completedCount = 0;
           activeMembers.forEach(m => {
-            if (String(m[dayCol] || '').toUpperCase() === 'TRUE') completedCount++;
+            if (String(m?.[dayCol] || '').toUpperCase() === 'TRUE') completedCount++;
           });
           pastRoundBreakdown.push(`- Day ${d}: ${completedCount.toString().padStart(2,'0')}/${numCommitted.toString().padStart(2,'0')}`);
           if (completedCount < numCommitted) roundIsComplete = false;
@@ -381,12 +381,12 @@ export default function LeaderDashboard({ team, onLogout }) {
 
     // Current round breakdown
     let currentRoundBreakdownList = [];
-    for (let d = currentRoundStart; d <= currentDayNum; d++) {
+    for (let d = currentRoundStart; d <= (currentDayNum || 1); d++) {
       const dayCol = `Day_${d}`;
       let completedCount = 0;
       activeMembers.forEach(m => {
-        const memberName = String(m.Member_Name || '').trim();
-        const val = (d === currentDayNum && selectedDay === currentDay) ? updates[memberName] : (String(m[dayCol] || '').toUpperCase() === 'TRUE');
+        const memberName = String(m?.Member_Name || '').trim();
+        const val = (d === currentDayNum && selectedDay === currentDay) ? (updates && updates[memberName]) : (String(m?.[dayCol] || '').toUpperCase() === 'TRUE');
         if (val) completedCount++;
       });
       currentRoundBreakdownList.push(`- Day ${d}: ${completedCount.toString().padStart(2,'0')}/${numCommitted.toString().padStart(2,'0')}`);
@@ -398,17 +398,17 @@ export default function LeaderDashboard({ team, onLogout }) {
     let upToDate = [];
     let evictionList = [];
     
-    const daysLeftInRound = (currentRoundStart + daysPerRound - 1) - currentDayNum;
+    const daysLeftInRound = (currentRoundStart + daysPerRound - 1) - (currentDayNum || 1);
     const showEvictionList = daysLeftInRound <= 3; // The last 4 days of the round
 
     activeMembers.forEach(m => {
       let missedDays = [];
-      const memberName = String(m.Member_Name || '').trim();
+      const memberName = String(m?.Member_Name || '').trim();
       let lastCompletedDay = 0;
       
-      for (let i = 1; i <= currentDayNum; i++) {
+      for (let i = 1; i <= (currentDayNum || 1); i++) {
         const dStr = `Day_${i}`;
-        const val = (i === currentDayNum && selectedDay === currentDay) ? updates[memberName] : (String(m[dStr] || '').toUpperCase() === 'TRUE');
+        const val = (i === currentDayNum && selectedDay === currentDay) ? (updates && updates[memberName]) : (String(m?.[dStr] || '').toUpperCase() === 'TRUE');
         if (!val) {
           missedDays.push(i);
         } else {
@@ -418,7 +418,7 @@ export default function LeaderDashboard({ team, onLogout }) {
       
       const daysBehindRoundEnd = (currentRound * daysPerRound) - lastCompletedDay;
       
-      const memberNameStr = m.Member_Name.trim();
+      const memberNameStr = memberName || 'Member';
       if (missedDays.length > 0) {
         const daysStr = missedDays.length === 1 ? `Day ${missedDays[0]}` : `Day ${missedDays[0]} - ${missedDays[missedDays.length - 1]}`;
         yetToUpdate.push(`* @${memberNameStr} (${daysStr})`);
@@ -441,16 +441,21 @@ export default function LeaderDashboard({ team, onLogout }) {
        evictionSection = `\\n\\n*Eviction List 🚨🚨🚨*\\n_(Members behind by more than ${evictionThreshold} days. Eviction takes effect next round!)_\\n${evictStr}`;
     }
 
+    const challengeHeader = String(useData.settings?.Challenge_Edition || useData.settings?.Challenge_Name || "ECCF BIBLE READING CHALLENGE").toUpperCase();
     const reflectionText = reflection || "'Thy word is a lamp unto my feet, and a light unto my path.' - Ps. 119:105";
     const text = `*${challengeHeader}*\n\n*Daily Reading Report*\n\n*${formatTeamUpper(team)}*\n\n*Team Status Update*\n- *Number Assigned*: ${numAssigned.toString().padStart(2,'0')}\n- *Number Committed*: ${numCommitted.toString().padStart(2,'0')}\n- *Number Declined*: ${numDeclined.toString().padStart(2,'0')}\n- *Number Left*: ${numLeft.toString().padStart(2,'0')}\n- *Number Evicted*: ${numEvicted.toString().padStart(2,'0')}\n- *Number Settled*: ${numCommitted.toString().padStart(2,'0')}\n\n*Bible Reading Team Report 📃*\n\n${previousRoundsStr}   *ROUND ${currentRound} ✅*\n${roundBreakdownStr}\n\n*YET TO UPDATE 🤲✨*\n${yetToUpdateStr}\n\n*UP-TO-DATE 🤩🚀*\n${upToDateStr}${evictionSection}\n\n*REFLECTION*\n*${reflectionText}*`;
     setReportText(text.replace(/\\n/g, '\n'));
   };
 
   const handleEnsureReportPreview = useCallback(() => {
-    if (!reportText) {
-      generateWhatsappText();
+    try {
+      if (!reportText) {
+        generateWhatsappText();
+      }
+    } catch (err) {
+      console.error("Error generating report preview for tour:", err);
     }
-  }, [reportText, data, currentDayNum, reflection, team]);
+  }, [reportText, data, currentDayNum, reflection, team, updates, selectedDay, currentDay]);
 
   if (loading && !data) return <div className="loader-container"><div className="spinner"></div><p>Loading Team Dashboard...</p></div>;
 

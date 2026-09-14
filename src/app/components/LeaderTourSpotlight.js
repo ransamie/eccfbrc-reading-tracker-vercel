@@ -112,6 +112,7 @@ export default function LeaderTourSpotlight({
   const currentStep = tourSteps[currentStepIndex];
   const onEnsureReportPreviewRef = useRef(onEnsureReportPreview);
   const timersRef = useRef([]);
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
     onEnsureReportPreviewRef.current = onEnsureReportPreview;
@@ -124,6 +125,7 @@ export default function LeaderTourSpotlight({
 
   // Synchronize dashboard tab ONLY when the tour step changes, never in a reactive loop!
   useEffect(() => {
+    retryCountRef.current = 0;
     if (!isOpen || !currentStep) return;
     if (currentStep.tab && activeTab !== currentStep.tab) {
       setActiveTab(currentStep.tab);
@@ -136,20 +138,36 @@ export default function LeaderTourSpotlight({
 
     // Automatically ensure report preview is generated when reaching step 5
     if (currentStep.id === 'step-copy-tag' && onEnsureReportPreviewRef.current) {
-      onEnsureReportPreviewRef.current();
+      try {
+        onEnsureReportPreviewRef.current();
+      } catch (e) {
+        console.error("Tour error triggering report preview:", e);
+      }
     }
 
     let element = document.querySelector(currentStep.selector);
     if (!element && currentStep.id === 'step-copy-tag') {
-      if (onEnsureReportPreviewRef.current) onEnsureReportPreviewRef.current();
-      clearTimers();
-      const retryTimer = setTimeout(updatePosition, 120);
-      timersRef.current.push(retryTimer);
-      return;
+      if (retryCountRef.current < 8) {
+        retryCountRef.current += 1;
+        try {
+          if (onEnsureReportPreviewRef.current) onEnsureReportPreviewRef.current();
+        } catch (e) {}
+        clearTimers();
+        const retryTimer = setTimeout(updatePosition, 120);
+        timersRef.current.push(retryTimer);
+        return;
+      }
     }
 
     if (!element) {
       setTargetRect(null);
+      const tooltipWidth = Math.min(380, window.innerWidth - 32);
+      const actualHeight = tooltipRef.current?.offsetHeight || 280;
+      setTooltipPos({
+        top: Math.max(20, (window.innerHeight - actualHeight) / 2),
+        left: Math.max(16, (window.innerWidth - tooltipWidth) / 2),
+        arrowPlacement: 'none'
+      });
       return;
     }
 
@@ -300,7 +318,7 @@ export default function LeaderTourSpotlight({
         }}
       >
         {/* Pointer Arrow */}
-        {targetRect && (
+        {targetRect && tooltipPos.arrowPlacement !== 'none' && (
           <div 
             className={`tour-arrow tour-arrow-${tooltipPos.arrowPlacement}`}
             style={{
