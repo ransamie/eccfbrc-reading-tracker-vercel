@@ -479,7 +479,7 @@ export default function LeaderDashboard({ team, onLogout }) {
       )}
       <div className="tracker-header-wrap">
         <div className="tracker-header-title">
-          <img src="/eccfbrclogo.png" alt="Logo" />
+          <img src="/eccfbrclogo_square.png" alt="ECCF Logo" />
           <div className="tracker-team-header-info">
             <div className="tracker-team-title-row">
               <h1 className="tracker-team-heading">{formatTeamName(team)}</h1>
@@ -513,28 +513,6 @@ export default function LeaderDashboard({ team, onLogout }) {
                   </span>
                 );
               })()}
-
-              <span className="tracker-meta-separator">&bull;</span>
-
-              {/* Live Reporting Window Indicator (Clean live status, NOT a box) */}
-              <button 
-                type="button"
-                data-tour="reporting-windows"
-                onClick={() => {
-                  setGuideInitialTab("windows");
-                  setShowGuideModal(true);
-                }}
-                className={`tracker-window-indicator ${isReportingWindow ? 'open' : 'closed'}`}
-                title={`Daily Reporting Windows: Morning (${mornStart} - ${mornEnd}) | Evening (${eveStart} - ${eveEnd}) WAT. Click to view schedule.`}
-              >
-                <span className={`tracker-pulse-dot ${isReportingWindow ? 'dot-open' : 'dot-closed'}`} />
-                <span className="tracker-window-text">
-                  {isReportingWindow ? 'Live Reporting Open' : 'Reporting Window Closed'}
-                </span>
-                <span className="tracker-window-hint">
-                  ({isReportingWindow ? `until ${mornEnd}` : `reopens ${eveStart}`})
-                </span>
-              </button>
             </div>
           </div>
         </div>
@@ -602,9 +580,29 @@ export default function LeaderDashboard({ team, onLogout }) {
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
-                Mark Daily Updates for Your Team
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                <h3 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+                  Mark Daily Updates for Your Team
+                </h3>
+                <button 
+                  type="button"
+                  data-tour="reporting-windows"
+                  onClick={() => {
+                    setGuideInitialTab("windows");
+                    setShowGuideModal(true);
+                  }}
+                  className={`tracker-window-indicator ${isReportingWindow ? 'open' : 'closed'}`}
+                  title={`Daily Reporting Windows: Morning (${mornStart} - ${mornEnd}) | Evening (${eveStart} - ${eveEnd}) WAT. Click to view schedule.`}
+                >
+                  <span className={`tracker-pulse-dot ${isReportingWindow ? 'dot-open' : 'dot-closed'}`} />
+                  <span className="tracker-window-text">
+                    {isReportingWindow ? 'Live Reporting Open' : 'Reporting Window Closed'}
+                  </span>
+                  <span className="tracker-window-hint">
+                    ({isReportingWindow ? `until ${mornEnd}` : `reopens ${eveStart}`})
+                  </span>
+                </button>
+              </div>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
                 Tap each member's card to record daily reading progress for any day.
               </p>

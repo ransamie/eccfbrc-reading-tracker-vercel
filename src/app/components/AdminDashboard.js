@@ -747,7 +747,7 @@ export default function AdminDashboard({ onLogout }) {
       )}
       <div className="tracker-header-wrap">
         <div className="tracker-header-title">
-          <img src="/eccfbrclogo.png" alt="Logo" />
+          <img src="/eccfbrclogo_square.png" alt="ECCF Logo" />
           <span>Admin Command Center</span>
         </div>
         <div className="tracker-header-actions admin-header-actions">

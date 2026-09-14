@@ -819,8 +819,9 @@ select option {
   }
 
   .tracker-header-title img {
-    width: 28px !important;
-    height: 28px !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 6px !important;
   }
 
   .tracker-header-actions {
@@ -1083,12 +1084,12 @@ select option {
 }
 
 .tracker-header-title img {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   background-color: #000;
-  padding: 5px;
-  border-radius: 10px;
-  object-fit: contain;
+  padding: 0;
+  border-radius: 8px;
+  object-fit: cover;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   flex-shrink: 0;
 }
@@ -3422,8 +3423,8 @@ select option {
   color: #94A3B8;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.15rem 0.6rem;
-  border-radius: 9999px;
+  padding: 0.18rem 0.5rem;
+  border-radius: 4px;
   letter-spacing: 0.02em;
 }
 
