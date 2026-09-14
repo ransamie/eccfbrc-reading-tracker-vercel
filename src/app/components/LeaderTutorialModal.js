@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   X, BookOpen, Layers, Users, HelpCircle, CheckCircle2, 
   MessageSquare, Sparkles, ArrowRight, FileText, ChevronRight,
@@ -17,9 +17,16 @@ export default function LeaderTutorialModal({
   mornEnd = "11:00 AM",
   eveStart = "06:00 PM",
   eveEnd = "11:00 PM",
-  isReportingWindow = true
+  isReportingWindow = true,
+  initialTab = "workflow"
 }) {
-  const [activeTab, setActiveTab] = useState("workflow");
+  const [activeTourTab, setActiveTourTab] = useState(initialTab || "workflow");
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTourTab(initialTab);
+    }
+  }, [initialTab, isOpen]);
 
   if (!isOpen) return null;
 
@@ -60,12 +67,12 @@ export default function LeaderTutorialModal({
         {
           num: "6",
           title: "Smart Tag Members via @Mentions",
-          text: "Open your Team WhatsApp Group and paste the report. In the numbered readers list, backspace each plain printed name and replace it with their WhatsApp '@mention' tag. Tagging ensures members receive direct notifications and keeps team momentum high!"
+          text: "Open your specific Team WhatsApp Group (e.g. For Team Goodness, Team Goodness's group; for Team Endurance, Team Endurance's group; for Team Praise, Team Praise's group). Paste the report. In the numbered readers list, backspace each plain printed name and replace it with their WhatsApp '@mention' tag so they get directly notified and motivated!"
         },
         {
           num: "7",
-          title: "Dual Group Broadcast",
-          text: "After publishing in your Team WhatsApp Group, forward the finalized, tagged message to both: (1) The ECCFBRC Team Leaders' Group, and (2) The ECCFBRC General Reading Challenge Group."
+          title: "Send to Team Group & General Challenge Group",
+          text: "Send the finalized, tagged report to both: (1) Your specific Team WhatsApp Group chat (e.g., Team Goodness's group for Team Goodness, Team Endurance's group for Team Endurance, Team Praise's group for Team Praise), and (2) The ECCFBRC General Reading Challenge Group."
         }
       ]
     },
@@ -143,7 +150,7 @@ export default function LeaderTutorialModal({
         },
         {
           title: "Posting Sequence",
-          text: "Always post in your Team Group first so your members see their progress celebrated. Then forward the tagged broadcast to the Team Leaders' Group and General Challenge Group."
+          text: "Send the tagged report directly to your specific Team Group chat first (e.g., Team Goodness, Team Endurance, Team Praise, etc.) to celebrate your members' dedication. Then forward the same finalized report to the General Reading Challenge Group."
         },
         {
           title: "Consistent Reflection Verse",

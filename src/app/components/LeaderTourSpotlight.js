@@ -66,7 +66,7 @@ export default function LeaderTourSpotlight({
       selector: '[data-tour="report-btn"]',
       badge: "Step 5 of 8 • WhatsApp Protocol",
       title: "5. Copy, Tag & Broadcast",
-      description: "Copy your report and paste it into your Team WhatsApp Group. In the readers list, replace each printed name with their WhatsApp '@mention' tag so they get notified. Then, forward the finalized post to both the Team Leaders' Group and General Reading Group!",
+      description: "Copy your report and paste it into your specific Team WhatsApp Group (e.g. Team Goodness, Team Endurance, Team Praise). In the readers list, replace each printed name with their WhatsApp '@mention' tag so they get directly notified. Send the finalized post to both: 1) Your specific Team Group, and 2) The General Reading Group!",
       preferredPlacement: "top"
     },
     {

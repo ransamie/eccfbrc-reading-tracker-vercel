@@ -2908,46 +2908,143 @@ select option {
   }
 }
 
-/* Header Reporting Window Status Badge */
-.tracker-window-badge {
+/* ==========================================================================
+   Modern Leader Dashboard Header Redesign (Unboxed, Sleek & Cohesive)
+   ========================================================================== */
+
+.tracker-team-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tracker-team-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.tracker-team-heading {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* Subtle Edition Tag - Clean text badge, NOT a bright green box */
+.tracker-edition-badge {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #94A3B8;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.15rem 0.6rem;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+
+.tracker-team-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.tracker-leaders-text {
+  color: var(--text-secondary);
+}
+
+.tracker-meta-separator {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 0.75rem;
+}
+
+/* Live Reporting Status Indicator - Pulsing Dot + Clean Text, NO chunky rectangular box */
+.tracker-window-indicator {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.22rem 0.65rem;
-  border-radius: 9999px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  background: transparent;
+  border: none;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
   transition: all 0.2s ease;
-  white-space: nowrap;
 }
 
-.tracker-window-badge.open {
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.35);
+.tracker-window-indicator:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tracker-window-indicator.open .tracker-window-text {
   color: #34D399;
 }
 
-.tracker-window-badge.closed {
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+.tracker-window-indicator.closed .tracker-window-text {
   color: #FBBF24;
 }
 
-.status-dot-pulse {
+.tracker-window-hint {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #64748B;
+}
+
+.tracker-pulse-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
 }
 
-.tracker-window-badge.open .status-dot-pulse {
+.tracker-pulse-dot.dot-open {
   background: #34D399;
   box-shadow: 0 0 8px #34D399;
   animation: statusPulse 1.8s infinite;
 }
 
-.tracker-window-badge.closed .status-dot-pulse {
+.tracker-pulse-dot.dot-closed {
   background: #FBBF24;
+}
+
+/* Unboxed Header Action Links - Modern contextual links with icons */
+.tracker-header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  background: transparent;
+  border: none;
+  color: #38BDF8;
+  font-size: 0.83rem;
+  font-weight: 600;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.45rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.tracker-header-link:hover {
+  color: #7DD3FC;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.tracker-header-quiz-link {
+  color: #60A5FA;
+}
+
+.tracker-header-quiz-link:hover {
+  color: #93C5FD;
+  background: rgba(96, 165, 250, 0.1);
 }
 
 @keyframes statusPulse {
@@ -2955,3 +3052,23 @@ select option {
   50% { transform: scale(1.3); opacity: 1; }
   100% { transform: scale(0.9); opacity: 0.7; }
 }
+
+@media (max-width: 640px) {
+  .tracker-team-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  .tracker-team-meta-row {
+    font-size: 0.78rem;
+    gap: 0.4rem;
+  }
+  .tracker-meta-separator {
+    display: none;
+  }
+  .tracker-header-actions {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+}
+

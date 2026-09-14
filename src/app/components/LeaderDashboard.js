@@ -11,6 +11,7 @@ export default function LeaderDashboard({ team, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showSpotlightTour, setShowSpotlightTour] = useState(false);
+  const [guideInitialTab, setGuideInitialTab] = useState("workflow");
   
   const [selectedDay, setSelectedDay] = useState("");
   const [currentDay, setCurrentDay] = useState("");
@@ -466,88 +467,94 @@ export default function LeaderDashboard({ team, onLogout }) {
       <div className="tracker-header-wrap">
         <div className="tracker-header-title">
           <img src="/eccfbrclogo.png" alt="Logo" />
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <div style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: '1.2' }}>{formatTeamName(team)}</div>
+          <div className="tracker-team-header-info">
+            <div className="tracker-team-title-row">
+              <h1 className="tracker-team-heading">{formatTeamName(team)}</h1>
               {data?.settings?.Challenge_Edition && (
-                <span style={{ 
-                  fontSize: '0.74rem', 
-                  fontWeight: '700', 
-                  padding: '0.15rem 0.55rem', 
-                  borderRadius: '999px',
-                  background: data?.isArchive ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                  color: data?.isArchive ? '#FDE68A' : '#6EE7B7',
-                  border: `1px solid ${data?.isArchive ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
-                }}>
-                  {data?.isArchive ? '📁 ' : '🟢 '}{data.settings.Challenge_Edition}
+                <span className="tracker-edition-badge">
+                  {data.settings.Challenge_Edition}
                 </span>
               )}
-              {/* Synchronized Reporting Window Status Badge */}
-              <div 
-                data-tour="reporting-windows"
-                className={`tracker-window-badge ${isReportingWindow ? 'open' : 'closed'}`}
-                title={`Daily Reporting Windows: Morning (${mornStart} - ${mornEnd}) | Evening (${eveStart} - ${eveEnd}) WAT. Click for full schedule and guidance.`}
-                onClick={() => setShowGuideModal(true)}
-                style={{ cursor: 'pointer' }}
-              >
-                <span className="status-dot-pulse" />
-                <span>{isReportingWindow ? 'Window Open' : 'Window Closed'}</span>
-              </div>
             </div>
-            {data?.leadersData && (() => {
-              const leaderRow = data.leadersData.find(l => {
-                const r = String(l.Role || '').toLowerCase();
-                return !r.includes('asst') && !r.includes('assistant');
-              }) || data.leadersData[0];
-              const asstRow = data.leadersData.find(l => {
-                const r = String(l.Role || '').toLowerCase();
-                return r.includes('asst') || r.includes('assistant');
-              }) || (data.leadersData.length > 1 ? data.leadersData[1] : null);
 
-              const lName = leaderRow?.['Team Leader'] || leaderRow?.Member_Name || leaderRow?.Name || 'N/A';
-              const aName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || '';
+            <div className="tracker-team-meta-row">
+              {data?.leadersData && (() => {
+                const leaderRow = data.leadersData.find(l => {
+                  const r = String(l.Role || '').toLowerCase();
+                  return !r.includes('asst') && !r.includes('assistant');
+                }) || data.leadersData[0];
+                const asstRow = data.leadersData.find(l => {
+                  const r = String(l.Role || '').toLowerCase();
+                  return r.includes('asst') || r.includes('assistant');
+                }) || (data.leadersData.length > 1 ? data.leadersData[1] : null);
 
-              return (
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                  Leader: <strong style={{ color: 'var(--text-primary)' }}>{lName}</strong>
-                  {aName && aName.toLowerCase() !== 'n/a' && (
-                    <span> &bull; Asst: <strong style={{ color: 'var(--text-primary)' }}>{aName}</strong></span>
-                  )}
-                </div>
-              );
-            })()}
+                const lName = leaderRow?.['Team Leader'] || leaderRow?.Member_Name || leaderRow?.Name || 'N/A';
+                const aName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || '';
+
+                return (
+                  <span className="tracker-leaders-text">
+                    Leader: <strong style={{ color: 'var(--text-primary)' }}>{lName}</strong>
+                    {aName && aName.toLowerCase() !== 'n/a' && (
+                      <span> &bull; Asst: <strong style={{ color: 'var(--text-primary)' }}>{aName}</strong></span>
+                    )}
+                  </span>
+                );
+              })()}
+
+              <span className="tracker-meta-separator">&bull;</span>
+
+              {/* Live Reporting Window Indicator (Clean live status, NOT a box) */}
+              <button 
+                type="button"
+                data-tour="reporting-windows"
+                onClick={() => {
+                  setGuideInitialTab("windows");
+                  setShowGuideModal(true);
+                }}
+                className={`tracker-window-indicator ${isReportingWindow ? 'open' : 'closed'}`}
+                title={`Daily Reporting Windows: Morning (${mornStart} - ${mornEnd}) | Evening (${eveStart} - ${eveEnd}) WAT. Click to view schedule.`}
+              >
+                <span className={`tracker-pulse-dot ${isReportingWindow ? 'dot-open' : 'dot-closed'}`} />
+                <span className="tracker-window-text">
+                  {isReportingWindow ? 'Live Reporting Open' : 'Reporting Window Closed'}
+                </span>
+                <span className="tracker-window-hint">
+                  ({isReportingWindow ? `until ${mornEnd}` : `reopens ${eveStart}`})
+                </span>
+              </button>
+            </div>
           </div>
         </div>
+
         <div className="tracker-header-actions leader-header-actions">
+          {/* Unboxed contextual text link for Guide & Tour */}
           <button 
             data-tour="guide-btn"
-            onClick={() => setShowGuideModal(true)}
+            onClick={() => {
+              setGuideInitialTab("workflow");
+              setShowGuideModal(true);
+            }}
             title="Open Guide & Interactive Tour"
-            className="tracker-btn-guide"
+            className="tracker-header-link"
           >
             <HelpCircle size={15} />
             <span>Guide &amp; Tour</span>
           </button>
+
+          {/* Unboxed contextual link for Quiz */}
           <button 
             data-tour="quiz-link"
             onClick={handleCopyQuizLink}
             title="Copy Quiz Link to share with team"
-            className="tracker-btn-quiz tracker-btn-quizlink"
-            style={{ 
-              background: quizCopied ? 'rgba(16,185,129,0.15)' : 'var(--surface-secondary)',
-              color: quizCopied ? 'var(--success)' : '#60A5FA',
-              border: `1px solid ${quizCopied ? 'rgba(16,185,129,0.4)' : 'var(--border-light)'}`,
-              width: 'auto',
-              padding: '0 0.75rem',
-              gap: '0.4rem',
-              cursor: 'pointer'
-            }}
+            className="tracker-header-link tracker-header-quiz-link"
           >
-            {quizCopied ? <CheckCheck size={16} /> : <Share2 size={16} />}
-            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{quizCopied ? 'Copied!' : 'Quiz Link'}</span>
+            {quizCopied ? <CheckCheck size={15} color="#34D399" /> : <Share2 size={15} />}
+            <span>{quizCopied ? 'Link Copied!' : 'Quiz Link'}</span>
           </button>
+
           <InstallPwaButton />
           <div className="tracker-header-divider" />
+
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
@@ -1143,6 +1150,7 @@ export default function LeaderDashboard({ team, onLogout }) {
         eveStart={eveStart}
         eveEnd={eveEnd}
         isReportingWindow={isReportingWindow}
+        initialTab={guideInitialTab}
       />
 
       <LeaderTourSpotlight
