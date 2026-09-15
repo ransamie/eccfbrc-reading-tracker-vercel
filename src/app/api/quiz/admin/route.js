@@ -72,9 +72,13 @@ export async function GET(request) {
       let timeSpentSeconds = r.timeSpentSeconds;
       if (timeSpentSeconds === null || timeSpentSeconds === undefined || isNaN(timeSpentSeconds)) {
         const rRound = String(r.round || "").trim().toLowerCase();
+        const rEdition = String(r.edition || "New Testament (3 chapters daily)").trim().toLowerCase();
+
         const matchedSession = rawSessions.find(s => 
-          isPhoneMatch(r.whatsApp, s.whatsApp) && String(s.round || "").trim().toLowerCase() === rRound
-        ) || rawSessions.find(s => isPhoneMatch(r.whatsApp, s.whatsApp));
+          isPhoneMatch(r.whatsApp, s.whatsApp) && 
+          String(s.round || "").trim().toLowerCase() === rRound &&
+          String(s.edition || "New Testament (3 chapters daily)").trim().toLowerCase() === rEdition
+        );
 
         if (matchedSession && matchedSession.startTimestamp && r.timestamp) {
           const startMs = Number(matchedSession.startTimestamp);
@@ -99,11 +103,15 @@ export async function GET(request) {
       let fullName = s.fullName && s.fullName !== "Candidate" ? s.fullName : "";
       let team = s.team && s.team.toLowerCase() !== "unassigned" ? s.team : "";
 
-      // 1. Try matching with results
+      // 1. Try matching with results (strictly matching same edition and round)
       const sRound = String(s.round || "").trim().toLowerCase();
+      const sEdition = String(s.edition || "New Testament (3 chapters daily)").trim().toLowerCase();
+
       const matchedResult = results.find(r => 
-        isPhoneMatch(s.whatsApp, r.whatsApp) && String(r.round || "").trim().toLowerCase() === sRound
-      ) || results.find(r => isPhoneMatch(s.whatsApp, r.whatsApp));
+        isPhoneMatch(s.whatsApp, r.whatsApp) && 
+        String(r.round || "").trim().toLowerCase() === sRound &&
+        String(r.edition || "New Testament (3 chapters daily)").trim().toLowerCase() === sEdition
+      );
 
       if (matchedResult) {
         if (!fullName && matchedResult.fullName && matchedResult.fullName !== "Candidate") {
@@ -155,13 +163,14 @@ export async function POST(request) {
     if (action === "extendSession") {
       const whatsApp = body.whatsApp || body.whatsapp || body.phone;
       const round = body.round;
+      const edition = body.edition;
       const extraMinutes = Number(body.extraMinutes) || 5;
 
       if (!whatsApp || !round) {
         return NextResponse.json({ error: "Missing candidate WhatsApp number or round to extend time." }, { status: 400 });
       }
 
-      const res = await extendQuizSession(whatsApp, round, extraMinutes);
+      const res = await extendQuizSession(whatsApp, round, extraMinutes, edition);
       if (res.success) {
         return NextResponse.json({ 
           success: true, 
@@ -176,13 +185,14 @@ export async function POST(request) {
     if (action === "resetSession") {
       const whatsApp = body.whatsApp || body.whatsapp || body.phone;
       const round = body.round;
+      const edition = body.edition;
       const fullName = body.fullName || body.name;
 
       if (!whatsApp || !round) {
         return NextResponse.json({ error: "Missing candidate WhatsApp number or round to reset session." }, { status: 400 });
       }
 
-      await deleteQuizSubmission(whatsApp, round, null, fullName);
+      await deleteQuizSubmission(whatsApp, round, null, fullName, edition);
       return NextResponse.json({ success: true, message: "Quiz session has been reset. The candidate can now take the quiz fresh." });
     }
 
@@ -293,11 +303,12 @@ export async function POST(request) {
       const round = body.round;
       const timestamp = body.timestamp;
       const fullName = body.fullName || body.name;
+      const edition = body.edition;
 
       if ((!whatsApp && !fullName) || !round) {
         return NextResponse.json({ error: "Missing required parameters (phone or name, round) to delete submission" }, { status: 400 });
       }
-      await deleteQuizSubmission(whatsApp, round, timestamp, fullName);
+      await deleteQuizSubmission(whatsApp, round, timestamp, fullName, edition);
       return NextResponse.json({ success: true, message: "Submission and session deleted successfully. Candidate can now retake the quiz." });
     }
 

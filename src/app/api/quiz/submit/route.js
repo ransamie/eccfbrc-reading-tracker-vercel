@@ -13,9 +13,10 @@ export async function POST(req) {
 
     const receiptTime = Date.now();
     const normalizedWhatsApp = participant.whatsapp.replace(/\D/g, "").replace(/^0+/, "");
+    const edition = participant.edition || "New Testament (3 chapters daily)";
 
     // 1. Validate Time Deadline Server-Side
-    const session = await getSession(normalizedWhatsApp, participant.round);
+    const session = await getSession(normalizedWhatsApp, participant.round, edition);
 
     if (!session) {
       return NextResponse.json({ error: "No active quiz session found for this participant." }, { status: 403 });
@@ -32,7 +33,6 @@ export async function POST(req) {
     }
 
     // 2. Fetch Correct Answers and Compute Score
-    const edition = participant.edition || "New Testament (3 chapters daily)";
     const questions = await getQuestionsForRound(participant.round, edition);
 
     if (!questions || questions.length === 0) {

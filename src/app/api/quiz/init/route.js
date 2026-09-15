@@ -31,7 +31,7 @@ export async function GET(req) {
     let activeSession = null;
     if (checkPhone) {
       const normPhone = checkPhone.replace(/\D/g, "").replace(/^0+/, "");
-      const session = await getSession(normPhone, activeRound);
+      const session = await getSession(normPhone, activeRound, activeEdition);
       if (session) {
         activeSession = {
           deadlineTimestamp: session.absoluteDeadline,

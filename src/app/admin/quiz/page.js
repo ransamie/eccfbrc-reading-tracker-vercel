@@ -213,6 +213,7 @@ export default function AdminQuizPage() {
   // Reading Schedule & Round UI filters
   const [selectedEdition, setSelectedEdition] = useState("New Testament (3 chapters daily)");
   const [selectedBankRound, setSelectedBankRound] = useState("All");
+  const [selectedActivityRound, setSelectedActivityRound] = useState("All");
   const [selectedLeaderboardEdition, setSelectedLeaderboardEdition] = useState("All");
   const [selectedRoundFilter, setSelectedRoundFilter] = useState("All");
   const [selectedTeamFilter, setSelectedTeamFilter] = useState("All");
@@ -413,6 +414,7 @@ export default function AdminQuizPage() {
           action: "extendSession",
           whatsApp: targetPhone,
           round: targetRound,
+          edition: item.edition || selectedEdition,
           extraMinutes
         })
       });
@@ -795,6 +797,7 @@ export default function AdminQuizPage() {
               whatsApp: targetPhone,
               fullName: sub.fullName,
               round: sub.round,
+              edition: sub.edition || selectedEdition,
               timestamp: sub.timestamp
             })
           });
@@ -805,6 +808,7 @@ export default function AdminQuizPage() {
               (targetPhone && (r.whatsApp === targetPhone || r.whatsapp === targetPhone)) ||
               (sub.fullName && r.fullName === sub.fullName)
             ) || r.round !== sub.round || (sub.timestamp && r.timestamp !== sub.timestamp)));
+            fetchWorkspaceData();
           } else {
             const errData = await res.json().catch(() => ({}));
             showAlert({
@@ -1289,9 +1293,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     return String(a).localeCompare(String(b));
   });
 
+  // Effective round filter for Submissions (syncing selectedActivityRound with selectedRoundFilter)
+  const effectiveSubmissionsRound = selectedActivityRound !== "All" ? selectedActivityRound : selectedRoundFilter;
+
   // Submissions sorted with independent Date, Score, and Time Taken sorting
   const sortedResults = trackResults
-    .filter(r => selectedRoundFilter === "All" || r.round === selectedRoundFilter)
+    .filter(r => effectiveSubmissionsRound === "All" || String(r.round || "").trim().toLowerCase() === String(effectiveSubmissionsRound).trim().toLowerCase())
     .filter(r => selectedTeamFilter === "All" || r.team === selectedTeamFilter)
     .sort((a, b) => {
       if (resultSortBy === "date") {
@@ -1347,12 +1354,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
   const enrichedSessions = trackSessions.map(s => {
     const sRound = String(s.round || "").trim().toLowerCase();
 
-    // Check if matching result exists in results
-    const matchingResult = results.find(r => {
+    // Check if matching result exists strictly within this track and round
+    const matchingResult = trackResults.find(r => {
       const isPhone = isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp);
       const rRound = String(r.round || "").trim().toLowerCase();
-      return isPhone && (!rRound || !sRound || rRound === sRound);
-    }) || results.find(r => isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp));
+      return isPhone && rRound === sRound;
+    });
 
     const now = Date.now();
     const isCompleted = !!matchingResult;
@@ -1413,15 +1420,19 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     };
   });
 
+  // Effective round filter for Sessions (syncing selectedActivityRound with selectedSessionRoundFilter)
+  const effectiveSessionsRound = selectedActivityRound !== "All" ? selectedActivityRound : selectedSessionRoundFilter;
+
   const filteredSessions = enrichedSessions
-    .filter(s => selectedSessionRoundFilter === "All" || s.round === selectedSessionRoundFilter)
+    .filter(s => effectiveSessionsRound === "All" || String(s.round || "").trim().toLowerCase() === String(effectiveSessionsRound).trim().toLowerCase())
     .filter(s => selectedSessionTeamFilter === "All" || s.team === selectedSessionTeamFilter)
     .filter(s => selectedSessionStatusFilter === "All" || s.status === selectedSessionStatusFilter)
     .sort((a, b) => (b.startTimestamp || 0) - (a.startTimestamp || 0));
 
-  const activeSessionsCount = enrichedSessions.filter(s => s.status === 'active').length;
-  const completedSessionsCount = enrichedSessions.filter(s => s.status === 'completed').length;
-  const expiredSessionsCount = enrichedSessions.filter(s => s.status === 'expired').length;
+  const totalStartedCount = filteredSessions.length;
+  const activeSessionsCount = filteredSessions.filter(s => s.status === 'active').length;
+  const completedSessionsCount = sortedResults.length;
+  const expiredSessionsCount = filteredSessions.filter(s => s.status === 'expired').length;
 
   const toggleSort = (col) => {
     if (resultSortBy === col) {
@@ -1748,6 +1759,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   onClick={() => {
                     setSelectedEdition(ed);
                     setSelectedBankRound("All");
+                    setSelectedActivityRound("All");
+                    setSelectedRoundFilter("All");
+                    setSelectedSessionRoundFilter("All");
+                    setSelectedTeamFilter("All");
+                    setSelectedSessionTeamFilter("All");
+                    setSelectedSessionStatusFilter("All");
                     setQuestionForm(prev => ({ ...prev, edition: ed }));
                     setBulkEdition(ed);
                     setAiEdition(ed);
@@ -1855,6 +1872,12 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   const name = newEditionName.trim();
                   setSelectedEdition(name);
                   setSelectedBankRound("All");
+                  setSelectedActivityRound("All");
+                  setSelectedRoundFilter("All");
+                  setSelectedSessionRoundFilter("All");
+                  setSelectedTeamFilter("All");
+                  setSelectedSessionTeamFilter("All");
+                  setSelectedSessionStatusFilter("All");
                   setQuestionForm(prev => ({ ...prev, edition: name }));
                   setBulkEdition(name);
                   setAiEdition(name);
@@ -3856,8 +3879,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 </h3>
                 <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                   {activityView === 'submissions'
-                    ? `Official scores, times taken, and rankings for ${selectedEdition}.`
-                    : `Live sessions, progress countdowns, and instant time extensions for ${selectedEdition}.`}
+                    ? `Official scores, times taken, and rankings for ${selectedEdition}${selectedActivityRound !== "All" ? ` • ${selectedActivityRound}` : ""}.`
+                    : `Live sessions, progress countdowns, and instant time extensions for ${selectedEdition}${selectedActivityRound !== "All" ? ` • ${selectedActivityRound}` : ""}.`}
                 </p>
               </div>
 
@@ -3943,6 +3966,101 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               </div>
             </div>
 
+            {/* ROUND SWITCHER PILL BAR FOR ACTIVITY & SUBMISSIONS */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              overflowX: 'auto',
+              paddingBottom: '0.45rem',
+              marginBottom: '1.1rem',
+              scrollbarWidth: 'thin'
+            }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginRight: '0.2rem', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <Filter size={13} /> Round:
+              </span>
+
+              {/* All Rounds Pill */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedActivityRound("All");
+                  setSelectedRoundFilter("All");
+                  setSelectedSessionRoundFilter("All");
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.38rem 0.8rem',
+                  borderRadius: '0.5rem',
+                  backgroundColor: selectedActivityRound === "All" ? 'var(--accent)' : 'rgba(255, 255, 255, 0.04)',
+                  border: `1px solid ${selectedActivityRound === "All" ? 'var(--accent)' : 'var(--border-light)'}`,
+                  color: selectedActivityRound === "All" ? '#fff' : 'var(--text-secondary)',
+                  fontSize: '0.82rem',
+                  fontWeight: selectedActivityRound === "All" ? 700 : 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span>All Rounds</span>
+                <span style={{
+                  fontSize: '0.75rem',
+                  opacity: selectedActivityRound === "All" ? 0.85 : 0.6,
+                  fontWeight: 600
+                }}>
+                  ({trackResults.length})
+                </span>
+              </button>
+
+              {/* Individual Round Pills */}
+              {uniqueRoundsInEdition.map(r => {
+                const subCount = trackResults.filter(res => String(res.round || '').trim().toLowerCase() === String(r).trim().toLowerCase()).length;
+                const isSelected = selectedActivityRound === r;
+                const isActiveLive = settings.Active_Round === r && (settings.Active_Edition || "New Testament (3 chapters daily)") === selectedEdition;
+
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => {
+                      setSelectedActivityRound(r);
+                      setSelectedRoundFilter(r);
+                      setSelectedSessionRoundFilter(r);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.38rem 0.8rem',
+                      borderRadius: '0.5rem',
+                      backgroundColor: isSelected ? 'var(--accent)' : (isActiveLive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.04)'),
+                      border: `1px solid ${isSelected ? 'var(--accent)' : (isActiveLive ? 'rgba(16, 185, 129, 0.35)' : 'var(--border-light)')}`,
+                      color: isSelected ? '#fff' : (isActiveLive ? '#34D399' : 'var(--text-primary)'),
+                      fontSize: '0.82rem',
+                      fontWeight: isSelected || isActiveLive ? 700 : 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <span>{r}</span>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      opacity: isSelected ? 0.85 : 0.6,
+                      fontWeight: 600
+                    }}>
+                      ({subCount})
+                    </span>
+                    {isActiveLive && !isSelected && (
+                      <span style={{ fontSize: '0.65rem', color: '#34D399' }}>●</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Metric Summary Cards */}
             <div style={{
               display: 'grid',
@@ -3960,7 +4078,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   Total Started
                 </div>
                 <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#60A5FA', marginTop: '0.15rem' }}>
-                  {enrichedSessions.length}
+                  {totalStartedCount}
                 </div>
               </div>
 
@@ -4039,12 +4157,15 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   {/* Custom Round Filter */}
                   <CustomDropdown
                     icon={Filter}
-                    value={selectedRoundFilter}
+                    value={effectiveSubmissionsRound}
                     minWidth="140px"
                     isOpen={openDropdown === 'round'}
                     onToggle={() => setOpenDropdown(prev => prev === 'round' ? null : 'round')}
                     onClose={() => setOpenDropdown(null)}
-                    onChange={(val) => setSelectedRoundFilter(val)}
+                    onChange={(val) => {
+                      setSelectedActivityRound(val);
+                      setSelectedRoundFilter(val);
+                    }}
                     options={[
                       { value: 'All', label: 'All Rounds' },
                       ...uniqueRoundsInEdition.map(r => ({ value: r, label: r }))
@@ -4103,7 +4224,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       {sortedResults.length === 0 ? (
                         <tr>
                           <td colSpan={7} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                            No quiz submissions recorded yet for this reading track.
+                            No quiz submissions recorded yet for {effectiveSubmissionsRound !== "All" ? `${effectiveSubmissionsRound} in ${selectedEdition}` : selectedEdition}.
                           </td>
                         </tr>
                       ) : (
@@ -4351,7 +4472,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                       {filteredSessions.length === 0 ? (
                         <tr>
                           <td colSpan={6} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                            No candidate activity logs recorded yet for this reading track.
+                            No candidate activity logs recorded yet for {effectiveSessionsRound !== "All" ? `${effectiveSessionsRound} in ${selectedEdition}` : selectedEdition}.
                           </td>
                         </tr>
                       ) : (

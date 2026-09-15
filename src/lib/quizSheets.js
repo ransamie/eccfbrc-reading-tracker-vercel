@@ -127,7 +127,7 @@ export async function checkExistingResult(whatsAppNumber, round, edition) {
   return !!match;
 }
 
-export async function getSession(whatsAppNumber, round) {
+export async function getSession(whatsAppNumber, round, edition = "") {
   const sheet = await getSheetByTitle("Quiz_Sessions", [
     "Full_Name",
     "WhatsApp_Number",
@@ -140,11 +140,19 @@ export async function getSession(whatsAppNumber, round) {
   const rows = await sheet.getRows();
   const normPhone = String(whatsAppNumber || "").replace(/\D/g, "").replace(/^0+/, "");
   const targetRound = String(round || "").trim().toLowerCase();
+  const targetEdition = edition ? String(edition).trim().toLowerCase() : "";
 
   const existingRow = rows.find((row) => {
     const rowPhone = String(row.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
     const rowRound = String(row.get("Round") || "").trim().toLowerCase();
-    return rowPhone === normPhone && rowRound === targetRound;
+    const phoneMatches = rowPhone === normPhone;
+    const roundMatches = rowRound === targetRound;
+    if (!phoneMatches || !roundMatches) return false;
+
+    if (!targetEdition) return true;
+    const rowEdition = String(row.get("Edition") || "").trim().toLowerCase();
+    if (!rowEdition) return targetEdition.includes("new testament");
+    return rowEdition === targetEdition;
   });
 
   if (existingRow) {
@@ -163,7 +171,7 @@ export async function getSession(whatsAppNumber, round) {
 
 export async function getOrCreateSession(whatsAppNumber, round, durationMinutes, fullName = "", team = "", edition = "") {
   const normPhone = String(whatsAppNumber || "").replace(/\D/g, "").replace(/^0+/, "");
-  const session = await getSession(normPhone, round);
+  const session = await getSession(normPhone, round, edition);
   if (session) return session;
 
   const sheet = await getSheetByTitle("Quiz_Sessions", [
@@ -215,14 +223,14 @@ export async function getAllQuizSessions() {
     fullName: row.get("Full_Name") || "",
     whatsApp: row.get("WhatsApp_Number"),
     team: row.get("Team_Name") || "Unassigned",
-    edition: row.get("Edition") || "New Testament (3 chapters daily)",
+    edition: String(row.get("Edition") || "New Testament (3 chapters daily)").trim(),
     round: row.get("Round"),
     startTimestamp: Number(row.get("Start_Timestamp")),
     absoluteDeadline: Number(row.get("Absolute_Deadline"))
   }));
 }
 
-export async function extendQuizSession(whatsAppNumber, round, extraMinutes = 5) {
+export async function extendQuizSession(whatsAppNumber, round, extraMinutes = 5, edition = "") {
   const sheet = await getSheetByTitle("Quiz_Sessions", [
     "Full_Name",
     "WhatsApp_Number",
@@ -235,11 +243,19 @@ export async function extendQuizSession(whatsAppNumber, round, extraMinutes = 5)
   const rows = await sheet.getRows();
   const normPhone = String(whatsAppNumber || "").replace(/\D/g, "").replace(/^0+/, "");
   const targetRound = String(round || "").trim().toLowerCase();
+  const targetEdition = edition ? String(edition).trim().toLowerCase() : "";
 
   const existingRow = rows.find((row) => {
     const rowPhone = String(row.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
     const rowRound = String(row.get("Round") || "").trim().toLowerCase();
-    return rowPhone === normPhone && rowRound === targetRound;
+    const phoneMatches = rowPhone === normPhone;
+    const roundMatches = rowRound === targetRound;
+    if (!phoneMatches || !roundMatches) return false;
+
+    if (!targetEdition) return true;
+    const rowEdition = String(row.get("Edition") || "").trim().toLowerCase();
+    if (!rowEdition) return targetEdition.includes("new testament");
+    return rowEdition === targetEdition;
   });
 
   if (!existingRow) {
@@ -331,7 +347,7 @@ export async function getAllQuizResults() {
     fullName: row.get("Full_Name"),
     whatsApp: row.get("WhatsApp_Number"),
     team: row.get("Team_Name") || row.get("Team") || "Unassigned",
-    edition: row.get("Edition") || "New Testament (3 chapters daily)",
+    edition: String(row.get("Edition") || "New Testament (3 chapters daily)").trim(),
     round: row.get("Round"),
     score: Number(row.get("Score")),
     totalQuestions: Number(row.get("Total_Questions")),
@@ -497,17 +513,19 @@ export async function deleteQuizQuestion(id) {
   return false;
 }
 
-export async function deleteQuizSubmission(whatsAppNumber, round, timestamp, fullName) {
+export async function deleteQuizSubmission(whatsAppNumber, round, timestamp, fullName, edition = "") {
   try {
     const normTargetPhone = String(whatsAppNumber || "").replace(/\D/g, "").replace(/^0+/, "");
     const targetRound = String(round || "").trim().toLowerCase();
     const targetName = String(fullName || "").trim().toLowerCase();
+    const targetEdition = edition ? String(edition).trim().toLowerCase() : "";
 
     // 1. Delete from Quiz_Results
     const resultsSheet = await getSheetByTitle("Quiz_Results", [
       "Full_Name",
       "WhatsApp_Number",
       "Team_Name",
+      "Edition",
       "Round",
       "Score",
       "Total_Questions",
@@ -521,13 +539,15 @@ export async function deleteQuizSubmission(whatsAppNumber, round, timestamp, ful
       const rowRound = String(row.get("Round") || "").trim().toLowerCase();
       const rowTimestamp = String(row.get("Timestamp") || "").trim();
       const rowName = String(row.get("Full_Name") || "").trim().toLowerCase();
+      const rowEdition = String(row.get("Edition") || "").trim().toLowerCase();
 
       const phoneMatch = normTargetPhone && rowPhone && (rowPhone === normTargetPhone || rowPhone.endsWith(normTargetPhone) || normTargetPhone.endsWith(rowPhone));
       const nameMatch = targetName && rowName && targetName === rowName;
       const roundMatch = !targetRound || rowRound === targetRound;
       const timestampMatch = timestamp ? rowTimestamp === String(timestamp).trim() : true;
+      const editionMatch = !targetEdition || (!rowEdition ? targetEdition.includes("new testament") : rowEdition === targetEdition);
 
-      if ((phoneMatch || nameMatch) && roundMatch && timestampMatch) {
+      if ((phoneMatch || nameMatch) && roundMatch && timestampMatch && editionMatch) {
         await row.delete();
         break;
       }
@@ -535,7 +555,10 @@ export async function deleteQuizSubmission(whatsAppNumber, round, timestamp, ful
 
     // 2. Delete from Quiz_Sessions to allow retake
     const sessionsSheet = await getSheetByTitle("Quiz_Sessions", [
+      "Full_Name",
       "WhatsApp_Number",
+      "Team_Name",
+      "Edition",
       "Round",
       "Start_Timestamp",
       "Absolute_Deadline"
@@ -545,11 +568,13 @@ export async function deleteQuizSubmission(whatsAppNumber, round, timestamp, ful
     for (const sRow of sessionRows) {
       const sPhone = String(sRow.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
       const sRound = String(sRow.get("Round") || "").trim().toLowerCase();
+      const sEdition = String(sRow.get("Edition") || "").trim().toLowerCase();
 
       const sPhoneMatch = normTargetPhone && sPhone && (sPhone === normTargetPhone || sPhone.endsWith(normTargetPhone) || normTargetPhone.endsWith(sPhone));
       const sRoundMatch = !targetRound || sRound === targetRound;
+      const sEditionMatch = !targetEdition || (!sEdition ? targetEdition.includes("new testament") : sEdition === targetEdition);
 
-      if (sPhoneMatch && sRoundMatch) {
+      if (sPhoneMatch && sRoundMatch && sEditionMatch) {
         await sRow.delete();
         break;
       }
