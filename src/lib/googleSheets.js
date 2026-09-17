@@ -405,6 +405,28 @@ export async function archiveAndResetChallenge({ newChallengeName, newEdition, n
     }
   }
 
+  // 8. Update Quiz_Settings for the New Edition
+  try {
+    const quizSettingsSheet = db.sheetsByTitle["Quiz_Settings"];
+    if (quizSettingsSheet) {
+      const qRows = await quizSettingsSheet.getRows();
+      const edRow = qRows.find(r => r.get("Setting_Key") === "Active_Edition");
+      if (edRow) {
+        edRow.set("Setting_Value", newEdition || "📖 New Reading Edition");
+        await edRow.save();
+      } else {
+        await quizSettingsSheet.addRow({ Setting_Key: "Active_Edition", Setting_Value: newEdition || "📖 New Reading Edition" });
+      }
+      const roundRow = qRows.find(r => r.get("Setting_Key") === "Active_Round");
+      if (roundRow) {
+        roundRow.set("Setting_Value", "Round 1");
+        await roundRow.save();
+      }
+    }
+  } catch (quizErr) {
+    console.warn("Could not sync Quiz_Settings on challenge reset:", quizErr);
+  }
+
   invalidateCache();
   return {
     success: true,

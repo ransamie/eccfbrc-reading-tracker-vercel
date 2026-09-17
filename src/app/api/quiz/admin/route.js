@@ -14,7 +14,7 @@ import {
   deleteRoundQuestions,
   deleteQuizRound 
 } from "@/lib/quizSheets";
-import { fetchGlobalData } from "@/lib/googleSheets";
+import { fetchGlobalData, fetchEditionsRegistry } from "@/lib/googleSheets";
 
 // Helper to verify admin access (direct access from dashboard allowed)
 async function verifyAdminAuth(request) {
@@ -41,13 +41,22 @@ export async function GET(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [settings, questions, rawResults, rawSessions, globalData] = await Promise.all([
+    const [settings, questions, rawResults, rawSessions, globalData, archives] = await Promise.all([
       getQuizSettings(),
       getAllQuestions(),
       getAllQuizResults(),
       getAllQuizSessions().catch(() => []),
-      fetchGlobalData().catch(() => ({ members: [] }))
+      fetchGlobalData().catch(() => ({ members: [], settings: {} })),
+      fetchEditionsRegistry().catch(() => [])
     ]);
+
+    const liveChallengeEdition = globalData?.settings?.Challenge_Edition || "📖 September - December NT Edition";
+    const archivedChallengeEditions = (archives || []).map(a => a.edition).filter(Boolean);
+
+    // If settings.Active_Edition is still generic default, automatically align it with live challenge edition
+    if (!settings.Active_Edition || settings.Active_Edition === "New Testament (3 chapters daily)") {
+      settings.Active_Edition = liveChallengeEdition;
+    }
 
     const members = globalData.members || [];
 
@@ -142,7 +151,11 @@ export async function GET(request) {
       settings,
       questions,
       results,
-      sessions
+      sessions,
+      challengeEditions: {
+        live: liveChallengeEdition,
+        archives: archivedChallengeEditions
+      }
     }, { status: 200 });
 
   } catch (error) {

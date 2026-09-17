@@ -211,7 +211,8 @@ export default function AdminQuizPage() {
   const [sessions, setSessions] = useState([]);
   
   // Reading Schedule & Round UI filters
-  const [selectedEdition, setSelectedEdition] = useState("New Testament (3 chapters daily)");
+  const [challengeEditions, setChallengeEditions] = useState({ live: "📖 September - December NT Edition", archives: [] });
+  const [selectedEdition, setSelectedEdition] = useState("📖 September - December NT Edition");
   const [selectedBankRound, setSelectedBankRound] = useState("All");
   const [selectedActivityRound, setSelectedActivityRound] = useState("All");
   const [selectedLeaderboardEdition, setSelectedLeaderboardEdition] = useState("All");
@@ -357,11 +358,14 @@ export default function AdminQuizPage() {
         };
         setSettings(loadedSettings);
         setIsQuizLive(String(loadedSettings.Is_Quiz_Live).toUpperCase() === "TRUE");
-        if (loadedSettings.Active_Edition) {
-          setSelectedEdition(loadedSettings.Active_Edition);
-          setBulkEdition(loadedSettings.Active_Edition);
-          setAiEdition(loadedSettings.Active_Edition);
+        if (data.challengeEditions) {
+          setChallengeEditions(data.challengeEditions);
         }
+        const activeEd = loadedSettings.Active_Edition || data.challengeEditions?.live || "📖 September - December NT Edition";
+        setSelectedEdition(activeEd);
+        setBulkEdition(activeEd);
+        setAiEdition(activeEd);
+
         if (loadedSettings.GEMINI_API_KEY) {
           setAiApiKey(loadedSettings.GEMINI_API_KEY);
         }
@@ -370,7 +374,7 @@ export default function AdminQuizPage() {
         setSessions(data.sessions || []);
         setQuestionForm(prev => ({ 
           ...prev, 
-          edition: loadedSettings.Active_Edition || "New Testament (3 chapters daily)",
+          edition: activeEd,
           round: loadedSettings.Active_Round || "Round 1" 
         }));
         setBulkRound(loadedSettings.Active_Round || "Round 1");
@@ -1126,21 +1130,26 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
   // Filtered Questions and Leaderboard calculations
   const availableEditions = Array.from(new Set([
+    challengeEditions?.live,
+    settings.Active_Edition,
+    ...(challengeEditions?.archives || []),
     ...DEFAULT_EDITIONS,
-    settings.Active_Edition || "New Testament (3 chapters daily)",
     ...questions.map(q => q.edition).filter(Boolean),
     ...results.map(r => r.edition).filter(Boolean),
     ...sessions.map(s => s.edition).filter(Boolean)
   ])).filter(Boolean);
 
   // Active Reading Track (Root container)
-  const currentTrack = selectedEdition || settings.Active_Edition || "New Testament (3 chapters daily)";
-  const isCurrentTrackLive = (settings.Active_Edition || "").trim().toLowerCase() === currentTrack.trim().toLowerCase() && isQuizLive;
+  const currentTrack = selectedEdition || settings.Active_Edition || challengeEditions?.live || "📖 September - December NT Edition";
+  const isCurrentTrackLive = (settings.Active_Edition || challengeEditions?.live || "").trim().toLowerCase() === currentTrack.trim().toLowerCase() && isQuizLive;
 
   // Questions scoped to active reading track
   const editionQuestions = questions.filter(q => {
-    const qEd = q.edition || "New Testament (3 chapters daily)";
-    return qEd.trim().toLowerCase() === currentTrack.trim().toLowerCase();
+    const qEd = (q.edition || "").trim().toLowerCase();
+    const curEd = currentTrack.trim().toLowerCase();
+    if (qEd === curEd) return true;
+    if ((!qEd || qEd === "new testament (3 chapters daily)") && (curEd.includes("nt") || curEd.includes("new testament"))) return true;
+    return false;
   });
 
   // Get planned rounds count for a reading track
@@ -1749,8 +1758,14 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
 
             {availableEditions.map(ed => {
               const isSelected = selectedEdition.trim().toLowerCase() === ed.trim().toLowerCase();
-              const isLiveEdition = (settings.Active_Edition || "New Testament (3 chapters daily)").trim().toLowerCase() === ed.trim().toLowerCase();
-              const questionCount = questions.filter(q => (q.edition || "New Testament (3 chapters daily)").trim().toLowerCase() === ed.trim().toLowerCase()).length;
+              const isLiveEdition = (settings.Active_Edition || challengeEditions?.live || "📖 September - December NT Edition").trim().toLowerCase() === ed.trim().toLowerCase();
+              const questionCount = questions.filter(q => {
+                const qEd = (q.edition || "").trim().toLowerCase();
+                const eLower = ed.trim().toLowerCase();
+                if (qEd === eLower) return true;
+                if ((!qEd || qEd === "new testament (3 chapters daily)") && (eLower.includes("nt") || eLower.includes("new testament"))) return true;
+                return false;
+              }).length;
 
               return (
                 <button
@@ -1796,7 +1811,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     }
                   }}
                 >
-                  <span>{ed.includes("New Testament") ? "📖" : (ed.includes("Entire") ? "📜" : "📚")}</span>
+                  <span>{ed.includes("New Testament") || ed.includes("NT") ? "📖" : (ed.includes("Entire") || ed.includes("Bible") ? "📜" : "📚")}</span>
                   <span>{ed}</span>
                   <span style={{
                     fontSize: '0.78rem',

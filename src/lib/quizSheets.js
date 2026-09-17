@@ -77,12 +77,13 @@ export async function getQuestionsForRound(round, edition) {
       if (!roundMatches) return false;
 
       if (!targetEdition) return true;
-      const rowEdition = String(row.get("Edition") || "").trim();
-      if (!rowEdition) {
-        // Backwards compatibility: rows with empty edition default to New Testament
-        return targetEdition.toLowerCase().includes("new testament");
+      const rowEdition = String(row.get("Edition") || "").trim().toLowerCase();
+      const tgt = targetEdition.toLowerCase();
+      if (!rowEdition || rowEdition === "new testament (3 chapters daily)") {
+        if (tgt === rowEdition) return true;
+        if (tgt.includes("nt") || tgt.includes("new testament")) return true;
       }
-      return rowEdition.toLowerCase() === targetEdition.toLowerCase();
+      return rowEdition === tgt;
     })
     .map((row, index) => ({
       id: row.get("ID") || `q_${index}`,
@@ -223,7 +224,7 @@ export async function getAllQuizSessions() {
     fullName: row.get("Full_Name") || "",
     whatsApp: row.get("WhatsApp_Number"),
     team: row.get("Team_Name") || "Unassigned",
-    edition: String(row.get("Edition") || "New Testament (3 chapters daily)").trim(),
+    edition: String(row.get("Edition") || "📖 June - August NT Edition").trim(),
     round: row.get("Round"),
     startTimestamp: Number(row.get("Start_Timestamp")),
     absoluteDeadline: Number(row.get("Absolute_Deadline"))
@@ -347,7 +348,7 @@ export async function getAllQuizResults() {
     fullName: row.get("Full_Name"),
     whatsApp: row.get("WhatsApp_Number"),
     team: row.get("Team_Name") || row.get("Team") || "Unassigned",
-    edition: String(row.get("Edition") || "New Testament (3 chapters daily)").trim(),
+    edition: String(row.get("Edition") || "📖 June - August NT Edition").trim(),
     round: row.get("Round"),
     score: Number(row.get("Score")),
     totalQuestions: Number(row.get("Total_Questions")),
