@@ -225,8 +225,6 @@ export default function AdminQuizPage() {
   const [resultSortBy, setResultSortBy] = useState("date");    // "score" | "date"
   const [resultSortOrder, setResultSortOrder] = useState("desc"); // "asc" | "desc"
   const [openDropdown, setOpenDropdown] = useState(null); // 'sort' | 'edition' | 'round' | 'team' | 'session_status' | 'session_edition' | 'session_round' | 'session_team' | null
-  const [showCustomEditionInput, setShowCustomEditionInput] = useState(false);
-  const [newEditionName, setNewEditionName] = useState("");
   const [showCustomRoundInput, setShowCustomRoundInput] = useState(false);
   const [newRoundInputName, setNewRoundInputName] = useState("");
   const [customRoundsMap, setCustomRoundsMap] = useState({}); // { [editionName]: string[] }
@@ -1132,11 +1130,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
   const availableEditions = Array.from(new Set([
     challengeEditions?.live,
     settings.Active_Edition,
-    ...(challengeEditions?.archives || []),
-    ...DEFAULT_EDITIONS,
-    ...questions.map(q => q.edition).filter(Boolean),
-    ...results.map(r => r.edition).filter(Boolean),
-    ...sessions.map(s => s.edition).filter(Boolean)
+    ...DEFAULT_EDITIONS
   ])).filter(Boolean);
 
   // Active Reading Track (Root container)
@@ -1671,7 +1665,38 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
               <img src="/eccfbrclogo.png" alt="ECCF Logo" style={{ maxWidth: '28px', maxHeight: '28px', objectFit: 'contain' }} />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, lineHeight: '1.2' }}>Quiz Control Center</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, lineHeight: '1.2' }}>Quiz Control Center</h2>
+                <span style={{
+                  fontSize: '0.73rem',
+                  fontWeight: '700',
+                  padding: '0.2rem 0.55rem',
+                  borderRadius: '0.45rem',
+                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                  border: '1px solid rgba(59, 130, 246, 0.28)',
+                  color: '#60A5FA',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}>
+                  <BookOpen size={12} />
+                  <span>{selectedEdition.replace(/^[📖📜📚\s]+/, '')}</span>
+                  {isCurrentTrackLive && (
+                    <span style={{
+                      fontSize: '0.68rem',
+                      color: '#34D399',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      marginLeft: '0.2rem'
+                    }}>
+                      <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#10B981' }}></span>
+                      Live
+                    </span>
+                  )}
+                </span>
+              </div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Super Admin Workspace</span>
             </div>
           </div>
@@ -1731,206 +1756,6 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       {/* Main Container */}
       <main style={{ maxWidth: '1000px', margin: '1.5rem auto 0 auto', padding: '0 1rem' }}>
         
-        {/* TOP READING TRACK SELECTOR BAR (Clean, Modern, Uncluttered) */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '0.65rem',
-          padding: '0.4rem 0.2rem',
-          marginBottom: '1rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <span style={{
-              fontSize: '0.76rem',
-              fontWeight: 800,
-              color: 'var(--text-secondary)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              marginRight: '0.2rem'
-            }}>
-              <BookOpen size={13} style={{ color: 'var(--accent)' }} /> Track:
-            </span>
-
-            {availableEditions.map(ed => {
-              const isSelected = selectedEdition.trim().toLowerCase() === ed.trim().toLowerCase();
-              const isLiveEdition = (settings.Active_Edition || challengeEditions?.live || "📖 September - December NT Edition").trim().toLowerCase() === ed.trim().toLowerCase();
-              const questionCount = questions.filter(q => {
-                const qEd = (q.edition || "").trim().toLowerCase();
-                const eLower = ed.trim().toLowerCase();
-                if (qEd === eLower) return true;
-                if ((!qEd || qEd === "new testament (3 chapters daily)") && (eLower.includes("nt") || eLower.includes("new testament"))) return true;
-                return false;
-              }).length;
-
-              return (
-                <button
-                  key={ed}
-                  type="button"
-                  onClick={() => {
-                    setSelectedEdition(ed);
-                    setSelectedBankRound("All");
-                    setSelectedActivityRound("All");
-                    setSelectedRoundFilter("All");
-                    setSelectedSessionRoundFilter("All");
-                    setSelectedTeamFilter("All");
-                    setSelectedSessionTeamFilter("All");
-                    setSelectedSessionStatusFilter("All");
-                    setQuestionForm(prev => ({ ...prev, edition: ed }));
-                    setBulkEdition(ed);
-                    setAiEdition(ed);
-                  }}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.42rem 0.8rem',
-                    borderRadius: '0.5rem',
-                    backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.14)' : 'transparent',
-                    border: `1px solid ${isSelected ? 'rgba(59, 130, 246, 0.35)' : 'transparent'}`,
-                    color: isSelected ? '#fff' : 'var(--text-secondary)',
-                    fontSize: '0.84rem',
-                    fontWeight: isSelected ? '700' : '500',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseOver={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
-                      e.currentTarget.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'var(--text-secondary)';
-                    }
-                  }}
-                >
-                  <span>{ed.includes("New Testament") || ed.includes("NT") ? "📖" : (ed.includes("Entire") || ed.includes("Bible") ? "📜" : "📚")}</span>
-                  <span>{ed}</span>
-                  <span style={{
-                    fontSize: '0.78rem',
-                    color: isSelected ? 'rgba(255, 255, 255, 0.65)' : 'var(--text-secondary)',
-                    fontWeight: 500
-                  }}>
-                    ({questionCount} Qs)
-                  </span>
-                  {isLiveEdition && (
-                    <span style={{
-                      fontSize: '0.74rem',
-                      color: '#34D399',
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      marginLeft: '0.15rem'
-                    }}>
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', boxShadow: '0 0 6px rgba(16, 185, 129, 0.6)' }}></span>
-                      Live
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-
-            <button
-              type="button"
-              onClick={() => setShowCustomEditionInput(!showCustomEditionInput)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                padding: '0.4rem 0.65rem',
-                borderRadius: '0.45rem',
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: 'var(--accent)',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.color = 'var(--accent-hover)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.color = 'var(--accent)'; }}
-            >
-              <PlusCircle size={13} /> Add Track
-            </button>
-          </div>
-
-          {showCustomEditionInput && (
-            <div style={{ width: '100%', display: 'flex', gap: '0.5rem', marginTop: '0.4rem', alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="Enter custom reading schedule name..."
-                value={newEditionName}
-                onChange={(e) => setNewEditionName(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '0.5rem 0.75rem',
-                  backgroundColor: 'var(--surface-secondary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '0.45rem',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.85rem',
-                  outline: 'none'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (!newEditionName.trim()) return;
-                  const name = newEditionName.trim();
-                  setSelectedEdition(name);
-                  setSelectedBankRound("All");
-                  setSelectedActivityRound("All");
-                  setSelectedRoundFilter("All");
-                  setSelectedSessionRoundFilter("All");
-                  setSelectedTeamFilter("All");
-                  setSelectedSessionTeamFilter("All");
-                  setSelectedSessionStatusFilter("All");
-                  setQuestionForm(prev => ({ ...prev, edition: name }));
-                  setBulkEdition(name);
-                  setAiEdition(name);
-                  setNewEditionName("");
-                  setShowCustomEditionInput(false);
-                  showToast(`Switched to new reading track: "${name}"!`);
-                }}
-                style={{
-                  padding: '0.5rem 0.85rem',
-                  backgroundColor: 'var(--accent)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '0.45rem',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                Create
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowCustomEditionInput(false)}
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  backgroundColor: 'transparent',
-                  color: 'var(--text-secondary)',
-                  border: 'none',
-                  fontSize: '0.85rem',
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
-
         {/* Tab Buttons (Responsive, Clean Segmented Bar) */}
         <div className="quiz-tab-bar" style={{
           display: 'flex',
