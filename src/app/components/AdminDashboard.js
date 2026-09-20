@@ -522,7 +522,8 @@ export default function AdminDashboard({ onLogout }) {
         }
       }
       
-      const daysBehindRoundEnd = (currentRound * daysPerRound) - lastCompletedDay;
+      // How many days behind the current day they are (not projected to round end)
+      const daysBehind = currentDayNum - lastCompletedDay;
       
       const teamStr = m.Team || m.Team_Name || "Unknown";
       const memberNameStr = `${name} (${teamStr})`;
@@ -530,9 +531,10 @@ export default function AdminDashboard({ onLogout }) {
       if (missedDays.length > 0) {
         const daysStr = missedDays.length === 1 ? `Day ${missedDays[0]}` : `Day ${missedDays[0]} - ${missedDays[missedDays.length - 1]}`;
         yetToUpdate.push(`* @${memberNameStr} (${daysStr})`);
-        if (showEvictionList && daysBehindRoundEnd > evictionThreshold) {
-           const dayWord = daysBehindRoundEnd === 1 ? "day" : "days";
-           evictionList.push(`* @${memberNameStr} (${daysBehindRoundEnd} ${dayWord} behind)`);
+        // Warn if they haven't completed at least evictionThreshold days — they risk eviction at round end
+        if (showEvictionList && lastCompletedDay < evictionThreshold) {
+           const dayWord = daysBehind === 1 ? "day" : "days";
+           evictionList.push(`* @${memberNameStr} (${daysBehind} ${dayWord} behind)`);
         }
       } else {
         upToDate.push(`* @${memberNameStr}`);
@@ -544,7 +546,7 @@ export default function AdminDashboard({ onLogout }) {
     let evictionSection = "";
     if (showEvictionList) {
        const evictStr = evictionList.length ? evictionList.join('\\n') : "- None 🎉";
-       evictionSection = `\\n\\n*Eviction List 🚨🚨🚨*\\n_(Members behind by more than ${evictionThreshold} days. Eviction takes effect next round!)_\\n${evictStr}`;
+       evictionSection = `\\n\\n*Eviction List 🚨🚨🚨*\\n_(Members who have not completed Day ${evictionThreshold}. Eviction takes effect next round!)_\\n${evictStr}`;
     }
 
     const challengeHeader = data?.settings?.Challenge_Name || 'ECCF Bible Reading Club';
