@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2, Power, Lock, Unlock, MessageSquare, FileSpreadsheet } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2, Power, Lock, Unlock, MessageSquare, FileSpreadsheet, Clock, History } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import NewRoundWizard from "./NewRoundWizard";
 import AdminTutorialModal from "./AdminTutorialModal";
@@ -103,6 +103,9 @@ export default function AdminDashboard({ onLogout }) {
   const [logs, setLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logSearchQuery, setLogSearchQuery] = useState('');
+  const [logsSubTab, setLogsSubTab] = useState('lastSeen'); // 'lastSeen' | 'history'
+  const [logRoleFilter, setLogRoleFilter] = useState('All'); // 'All' | 'Leader' | 'Admin'
+  const [logPage, setLogPage] = useState(1);
 
   const fetchLogs = async () => {
     setLogsLoading(true);
@@ -2089,13 +2092,7 @@ export default function AdminDashboard({ onLogout }) {
       )}
 
       {activeTab === 'logs' && (() => {
-        const filteredLogs = logs.filter(l =>
-          !logSearchQuery ||
-          (l.teamName && l.teamName.toLowerCase().includes(logSearchQuery.toLowerCase())) ||
-          (l.loginType && l.loginType.toLowerCase().includes(logSearchQuery.toLowerCase())) ||
-          (l.device && l.device.toLowerCase().includes(logSearchQuery.toLowerCase())) ||
-          (l.timestamp && l.timestamp.toLowerCase().includes(logSearchQuery.toLowerCase()))
-        );
+        const LOGS_PER_PAGE = 50;
 
         // Last activity per team (logs is already sorted newest first)
         const lastLoginMap = {};
@@ -2105,8 +2102,39 @@ export default function AdminDashboard({ onLogout }) {
           }
         });
 
+        // Filtered last logins for the 'lastSeen' view
+        const lastLoginList = Object.values(lastLoginMap);
+        const filteredLastLogins = lastLoginList.filter(l =>
+          !logSearchQuery ||
+          (l.teamName && l.teamName.toLowerCase().includes(logSearchQuery.toLowerCase())) ||
+          (l.loginType && l.loginType.toLowerCase().includes(logSearchQuery.toLowerCase())) ||
+          (l.device && l.device.toLowerCase().includes(logSearchQuery.toLowerCase())) ||
+          (l.timestamp && l.timestamp.toLowerCase().includes(logSearchQuery.toLowerCase()))
+        );
+
+        // Filtered logs for the 'history' view (with search and role filter)
+        const filteredLogs = logs.filter(l => {
+          if (logRoleFilter !== 'All') {
+            const currentRole = (l.loginType || 'Leader').toLowerCase();
+            if (logRoleFilter.toLowerCase() !== currentRole) return false;
+          }
+          if (!logSearchQuery) return true;
+          const query = logSearchQuery.toLowerCase();
+          return (
+            (l.teamName && l.teamName.toLowerCase().includes(query)) ||
+            (l.loginType && l.loginType.toLowerCase().includes(query)) ||
+            (l.device && l.device.toLowerCase().includes(query)) ||
+            (l.timestamp && l.timestamp.toLowerCase().includes(query))
+          );
+        });
+
+        const totalPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE) || 1;
+        const currentPage = Math.min(logPage, totalPages);
+        const paginatedLogs = filteredLogs.slice((currentPage - 1) * LOGS_PER_PAGE, currentPage * LOGS_PER_PAGE);
+
         return (
           <div className="card">
+            {/* Header Area */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>📋 Activity & Usage Logs</h3>
@@ -2126,144 +2154,360 @@ export default function AdminDashboard({ onLogout }) {
               </button>
             </div>
 
-            {/* Search */}
-            <div className="tracker-search-wrap">
-              <Search className="search-icon" size={16} />
-              <input
-                type="text"
-                className="tracker-search-input"
-                placeholder="Search by team, role, device, or date..."
-                value={logSearchQuery}
-                onChange={e => setLogSearchQuery(e.target.value)}
-              />
-              {logSearchQuery && (
-                <button
-                  onClick={() => setLogSearchQuery("")}
-                  style={{
-                    position: 'absolute',
-                    right: '0.85rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0.2rem'
-                  }}
-                  title="Clear search"
-                >
-                  <X size={14} />
-                </button>
+            {/* Segmented Sub-Tab Switcher */}
+            <div style={{
+              display: 'flex',
+              backgroundColor: 'var(--surface-secondary)',
+              border: '1px solid var(--border-light)',
+              padding: '0.3rem',
+              borderRadius: '0.65rem',
+              marginBottom: '1.25rem',
+              gap: '0.35rem'
+            }}>
+              <button 
+                type="button"
+                onClick={() => { setLogsSubTab('lastSeen'); setLogPage(1); }}
+                style={{
+                  flex: 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  padding: '0.6rem 0.85rem',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.88rem',
+                  fontWeight: logsSubTab === 'lastSeen' ? '700' : '600',
+                  background: logsSubTab === 'lastSeen' ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)' : 'transparent',
+                  color: logsSubTab === 'lastSeen' ? '#FFFFFF' : 'var(--text-secondary)',
+                  boxShadow: logsSubTab === 'lastSeen' ? '0 4px 12px rgba(37, 99, 235, 0.35)' : 'none',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+              >
+                <Clock size={16} />
+                <span>Last Seen Per Team</span>
+                <span style={{
+                  fontSize: '0.72rem',
+                  fontWeight: '700',
+                  padding: '0.12rem 0.5rem',
+                  borderRadius: '999px',
+                  backgroundColor: logsSubTab === 'lastSeen' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                  color: logsSubTab === 'lastSeen' ? '#FFFFFF' : 'var(--text-secondary)'
+                }}>
+                  {Object.keys(lastLoginMap).length}
+                </span>
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => { setLogsSubTab('history'); setLogPage(1); }}
+                style={{
+                  flex: 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  padding: '0.6rem 0.85rem',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.88rem',
+                  fontWeight: logsSubTab === 'history' ? '700' : '600',
+                  background: logsSubTab === 'history' ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)' : 'transparent',
+                  color: logsSubTab === 'history' ? '#FFFFFF' : 'var(--text-secondary)',
+                  boxShadow: logsSubTab === 'history' ? '0 4px 12px rgba(37, 99, 235, 0.35)' : 'none',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+              >
+                <History size={16} />
+                <span>Full Activity History</span>
+                <span style={{
+                  fontSize: '0.72rem',
+                  fontWeight: '700',
+                  padding: '0.12rem 0.5rem',
+                  borderRadius: '999px',
+                  backgroundColor: logsSubTab === 'history' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                  color: logsSubTab === 'history' ? '#FFFFFF' : 'var(--text-secondary)'
+                }}>
+                  {logs.length}
+                </span>
+              </button>
+            </div>
+
+            {/* Search & Filter Controls */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <div className="tracker-search-wrap" style={{ margin: 0 }}>
+                <Search className="search-icon" size={16} />
+                <input
+                  type="text"
+                  className="tracker-search-input"
+                  placeholder={logsSubTab === 'lastSeen' ? "Search team, role, device, or date..." : "Search activity by team, role, device, or date..."}
+                  value={logSearchQuery}
+                  onChange={e => { setLogSearchQuery(e.target.value); setLogPage(1); }}
+                />
+                {logSearchQuery && (
+                  <button
+                    onClick={() => { setLogSearchQuery(""); setLogPage(1); }}
+                    style={{
+                      position: 'absolute',
+                      right: '0.85rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0.2rem'
+                    }}
+                    title="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {logsSubTab === 'history' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Filter Role:</span>
+                  {['All', 'Leader', 'Admin'].map(role => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => { setLogRoleFilter(role); setLogPage(1); }}
+                      style={{
+                        fontSize: '0.76rem',
+                        fontWeight: logRoleFilter === role ? '700' : '500',
+                        padding: '0.22rem 0.65rem',
+                        borderRadius: '999px',
+                        border: logRoleFilter === role ? '1px solid #3B82F6' : '1px solid var(--border-light)',
+                        backgroundColor: logRoleFilter === role ? 'rgba(59, 130, 246, 0.15)' : 'var(--surface-secondary)',
+                        color: logRoleFilter === role ? '#60A5FA' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {role === 'All' ? 'All Roles' : `${role}s`}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 
-            {/* Last Activity Per Team Summary Cards */}
-            <div style={{ marginBottom: '1.75rem' }}>
-              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)' }}>
-                🕐 Last Seen Per Team
-              </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.65rem' }}>
-                {Object.values(lastLoginMap).map(l => {
-                  const isRecent = l.status === 'Active';
-                  return (
-                    <div key={l.teamName} style={{ 
-                      background: 'var(--surface-secondary)', 
-                      borderRadius: '0.65rem', 
-                      padding: '0.75rem 0.9rem', 
-                      border: '1px solid var(--border-light)', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      gap: '0.35rem' 
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: '700', fontSize: '0.92rem', color: 'var(--text-primary)' }}>{l.teamName}</span>
-                        <span style={{
-                          display: 'inline-block', padding: '0.1rem 0.45rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: '700',
-                          background: l.loginType === 'Admin' ? 'rgba(139,92,246,0.15)' : 'rgba(37,99,235,0.15)',
-                          color: l.loginType === 'Admin' ? '#A78BFA' : '#60A5FA'
-                        }}>{l.loginType || 'Leader'}</span>
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                        <span>📅 Opened: <strong style={{ color: 'var(--text-primary)' }}>{l.timestamp}</strong></span>
-                        <span>⏱️ Stayed: <strong style={{ color: isRecent ? '#34D399' : 'var(--text-primary)' }}>{l.duration || '< 1 min'}</strong></span>
-                        <span style={{ fontSize: '0.74rem' }}>{l.device}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                {Object.keys(lastLoginMap).length === 0 && !logsLoading && (
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No activity recorded yet.</p>
+            {/* View 1: Last Seen Per Team */}
+            {logsSubTab === 'lastSeen' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)' }}>
+                    🕐 Last Seen Per Team ({filteredLastLogins.length})
+                  </h4>
+                  {logSearchQuery && (
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                      Filtered from {Object.keys(lastLoginMap).length} teams
+                    </span>
+                  )}
+                </div>
+
+                {logsLoading ? (
+                  <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+                    <div className="spinner" style={{ margin: '0 auto 0.75rem auto' }}></div>
+                    <p>Loading activity logs...</p>
+                  </div>
+                ) : filteredLastLogins.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', background: 'var(--surface-secondary)', borderRadius: '0.65rem', border: '1px dashed var(--border-light)' }}>
+                    <p style={{ margin: 0, fontSize: '0.9rem' }}>{logSearchQuery ? `No team activity found matching "${logSearchQuery}".` : 'No activity recorded yet.'}</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.75rem' }}>
+                    {filteredLastLogins.map(l => {
+                      const isRecent = l.status === 'Active';
+                      return (
+                        <div key={l.teamName} style={{ 
+                          background: 'var(--surface-secondary)', 
+                          borderRadius: '0.75rem', 
+                          padding: '0.85rem 1rem', 
+                          border: '1px solid var(--border-light)', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '0.5rem',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontWeight: '700', fontSize: '0.94rem', color: 'var(--text-primary)' }}>{l.teamName}</span>
+                            <span style={{
+                              display: 'inline-block', padding: '0.12rem 0.5rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: '700',
+                              background: l.loginType === 'Admin' ? 'rgba(139,92,246,0.18)' : 'rgba(37,99,235,0.18)',
+                              color: l.loginType === 'Admin' ? '#A78BFA' : '#60A5FA',
+                              border: `1px solid ${l.loginType === 'Admin' ? 'rgba(139,92,246,0.3)' : 'rgba(37,99,235,0.3)'}`
+                            }}>{l.loginType || 'Leader'}</span>
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <span>📅 Opened:</span>
+                              <strong style={{ color: 'var(--text-primary)' }}>{l.timestamp}</strong>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <span>⏱️ Stayed:</span>
+                              <span style={{ 
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                padding: '0.1rem 0.45rem',
+                                borderRadius: '0.35rem',
+                                fontSize: '0.76rem',
+                                fontWeight: '700',
+                                backgroundColor: isRecent ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                                color: isRecent ? '#34D399' : 'var(--text-primary)'
+                              }}>
+                                {l.duration || '< 1 min'}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                              {l.device?.toLowerCase().includes('phone') || l.device?.toLowerCase().includes('android') || l.device?.toLowerCase().includes('ios') || l.device?.toLowerCase().includes('mobile') ? '📱 ' : '💻 '}
+                              {l.device}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-            </div>
+            )}
 
-            {/* Full Log History Table */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)' }}>
-                📜 Full Activity History ({filteredLogs.length})
-              </h4>
-            </div>
+            {/* View 2: Full Activity History */}
+            {logsSubTab === 'history' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)' }}>
+                    📜 Full Activity History ({filteredLogs.length})
+                  </h4>
+                  {filteredLogs.length > 0 && (
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                      Showing {Math.min((currentPage - 1) * LOGS_PER_PAGE + 1, filteredLogs.length)}–{Math.min(currentPage * LOGS_PER_PAGE, filteredLogs.length)} of {filteredLogs.length}
+                    </span>
+                  )}
+                </div>
 
-            {logsLoading ? (
-              <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
-                <div className="spinner" style={{ margin: '0 auto 0.75rem auto' }}></div>
-                <p>Loading activity logs...</p>
-              </div>
-            ) : filteredLogs.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', padding: '1rem 0' }}>No activity records found.</p>
-            ) : (
-              <div style={{ overflowX: 'auto', borderRadius: '0.5rem', border: '1px solid var(--border-light)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ background: 'var(--surface-secondary)', borderBottom: '1px solid var(--border-light)' }}>
-                      {['Opened At', 'Team / User', 'Role', 'Time Stayed', 'Device'].map(h => (
-                        <th key={h} style={{ padding: '0.65rem 0.85rem', color: 'var(--text-secondary)', fontWeight: '700', fontSize: '0.76rem', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredLogs.map((l, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid var(--border-light)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
-                        <td style={{ padding: '0.65rem 0.85rem', color: 'var(--text-secondary)', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
-                          {l.timestamp}
-                        </td>
-                        <td style={{ padding: '0.65rem 0.85rem', fontWeight: '600' }}>
-                          {l.teamName}
-                        </td>
-                        <td style={{ padding: '0.65rem 0.85rem' }}>
-                          <span style={{
-                            display: 'inline-block', padding: '0.15rem 0.5rem', borderRadius: '999px', fontSize: '0.72rem', fontWeight: '700',
-                            background: l.loginType === 'Admin' ? 'rgba(139,92,246,0.15)' : 'rgba(37,99,235,0.15)',
-                            color: l.loginType === 'Admin' ? '#A78BFA' : '#60A5FA'
-                          }}>{l.loginType || 'Leader'}</span>
-                        </td>
-                        <td style={{ padding: '0.65rem 0.85rem', whiteSpace: 'nowrap' }}>
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            padding: '0.15rem 0.55rem',
-                            borderRadius: '0.35rem',
-                            fontSize: '0.78rem',
-                            fontWeight: '600',
-                            background: 'rgba(16, 185, 129, 0.12)',
-                            color: '#34D399'
-                          }}>
-                            ⏱️ {l.duration || '< 1 min'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '0.65rem 0.85rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                          {l.device}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {logsLoading ? (
+                  <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+                    <div className="spinner" style={{ margin: '0 auto 0.75rem auto' }}></div>
+                    <p>Loading activity logs...</p>
+                  </div>
+                ) : filteredLogs.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)', background: 'var(--surface-secondary)', borderRadius: '0.65rem', border: '1px dashed var(--border-light)' }}>
+                    <p style={{ margin: 0, fontSize: '0.9rem' }}>No activity records found matching the current search / filter.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ overflowX: 'auto', borderRadius: '0.65rem', border: '1px solid var(--border-light)', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ background: 'var(--surface-secondary)', borderBottom: '1px solid var(--border-light)' }}>
+                            {['Opened At', 'Team / User', 'Role', 'Time Stayed', 'Device'].map(h => (
+                              <th key={h} style={{ padding: '0.75rem 0.95rem', color: 'var(--text-secondary)', fontWeight: '700', fontSize: '0.76rem', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paginatedLogs.map((l, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid var(--border-light)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
+                              <td style={{ padding: '0.7rem 0.95rem', color: 'var(--text-secondary)', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
+                                {l.timestamp}
+                              </td>
+                              <td style={{ padding: '0.7rem 0.95rem', fontWeight: '600' }}>
+                                {l.teamName}
+                              </td>
+                              <td style={{ padding: '0.7rem 0.95rem' }}>
+                                <span style={{
+                                  display: 'inline-block', padding: '0.15rem 0.5rem', borderRadius: '999px', fontSize: '0.72rem', fontWeight: '700',
+                                  background: l.loginType === 'Admin' ? 'rgba(139,92,246,0.15)' : 'rgba(37,99,235,0.15)',
+                                  color: l.loginType === 'Admin' ? '#A78BFA' : '#60A5FA'
+                                }}>{l.loginType || 'Leader'}</span>
+                              </td>
+                              <td style={{ padding: '0.7rem 0.95rem', whiteSpace: 'nowrap' }}>
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  padding: '0.15rem 0.55rem',
+                                  borderRadius: '0.35rem',
+                                  fontSize: '0.78rem',
+                                  fontWeight: '600',
+                                  background: 'rgba(16, 185, 129, 0.12)',
+                                  color: '#34D399'
+                                }}>
+                                  ⏱️ {l.duration || '< 1 min'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.7rem 0.95rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                                {l.device?.toLowerCase().includes('phone') || l.device?.toLowerCase().includes('android') || l.device?.toLowerCase().includes('ios') || l.device?.toLowerCase().includes('mobile') ? '📱 ' : '💻 '}
+                                {l.device}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          Page <strong style={{ color: 'var(--text-primary)' }}>{currentPage}</strong> of <strong style={{ color: 'var(--text-primary)' }}>{totalPages}</strong>
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => setLogPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              padding: '0.45rem 0.85rem',
+                              borderRadius: '0.45rem',
+                              border: '1px solid var(--border-light)',
+                              background: 'var(--surface-secondary)',
+                              color: currentPage === 1 ? 'var(--text-secondary)' : 'var(--text-primary)',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                              opacity: currentPage === 1 ? 0.5 : 1
+                            }}
+                          >
+                            <ChevronLeft size={15} /> Prev
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLogPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              padding: '0.45rem 0.85rem',
+                              borderRadius: '0.45rem',
+                              border: '1px solid var(--border-light)',
+                              background: 'var(--surface-secondary)',
+                              color: currentPage === totalPages ? 'var(--text-secondary)' : 'var(--text-primary)',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                              opacity: currentPage === totalPages ? 0.5 : 1
+                            }}
+                          >
+                            Next <ChevronRight size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
