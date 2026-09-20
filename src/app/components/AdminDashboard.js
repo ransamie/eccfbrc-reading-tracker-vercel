@@ -2094,6 +2094,23 @@ export default function AdminDashboard({ onLogout }) {
       {activeTab === 'logs' && (() => {
         const LOGS_PER_PAGE = 50;
 
+        const formatDeviceDisplay = (device) => {
+          if (!device) return 'Unknown';
+          const trimmed = String(device).trim();
+          // If device already starts with an emoji, return as-is
+          if (/^[\p{Emoji}\u200d\uFE0F]+/u.test(trimmed)) {
+            return trimmed;
+          }
+          const lower = trimmed.toLowerCase();
+          if (lower.includes('phone') || lower.includes('android') || lower.includes('ios') || lower.includes('mobile')) {
+            return `📱 ${trimmed}`;
+          }
+          if (lower.includes('mac') || lower.includes('windows') || lower.includes('pc') || lower.includes('laptop')) {
+            return `💻 ${trimmed}`;
+          }
+          return `🌐 ${trimmed}`;
+        };
+
         // Last activity per team (logs is already sorted newest first)
         const lastLoginMap = {};
         logs.forEach(l => {
@@ -2365,8 +2382,7 @@ export default function AdminDashboard({ onLogout }) {
                               </span>
                             </div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                              {l.device?.toLowerCase().includes('phone') || l.device?.toLowerCase().includes('android') || l.device?.toLowerCase().includes('ios') || l.device?.toLowerCase().includes('mobile') ? '📱 ' : '💻 '}
-                              {l.device}
+                              {formatDeviceDisplay(l.device)}
                             </div>
                           </div>
                         </div>
@@ -2445,8 +2461,7 @@ export default function AdminDashboard({ onLogout }) {
                                 </span>
                               </td>
                               <td style={{ padding: '0.7rem 0.95rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                                {l.device?.toLowerCase().includes('phone') || l.device?.toLowerCase().includes('android') || l.device?.toLowerCase().includes('ios') || l.device?.toLowerCase().includes('mobile') ? '📱 ' : '💻 '}
-                                {l.device}
+                                {formatDeviceDisplay(l.device)}
                               </td>
                             </tr>
                           ))}
