@@ -290,10 +290,12 @@ export default function AdminDashboard({ onLogout }) {
         setAdminUpdates(initialUpdates);
         setLoading(false);
         if (isManualRefresh === true) showToast("Dashboard is up-to-date!");
+        return d;
       })
       .catch(err => {
         setLoading(false);
         if (isManualRefresh === true) showToast("Error refreshing data", "error");
+        throw err;
       });
   };
 
