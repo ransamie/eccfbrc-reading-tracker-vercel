@@ -71,15 +71,53 @@ export default function QuizResultPage() {
 
   // Helper: map full schedule title to concise edition tag from Canva sample
   const getEditionTag = (rawEdition) => {
-    if (!rawEdition) return "JUN – AUG NT EDITION";
-    const lower = rawEdition.toLowerCase();
-    if (lower.includes("new testament") || lower.includes("nt")) {
-      return "JUN – AUG NT EDITION";
-    }
+    if (!rawEdition) return "SEP – DEC NT EDITION";
+
+    // Strip emojis
+    let clean = rawEdition.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+
+    const lower = clean.toLowerCase();
     if (lower.includes("entire bible") || lower.includes("whole bible")) {
       return "ENTIRE BIBLE EDITION";
     }
-    return rawEdition.toUpperCase();
+
+    const monthMap = [
+      { full: /\bseptember\b/gi, abbr: 'SEP' },
+      { full: /\bdecember\b/gi, abbr: 'DEC' },
+      { full: /\bjanuary\b/gi, abbr: 'JAN' },
+      { full: /\bfebruary\b/gi, abbr: 'FEB' },
+      { full: /\bmarch\b/gi, abbr: 'MAR' },
+      { full: /\bapril\b/gi, abbr: 'APR' },
+      { full: /\bmay\b/gi, abbr: 'MAY' },
+      { full: /\bjune\b/gi, abbr: 'JUN' },
+      { full: /\bjuly\b/gi, abbr: 'JUL' },
+      { full: /\baugust\b/gi, abbr: 'AUG' },
+      { full: /\bsept\b/gi, abbr: 'SEP' },
+      { full: /\boctober\b/gi, abbr: 'OCT' },
+      { full: /\bnovember\b/gi, abbr: 'NOV' },
+      { full: /\bdec\b/gi, abbr: 'DEC' },
+      { full: /\bjan\b/gi, abbr: 'JAN' },
+      { full: /\bfeb\b/gi, abbr: 'FEB' },
+      { full: /\baug\b/gi, abbr: 'AUG' },
+      { full: /\boct\b/gi, abbr: 'OCT' },
+      { full: /\bnov\b/gi, abbr: 'NOV' },
+    ];
+
+    let formatted = clean;
+    monthMap.forEach(({ full, abbr }) => {
+      formatted = formatted.replace(full, abbr);
+    });
+
+    formatted = formatted.replace(/\(\s*\d+\s*chapters?\s*daily\s*\)/gi, '');
+    formatted = formatted.replace(/new\s+testament/gi, 'NT');
+    formatted = formatted.replace(/\s+/g, ' ').trim();
+
+    if (!/edition/i.test(formatted)) {
+      formatted += ' EDITION';
+    }
+
+    formatted = formatted.replace(/\s*[-–—]\s*/g, ' – ');
+    return formatted.toUpperCase().trim();
   };
 
   const getCleanTeam = (teamStr) => {
@@ -91,7 +129,7 @@ export default function QuizResultPage() {
     return clean;
   };
 
-  const editionDisplay = participant?.edition || result.edition || "New Testament (3 chapters daily)";
+  const editionDisplay = participant?.edition || result.edition || "September - December NT Edition";
   const roundDisplay = participant?.round || result.round || "Round 7";
   const editionTag = getEditionTag(editionDisplay);
   const cleanTeam = getCleanTeam(teamDisplay);
