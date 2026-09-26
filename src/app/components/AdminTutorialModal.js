@@ -3,10 +3,10 @@ import React, { useState } from "react";
 import { 
   X, BookOpen, Layers, Users, Sliders, BarChart3, 
   HelpCircle, ShieldCheck, CheckCircle2, AlertTriangle, 
-  MessageSquare, KeyRound, Sparkles, ArrowRight, FileText, ChevronRight
+  MessageSquare, KeyRound, Sparkles, ArrowRight, FileText, ChevronRight, Play
 } from "lucide-react";
 
-export default function AdminTutorialModal({ isOpen, onClose }) {
+export default function AdminTutorialModal({ isOpen, onClose, onStartInteractiveTour }) {
   const [activeTourTab, setActiveTourTab] = useState("wizard");
 
   if (!isOpen) return null;
@@ -191,14 +191,29 @@ export default function AdminTutorialModal({ isOpen, onClose }) {
               <p className="tutorial-header-subtitle">Everything you need to know to run the ECCF Bible Reading Tracker</p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="tutorial-close-btn"
-            title="Close Guide"
-            aria-label="Close Guide"
-          >
-            <X size={18} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            {onStartInteractiveTour && (
+              <button 
+                onClick={() => {
+                  onClose();
+                  onStartInteractiveTour();
+                }} 
+                className="guide-tour-link-btn"
+                title="Start step-by-step interactive walkthrough on the dashboard"
+              >
+                <Play size={12} fill="currentColor" />
+                <span>Interactive Tour</span>
+              </button>
+            )}
+            <button 
+              onClick={onClose}
+              className="tutorial-close-btn"
+              title="Close Guide"
+              aria-label="Close Guide"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body: Sidebar Tabs (Desktop) / Horizontal Scrollable Tabs (Mobile) + Content Area */}
@@ -283,14 +298,41 @@ export default function AdminTutorialModal({ isOpen, onClose }) {
         {/* Modal Footer */}
         <div className="tutorial-footer">
           <span className="tutorial-footer-tip">
-            Tip: You can re-open this guide anytime by clicking the Guide button in the header.
+            Tip: You can re-open this handbook or launch the interactive tour anytime from the header.
           </span>
-          <button
-            onClick={onClose}
-            className="tutorial-footer-btn"
-          >
-            Got it, let&apos;s build!
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+            {onStartInteractiveTour && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onStartInteractiveTour();
+                }}
+                className="btn-secondary"
+                style={{ 
+                  display: "inline-flex", 
+                  alignItems: "center", 
+                  gap: "0.4rem", 
+                  fontSize: "0.85rem", 
+                  padding: "0.5rem 1rem", 
+                  color: "#38BDF8", 
+                  borderColor: "rgba(56, 189, 248, 0.4)", 
+                  background: "rgba(56, 189, 248, 0.1)",
+                  cursor: "pointer",
+                  borderRadius: "0.5rem",
+                  fontWeight: "600"
+                }}
+              >
+                <Play size={13} fill="currentColor" />
+                <span>Start Interactive Tour</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="tutorial-footer-btn"
+            >
+              Got it, let&apos;s build!
+            </button>
+          </div>
         </div>
       </div>
     </div>

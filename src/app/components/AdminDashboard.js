@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2, Power, Lock, Unlock, MessageSquare, FileSpreadsheet, Clock, History } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2, Power, Lock, Unlock, MessageSquare, FileSpreadsheet, Clock, History, Play } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import NewRoundWizard from "./NewRoundWizard";
 import AdminTutorialModal from "./AdminTutorialModal";
+import AdminTourSpotlight from "./AdminTourSpotlight";
 import LeaderWhatsAppModal from "./LeaderWhatsAppModal";
 import SyncNamesModal from "./SyncNamesModal";
 import AddMemberModal from "./AddMemberModal";
@@ -78,6 +79,7 @@ export default function AdminDashboard({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("leaders");
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showSpotlightTour, setShowSpotlightTour] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [showSyncNamesModal, setShowSyncNamesModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
@@ -757,14 +759,22 @@ export default function AdminDashboard({ onLogout }) {
           <img src="/eccfbrclogo_square.png" alt="ECCF Logo" />
           <span>Admin Command Center</span>
         </div>
-        <div className="tracker-header-actions admin-header-actions">
+        <div className="tracker-header-actions admin-header-actions" data-tour="admin-header-actions">
+          <button
+            onClick={() => setShowSpotlightTour(true)}
+            title="Start step-by-step interactive walkthrough"
+            className="tracker-btn-quiz"
+            style={{ background: 'rgba(56, 189, 248, 0.2)', borderColor: 'rgba(56, 189, 248, 0.45)', color: '#38BDF8', fontWeight: '700' }}
+          >
+            <Play size={14} fill="currentColor" /> <span>Interactive Tour</span>
+          </button>
           <button
             onClick={() => setShowTutorial(true)}
-            title="Open Admin Guide & System Tour"
+            title="Open Super Admin Handbook & Guide"
             className="tracker-btn-quiz"
-            style={{ background: 'rgba(56, 189, 248, 0.15)', borderColor: 'rgba(56, 189, 248, 0.3)', color: '#38BDF8' }}
+            style={{ background: 'rgba(255, 255, 255, 0.06)', borderColor: 'rgba(255, 255, 255, 0.15)', color: '#E2E8F0' }}
           >
-            <HelpCircle size={16} /> <span>Guide & Tour</span>
+            <HelpCircle size={16} /> <span>Handbook</span>
           </button>
           <a
             href="/admin/quiz"
@@ -795,7 +805,7 @@ export default function AdminDashboard({ onLogout }) {
         </div>
       </div>
 
-      <div className="tracker-tabs-bar">
+      <div className="tracker-tabs-bar" data-tour="admin-tabs-bar">
         <button 
           className={`tracker-tab-pill ${activeTab === 'wizard' ? 'active' : ''}`} 
           onClick={() => setActiveTab('wizard')}
@@ -820,7 +830,7 @@ export default function AdminDashboard({ onLogout }) {
       </div>
 
       {/* Global Edition & Quick Actions Switcher Bar */}
-      <div className="tracker-edition-bar">
+      <div className="tracker-edition-bar" data-tour="admin-edition-bar">
         <div className="tracker-edition-left">
           <span className="tracker-edition-label">
             Active Edition:
@@ -897,21 +907,23 @@ export default function AdminDashboard({ onLogout }) {
       )}
 
       {activeTab === 'wizard' && (
-        <NewRoundWizard 
-          onComplete={() => {
-            loadData(true);
-            setActiveTab('leaders');
-          }}
-          currentEditionInfo={{
-            name: data?.settings?.Challenge_Name,
-            edition: data?.settings?.Challenge_Edition,
-            totalDays: data?.settings?.Total_Days
-          }}
-        />
+        <div data-tour="admin-wizard-container">
+          <NewRoundWizard 
+            onComplete={() => {
+              loadData(true);
+              setActiveTab('leaders');
+            }}
+            currentEditionInfo={{
+              name: data?.settings?.Challenge_Name,
+              edition: data?.settings?.Challenge_Edition,
+              totalDays: data?.settings?.Total_Days
+            }}
+          />
+        </div>
       )}
 
       {activeTab === 'leaders' && (
-        <div className="card">
+        <div className="card" data-tour="admin-leaders-controls">
 
           <div className="admin-section-header">
             <div>
@@ -1148,7 +1160,7 @@ export default function AdminDashboard({ onLogout }) {
       )}
 
       {activeTab === 'roster' && (
-        <div className="card">
+        <div className="card" data-tour="admin-roster-controls">
           <div className="admin-section-header">
             <div>
               <h3 className="admin-section-title">Manage Team Leaders & Roster</h3>
@@ -1419,7 +1431,7 @@ export default function AdminDashboard({ onLogout }) {
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '2rem' }} data-tour="admin-analytics-kpis">
               <div style={{ padding: '1rem', background: 'var(--surface)', border: '1px solid var(--border-light)', borderRadius: '0.5rem', textAlign: 'center' }}><p style={{fontSize:'0.9rem', color:'var(--text-secondary)', margin:0}}>Total Assigned</p><h2 style={{margin:'5px 0 0 0', fontSize:'2rem'}}>{totalMembers}</h2></div>
               <div style={{ padding: '1rem', background: 'var(--surface)', border: '1px solid var(--border-light)', borderRadius: '0.5rem', textAlign: 'center' }}><p style={{fontSize:'0.9rem', color:'var(--text-secondary)', margin:0}}>Active Readers</p><h2 style={{margin:'5px 0 0 0', fontSize:'2rem'}}>{activeMembers}</h2></div>
               <div style={{ padding: '1rem', background: 'var(--surface)', border: '1px solid var(--border-light)', borderRadius: '0.5rem', textAlign: 'center' }}><p style={{fontSize:'0.9rem', color:'var(--text-secondary)', margin:0}}>Total Evicted</p><h2 style={{margin:'5px 0 0 0', fontSize:'2rem'}}>{evictedMembers}</h2></div>
@@ -1432,7 +1444,7 @@ export default function AdminDashboard({ onLogout }) {
             </div>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '2rem' }}>{todayReads} out of {activeMembers} active members have read today ({(completionRate*100).toFixed(1)}%)</p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '2rem', marginBottom: '3rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '2rem', marginBottom: '3rem' }} data-tour="admin-analytics-charts">
               
               <div style={{ maxWidth: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -1643,7 +1655,7 @@ export default function AdminDashboard({ onLogout }) {
       })()}
 
       {activeTab === 'settings' && (
-        <div className="card">
+        <div className="card" data-tour="admin-settings-controls">
           <div className="admin-section-header" style={{ marginBottom: '1.25rem' }}>
             <div>
               <h3 className="admin-section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -2152,7 +2164,7 @@ export default function AdminDashboard({ onLogout }) {
         const paginatedLogs = filteredLogs.slice((currentPage - 1) * LOGS_PER_PAGE, currentPage * LOGS_PER_PAGE);
 
         return (
-          <div className="card">
+          <div className="card" data-tour="admin-logs-controls">
             {/* Header Area */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
@@ -2933,6 +2945,19 @@ export default function AdminDashboard({ onLogout }) {
       <AdminTutorialModal 
         isOpen={showTutorial} 
         onClose={() => setShowTutorial(false)} 
+        onStartInteractiveTour={() => setShowSpotlightTour(true)}
+      />
+
+      <AdminTourSpotlight
+        isOpen={showSpotlightTour}
+        onClose={() => setShowSpotlightTour(false)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenFullGuide={() => setShowTutorial(true)}
+        onEnsureTabReady={(tab) => {
+          if (tab === 'logs') fetchLogs();
+        }}
+        settings={data?.settings}
       />
 
       <LeaderWhatsAppModal 
