@@ -833,7 +833,8 @@ export default function AdminDashboard({ onLogout }) {
       <div className="tracker-edition-bar" data-tour="admin-edition-bar">
         <div className="tracker-edition-left">
           <span className="tracker-edition-label">
-            Active Edition:
+            <BookOpen size={13} style={{ color: 'var(--accent)' }} />
+            <span>Active Edition:</span>
           </span>
           <select
             value={selectedEdition}

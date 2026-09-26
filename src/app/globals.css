@@ -944,10 +944,10 @@ select option {
   .tracker-edition-bar {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 0.75rem !important;
-    padding: 0.85rem 0.95rem !important;
-    margin-bottom: 1.25rem !important;
-    border-radius: 0.75rem !important;
+    gap: 0.65rem !important;
+    padding: 0.75rem 0.85rem !important;
+    margin-bottom: 1rem !important;
+    border-radius: 0.65rem !important;
   }
 
   .tracker-edition-left {
@@ -955,16 +955,16 @@ select option {
     flex: 0 0 auto !important;
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 0.35rem !important;
+    gap: 0.3rem !important;
     min-height: 0 !important;
   }
 
   .tracker-edition-label {
-    font-size: 0.72rem !important;
+    font-size: 0.7rem !important;
     font-weight: 700 !important;
     color: var(--text-secondary) !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.08em !important;
+    letter-spacing: 0.06em !important;
   }
 
   .tracker-edition-select {
@@ -972,12 +972,12 @@ select option {
     max-width: 100% !important;
     min-width: 0 !important;
     flex: 0 0 auto !important;
-    height: 2.6rem !important;
-    min-height: 2.6rem !important;
-    max-height: 2.6rem !important;
+    height: 2.35rem !important;
+    min-height: 2.35rem !important;
+    max-height: 2.35rem !important;
     font-size: 0.82rem !important;
     line-height: normal !important;
-    padding: 0.45rem 2.2rem 0.45rem 0.75rem !important;
+    padding: 0.4rem 2rem 0.4rem 0.75rem !important;
     box-sizing: border-box !important;
     display: block !important;
     background-size: 0.95rem !important;
@@ -987,25 +987,26 @@ select option {
   .tracker-edition-actions {
     width: 100% !important;
     display: flex !important;
-    flex-direction: column !important;
+    flex-direction: row !important;
     gap: 0.45rem !important;
   }
 
   .tracker-edition-actions > * {
+    flex: 1 1 0 !important;
     width: 100% !important;
-    height: 2.45rem !important;
-    min-height: 2.45rem !important;
-    max-height: 2.45rem !important;
+    height: 2.35rem !important;
+    min-height: 2.35rem !important;
+    max-height: 2.35rem !important;
     justify-content: center !important;
     text-align: center !important;
-    font-size: 0.82rem !important;
-    padding: 0 0.75rem !important;
+    font-size: 0.8rem !important;
+    padding: 0 0.65rem !important;
     border-radius: 0.5rem !important;
     box-sizing: border-box !important;
   }
 
   .tracker-edition-actions > .tracker-btn-archive-return {
-    flex: 0 0 auto !important;
+    flex: 1 1 0 !important;
   }
 
   /* Admin Sections & Action Buttons */
@@ -1679,19 +1680,19 @@ select option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
-  padding: 0.75rem 1.15rem;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 0.65rem 1rem;
   background: var(--surface);
   border-radius: 0.75rem;
   border: 1px solid var(--border-light);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .tracker-edition-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -1703,16 +1704,20 @@ select option {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 .tracker-edition-select {
   background-color: var(--surface-secondary);
   color: var(--text-primary);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 0.55rem 2.2rem 0.55rem 0.85rem;
+  padding: 0.5rem 2.2rem 0.5rem 0.85rem;
   border-radius: 0.5rem;
-  font-size: 0.88rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   outline: none;
   transition: all 0.2s ease;
@@ -1721,14 +1726,17 @@ select option {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
-  background-size: 1rem;
-  flex: 1;
-  min-width: 240px;
-  max-width: 480px;
-  height: 2.5rem;
-  min-height: 2.5rem;
+  background-size: 0.95rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 520px;
+  height: 2.35rem;
+  min-height: 2.35rem;
   box-sizing: border-box;
-  line-height: 1.4;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .tracker-edition-select:focus {
@@ -1740,9 +1748,9 @@ select option {
 .tracker-edition-actions {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
   flex-shrink: 0;
-  flex-wrap: wrap;
+  white-space: nowrap;
 }
 
 .tracker-btn-reporting {
@@ -1750,14 +1758,15 @@ select option {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0 0.75rem;
-  height: 2.25rem;
+  padding: 0 0.85rem;
+  height: 2.35rem;
   border-radius: 0.5rem;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.18s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tracker-btn-reporting.active {
