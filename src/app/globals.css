@@ -831,20 +831,59 @@ select option {
     gap: 0.45rem !important;
   }
 
-  /* Admin Header Actions (Guide & Tour, Quiz Hub, Refresh, Logout) in 1 clean grid row */
-  .admin-header-actions {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr 2.35rem 2.35rem !important;
+  /* Header Brand Bar on Mobile: Title on left, Utilities on right */
+  .tracker-header-brand-bar {
+    display: flex !important;
+    justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
+    gap: 0.5rem !important;
   }
 
-  /* Leader Header Actions (Guide, Refresh, Logout) in 1 clean grid row */
-  .leader-header-actions {
+  .tracker-header-title {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .mobile-header-utils {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .mobile-header-utils > .tracker-btn-icon {
+    width: 2.35rem !important;
+    height: 2.35rem !important;
+    min-width: 2.35rem !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .desktop-header-utils {
+    display: none !important;
+  }
+
+  /* Admin Header Actions (Tour, Handbook, Quiz Hub) in 3 equal columns */
+  .admin-header-actions {
     display: grid !important;
-    grid-template-columns: 1fr 2.35rem 2.35rem !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     align-items: center !important;
     width: 100% !important;
+    gap: 0.45rem !important;
+  }
+
+  /* Leader Header Actions (Tour, Guide) in 2 equal columns */
+  .leader-header-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 0.45rem !important;
   }
 
   .tracker-header-actions > .tracker-btn-quiz,
@@ -852,7 +891,7 @@ select option {
     width: 100% !important;
     min-width: 0 !important;
     height: 2.35rem !important;
-    padding: 0 0.5rem !important;
+    padding: 0 0.45rem !important;
     font-size: 0.8rem !important;
     font-weight: 700 !important;
     justify-content: center !important;
@@ -872,26 +911,6 @@ select option {
     white-space: nowrap !important;
   }
 
-  .tracker-header-actions > .tracker-btn-icon {
-    flex: 0 0 2.35rem !important;
-    width: 2.35rem !important;
-    height: 2.35rem !important;
-    min-width: 2.35rem !important;
-    padding: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-sizing: border-box !important;
-    border-radius: 0.5rem !important;
-  }
-
-  .tracker-header-actions > .tracker-btn-logout {
-    flex: 0 0 2.35rem !important;
-    width: 2.35rem !important;
-    height: 2.35rem !important;
-    padding: 0 !important;
-  }
-
   .tracker-header-actions > button[title="Install App"] {
     grid-column: 1 / -1 !important;
     width: 100% !important;
@@ -902,6 +921,22 @@ select option {
     display: none !important;
   }
 
+  .btn-text-full {
+    display: none !important;
+  }
+
+  .btn-text-short {
+    display: inline !important;
+  }
+
+  .tab-text-full {
+    display: none !important;
+  }
+
+  .tab-text-short {
+    display: inline !important;
+  }
+
   /* Tabs Bar */
   .tracker-tabs-bar {
     display: flex !important;
@@ -910,6 +945,7 @@ select option {
     padding: 0.3rem !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
+    scroll-behavior: smooth !important;
     scrollbar-width: none !important;
     margin-bottom: 1rem !important;
     border-radius: 0.65rem !important;
@@ -1099,6 +1135,36 @@ select option {
   flex-shrink: 0;
 }
 
+.tracker-header-brand-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mobile-header-utils {
+  display: none !important;
+}
+
+.desktop-header-utils {
+  display: inline-flex !important;
+}
+
+.btn-text-short {
+  display: none;
+}
+
+.btn-text-full {
+  display: inline;
+}
+
+.tab-text-short {
+  display: none;
+}
+
+.tab-text-full {
+  display: inline;
+}
+
 .tracker-header-actions {
   display: flex;
   align-items: center;
@@ -1130,6 +1196,39 @@ select option {
   border-color: #60A5FA;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.tracker-btn-tour {
+  background: rgba(56, 189, 248, 0.16) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  color: #38BDF8 !important;
+  font-weight: 700 !important;
+}
+
+.tracker-btn-tour:hover {
+  background: rgba(56, 189, 248, 0.26) !important;
+  border-color: #38BDF8 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+}
+
+.tracker-btn-handbook {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #E2E8F0 !important;
+  font-weight: 600 !important;
+}
+
+.tracker-btn-handbook:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+.tracker-btn-quiz-hub {
+  background: var(--surface-secondary);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #60A5FA !important;
 }
 
 .tracker-btn-guide {
@@ -3551,21 +3650,20 @@ select option {
 }
 
 @media (max-width: 640px) {
+  .tracker-team-heading {
+    font-size: 1.15rem !important;
+  }
   .tracker-team-title-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.25rem;
+    gap: 0.2rem;
   }
   .tracker-team-meta-row {
-    font-size: 0.78rem;
-    gap: 0.4rem;
+    font-size: 0.76rem;
+    gap: 0.35rem;
   }
   .tracker-meta-separator {
     display: none;
-  }
-  .tracker-header-actions {
-    flex-wrap: wrap;
-    gap: 0.35rem;
   }
 }
 

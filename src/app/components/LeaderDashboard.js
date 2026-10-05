@@ -480,46 +480,83 @@ export default function LeaderDashboard({ team, onLogout }) {
         </div>
       )}
       <div className="tracker-header-wrap">
-        <div className="tracker-header-title">
-          <img src="/eccfbrclogo_square.png" alt="ECCF Logo" />
-          <div className="tracker-team-header-info">
-            <div className="tracker-team-title-row">
-              <h1 className="tracker-team-heading">{formatTeamName(team)}</h1>
-              {data?.settings?.Challenge_Edition && (
-                <span className="tracker-edition-badge">
-                  {data.settings.Challenge_Edition}
-                </span>
-              )}
-            </div>
-
-            <div className="tracker-team-meta-row">
-              {data?.leadersData && (() => {
-                const leaderRow = data.leadersData.find(l => {
-                  const r = String(l.Role || '').toLowerCase();
-                  return !r.includes('asst') && !r.includes('assistant');
-                }) || data.leadersData[0];
-                const asstRow = data.leadersData.find(l => {
-                  const r = String(l.Role || '').toLowerCase();
-                  return r.includes('asst') || r.includes('assistant');
-                }) || (data.leadersData.length > 1 ? data.leadersData[1] : null);
-
-                const lName = leaderRow?.['Team Leader'] || leaderRow?.Member_Name || leaderRow?.Name || 'N/A';
-                const aName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || '';
-
-                return (
-                  <span className="tracker-leaders-text">
-                    Leader: <strong style={{ color: 'var(--text-primary)' }}>{lName}</strong>
-                    {aName && aName.toLowerCase() !== 'n/a' && (
-                      <span> &bull; Asst: <strong style={{ color: 'var(--text-primary)' }}>{aName}</strong></span>
-                    )}
+        <div className="tracker-header-brand-bar">
+          <div className="tracker-header-title">
+            <img src="/eccfbrclogo_square.png" alt="ECCF Logo" />
+            <div className="tracker-team-header-info">
+              <div className="tracker-team-title-row">
+                <h1 className="tracker-team-heading">{formatTeamName(team)}</h1>
+                {data?.settings?.Challenge_Edition && (
+                  <span className="tracker-edition-badge">
+                    {data.settings.Challenge_Edition}
                   </span>
-                );
-              })()}
+                )}
+              </div>
+
+              <div className="tracker-team-meta-row">
+                {data?.leadersData && (() => {
+                  const leaderRow = data.leadersData.find(l => {
+                    const r = String(l.Role || '').toLowerCase();
+                    return !r.includes('asst') && !r.includes('assistant');
+                  }) || data.leadersData[0];
+                  const asstRow = data.leadersData.find(l => {
+                    const r = String(l.Role || '').toLowerCase();
+                    return r.includes('asst') || r.includes('assistant');
+                  }) || (data.leadersData.length > 1 ? data.leadersData[1] : null);
+
+                  const lName = leaderRow?.['Team Leader'] || leaderRow?.Member_Name || leaderRow?.Name || 'N/A';
+                  const aName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || '';
+
+                  return (
+                    <span className="tracker-leaders-text">
+                      Leader: <strong style={{ color: 'var(--text-primary)' }}>{lName}</strong>
+                      {aName && aName.toLowerCase() !== 'n/a' && (
+                        <span> &bull; Asst: <strong style={{ color: 'var(--text-primary)' }}>{aName}</strong></span>
+                      )}
+                    </span>
+                  );
+                })()}
+              </div>
             </div>
+          </div>
+
+          {/* Mobile utility cluster (Refresh & Logout opposite the title on mobile) */}
+          <div className="tracker-header-util-cluster mobile-header-utils">
+            <button 
+              onClick={() => loadData(true)} 
+              disabled={loading} 
+              title="Refresh Data"
+              className="tracker-btn-icon"
+              style={{ opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
+            >
+              <RefreshCw size={16} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+            </button>
+            <button 
+              onClick={onLogout} 
+              className="tracker-btn-icon tracker-btn-logout"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
 
         <div className="tracker-header-actions leader-header-actions">
+          {/* Interactive Tour button */}
+          <button
+            onClick={() => {
+              setSelectedDay(currentDay);
+              setShowSpotlightTour(true);
+            }}
+            title="Start step-by-step interactive walkthrough"
+            className="tracker-btn-quiz tracker-btn-tour"
+          >
+            <Compass size={14} />
+            <span className="btn-text-full">Interactive Tour</span>
+            <span className="btn-text-short">Tour</span>
+          </button>
+
           {/* Guide button */}
           <button 
             data-tour="guide-btn"
@@ -531,24 +568,25 @@ export default function LeaderDashboard({ team, onLogout }) {
             className="tracker-btn-guide"
           >
             <HelpCircle size={15} />
-            <span>Guide</span>
+            <span className="btn-text-full">Leader Guide</span>
+            <span className="btn-text-short">Guide</span>
           </button>
 
           <InstallPwaButton />
-          <div className="tracker-header-divider" />
+          <div className="tracker-header-divider desktop-header-utils" />
 
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
             title="Refresh Data"
-            className="tracker-btn-icon"
+            className="tracker-btn-icon desktop-header-utils"
             style={{ opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
           >
             <RefreshCw size={17} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </button>
           <button 
             onClick={onLogout} 
-            className="tracker-btn-icon tracker-btn-logout"
+            className="tracker-btn-icon tracker-btn-logout desktop-header-utils"
             title="Logout"
             aria-label="Logout"
           >
@@ -558,20 +596,32 @@ export default function LeaderDashboard({ team, onLogout }) {
       </div>
 
       <div className="tracker-tabs-bar">
-        <button className={`tracker-tab-pill ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>
+        <button 
+          className={`tracker-tab-pill ${activeTab === 'report' ? 'active' : ''}`} 
+          onClick={(e) => {
+            setActiveTab('report');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }}
+        >
           <FileText size={15} /> <span>Report</span>
         </button>
         <button 
           data-tour="roster-tab"
           className={`tracker-tab-pill ${activeTab === 'roster' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('roster')}
+          onClick={(e) => {
+            setActiveTab('roster');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }}
         >
           <Users size={15} /> <span>Roster</span>
         </button>
         <button 
           data-tour="quiz-tab"
           className={`tracker-tab-pill ${activeTab === 'quiz' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('quiz')}
+          onClick={(e) => {
+            setActiveTab('quiz');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }}
         >
           <Trophy size={15} /> <span>Quiz</span>
         </button>

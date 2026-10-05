@@ -755,48 +755,75 @@ export default function AdminDashboard({ onLogout }) {
         </div>
       )}
       <div className="tracker-header-wrap">
-        <div className="tracker-header-title">
-          <img src="/eccfbrclogo_square.png" alt="ECCF Logo" />
-          <span>Admin Command Center</span>
+        <div className="tracker-header-brand-bar">
+          <div className="tracker-header-title">
+            <img src="/eccfbrclogo_square.png" alt="ECCF Logo" />
+            <span>Admin Command Center</span>
+          </div>
+
+          {/* Mobile utility cluster (Refresh & Logout opposite the title on mobile) */}
+          <div className="tracker-header-util-cluster mobile-header-utils">
+            <button 
+              onClick={() => loadData(true)} 
+              disabled={loading} 
+              title="Refresh Data"
+              className="tracker-btn-icon"
+              style={{ opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
+            >
+              <RefreshCw size={16} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+            </button>
+            <button 
+              onClick={onLogout} 
+              className="tracker-btn-icon tracker-btn-logout"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
+
         <div className="tracker-header-actions admin-header-actions" data-tour="admin-header-actions">
           <button
             onClick={() => setShowSpotlightTour(true)}
             title="Start step-by-step interactive walkthrough"
-            className="tracker-btn-quiz"
-            style={{ background: 'rgba(56, 189, 248, 0.2)', borderColor: 'rgba(56, 189, 248, 0.45)', color: '#38BDF8', fontWeight: '700' }}
+            className="tracker-btn-quiz tracker-btn-tour"
           >
-            <Play size={14} fill="currentColor" /> <span>Interactive Tour</span>
+            <Play size={13} fill="currentColor" /> 
+            <span className="btn-text-full">Interactive Tour</span>
+            <span className="btn-text-short">Tour</span>
           </button>
           <button
             onClick={() => setShowTutorial(true)}
             title="Open Super Admin Handbook & Guide"
-            className="tracker-btn-quiz"
-            style={{ background: 'rgba(255, 255, 255, 0.06)', borderColor: 'rgba(255, 255, 255, 0.15)', color: '#E2E8F0' }}
+            className="tracker-btn-quiz tracker-btn-handbook"
           >
-            <HelpCircle size={16} /> <span>Handbook</span>
+            <HelpCircle size={15} /> 
+            <span className="btn-text-full">Admin Handbook</span>
+            <span className="btn-text-short">Handbook</span>
           </button>
           <a
             href="/admin/quiz"
             title="Open Quiz Control Center"
-            className="tracker-btn-quiz"
+            className="tracker-btn-quiz tracker-btn-quiz-hub"
           >
-            <Trophy size={16} /> <span>Quiz Hub</span>
+            <Trophy size={15} /> <span>Quiz Hub</span>
           </a>
           <InstallPwaButton />
-          <div className="tracker-header-divider" />
+
+          <div className="tracker-header-divider desktop-header-utils" />
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
             title="Refresh Data"
-            className="tracker-btn-icon"
+            className="tracker-btn-icon desktop-header-utils"
             style={{ opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
           >
             <RefreshCw size={17} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </button>
           <button 
             onClick={onLogout} 
-            className="tracker-btn-icon tracker-btn-logout"
+            className="tracker-btn-icon tracker-btn-logout desktop-header-utils"
             title="Logout"
             aria-label="Logout"
           >
@@ -808,23 +835,59 @@ export default function AdminDashboard({ onLogout }) {
       <div className="tracker-tabs-bar" data-tour="admin-tabs-bar">
         <button 
           className={`tracker-tab-pill ${activeTab === 'wizard' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('wizard')}
+          onClick={(e) => {
+            setActiveTab('wizard');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }}
         >
-          <PlusCircle size={15} /> <span>Start New Edition</span>
+          <PlusCircle size={15} /> 
+          <span className="tab-text-full">Start New Edition</span>
+          <span className="tab-text-short">New Edition</span>
         </button>
-        <button className={`tracker-tab-pill ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
+        <button 
+          className={`tracker-tab-pill ${activeTab === 'analytics' ? 'active' : ''}`} 
+          onClick={(e) => {
+            setActiveTab('analytics');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }}
+        >
           <BarChart3 size={15} /> <span>Overview</span>
         </button>
-        <button className={`tracker-tab-pill ${activeTab === 'leaders' ? 'active' : ''}`} onClick={() => setActiveTab('leaders')}>
+        <button 
+          className={`tracker-tab-pill ${activeTab === 'leaders' ? 'active' : ''}`} 
+          onClick={(e) => {
+            setActiveTab('leaders');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }}
+        >
           <FileText size={15} /> <span>Reports</span>
         </button>
-        <button className={`tracker-tab-pill ${activeTab === 'roster' ? 'active' : ''}`} onClick={() => setActiveTab('roster')}>
+        <button 
+          className={`tracker-tab-pill ${activeTab === 'roster' ? 'active' : ''}`} 
+          onClick={(e) => {
+            setActiveTab('roster');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }}
+        >
           <Users size={15} /> <span>Roster</span>
         </button>
-        <button className={`tracker-tab-pill ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+        <button 
+          className={`tracker-tab-pill ${activeTab === 'settings' ? 'active' : ''}`} 
+          onClick={(e) => {
+            setActiveTab('settings');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }}
+        >
           <Settings size={15} /> <span>Settings</span>
         </button>
-        <button className={`tracker-tab-pill ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => { setActiveTab('logs'); fetchLogs(); }}>
+        <button 
+          className={`tracker-tab-pill ${activeTab === 'logs' ? 'active' : ''}`} 
+          onClick={(e) => {
+            setActiveTab('logs');
+            fetchLogs();
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          }}
+        >
           <Activity size={15} /> <span>Logs</span>
         </button>
       </div>
