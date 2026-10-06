@@ -139,7 +139,21 @@ export default function LeaderDashboard({ team, onLogout }) {
           });
         }
         setLeaderUpdates(initialLeaderUpdates);
-        
+
+        // Sync roster status display from fresh server data.
+        // Clears any stale local overrides (e.g. a member manually set to
+        // Active here who was later evicted server-side after a report save).
+        if (d.trackerData) {
+          const freshRosterStatuses = {};
+          d.trackerData.forEach(member => {
+            const memberName = String(member.Member_Name || '').trim();
+            if (memberName) {
+              freshRosterStatuses[memberName] = String(member.Status || 'Active').trim();
+            }
+          });
+          setRosterUpdates(freshRosterStatuses);
+        }
+
         if (isManualRefresh === true) showToast("Dashboard is up-to-date!");
         return d;
       })
@@ -1002,7 +1016,9 @@ export default function LeaderDashboard({ team, onLogout }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {allMembers.map(m => {
                   const trimmedName = String(m.Member_Name || '').trim();
-                  const currentStatus = rosterUpdates[trimmedName] || String(m.Status || '').trim() || 'Active';
+                  // rosterUpdates is always synced from server on every loadData(),
+                  // so it is the authoritative status. m.Status is a safety fallback only.
+                  const currentStatus = rosterUpdates[trimmedName] ?? String(m.Status || 'Active').trim();
                   
                   let statusColor = "var(--text-primary)";
                   let statusBg = "var(--surface)";
