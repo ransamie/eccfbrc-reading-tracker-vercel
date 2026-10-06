@@ -1325,11 +1325,27 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       return new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime();
     });
 
-  // Sessions scoped to currently selected reading track
-  const trackSessions = sessions.filter(s => {
+  // Sessions scoped to currently selected reading track, deduplicated by candidate phone + round
+  const rawTrackSessions = sessions.filter(s => {
     const sEd = s.edition || "New Testament (3 chapters daily)";
     return sEd.trim().toLowerCase() === currentTrack.trim().toLowerCase();
   });
+
+  const trackSessions = [];
+  const seenSessionKeys = new Set();
+  // Sort by startTimestamp descending so newest session is retained if duplicate exists
+  const sortedTrackSessions = [...rawTrackSessions].sort((a, b) => (b.startTimestamp || 0) - (a.startTimestamp || 0));
+  for (const s of sortedTrackSessions) {
+    const phone = String(s.whatsApp || s.whatsapp || "").replace(/\D/g, "").slice(-10);
+    const round = String(s.round || "").trim().toLowerCase();
+    const key = `${phone}_${round}`;
+    if (phone && !seenSessionKeys.has(key)) {
+      seenSessionKeys.add(key);
+      trackSessions.push(s);
+    } else if (!phone) {
+      trackSessions.push(s);
+    }
+  }
 
   const uniqueSessionTeams = Array.from(new Set([
     ...uniqueTeams,
