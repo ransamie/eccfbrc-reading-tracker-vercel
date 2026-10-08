@@ -747,9 +747,9 @@ function QuizPreviewContent() {
           </header>
 
           {/* Questions Stream */}
-          <main style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '220px', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '6rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <main style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '235px', paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingBottom: '6rem', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
 
-            {/* Question Cards */}
+            {/* Question Cards (Unboxed on page background) */}
             {questions.map((q, idx) => {
               const opts = q.options || [q.option1, q.option2, q.option3, q.option4].filter(Boolean);
               return (
@@ -757,35 +757,40 @@ function QuizPreviewContent() {
                   key={q.id}
                   id={`q_${q.id}`}
                   style={{
-                    backgroundColor: 'var(--surface)',
-                    borderRadius: '1.25rem',
-                    border: '1px solid var(--border)',
-                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)',
-                    padding: '1.75rem',
-                    scrollMarginTop: '220px'
+                    scrollMarginTop: '235px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
-                    <span style={{
-                      fontSize: '0.78rem',
+                  {/* Question Header (Directly on page background) */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: answers[q.id] ? 'rgba(16, 185, 129, 0.15)' : 'var(--accent-light)',
+                      color: answers[q.id] ? '#34D399' : 'var(--accent-hover)',
+                      border: `1px solid ${answers[q.id] ? 'rgba(16, 185, 129, 0.3)' : 'transparent'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       fontWeight: '800',
-                      textTransform: 'uppercase',
-                      padding: '0.2rem 0.6rem',
-                      borderRadius: '0.35rem',
-                      backgroundColor: answers[q.id] ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.06)',
-                      color: answers[q.id] ? '#34D399' : 'var(--text-secondary)',
-                      border: `1px solid ${answers[q.id] ? 'rgba(16, 185, 129, 0.3)' : 'transparent'}`
+                      fontSize: '0.95rem',
+                      flexShrink: 0,
+                      marginTop: '2px'
                     }}>
-                      Question {idx + 1} {answers[q.id] ? '• Answered' : ''}
-                    </span>
+                      {idx + 1}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '1.12rem', fontWeight: '700', lineHeight: '1.5', margin: 0, color: 'var(--text-primary)' }}>
+                        {q.question}
+                      </h3>
+                    </div>
                   </div>
 
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: '700', lineHeight: '1.45', margin: '0 0 1.5rem 0' }}>
-                    {q.question}
-                  </h3>
-
                   {/* Options */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                     {opts.map((opt, oIdx) => {
                       const isSelected = answers[q.id] === opt;
                       const letter = ["A", "B", "C", "D"][oIdx] || String(oIdx + 1);
@@ -801,7 +806,8 @@ function QuizPreviewContent() {
                             padding: '0.95rem 1.15rem',
                             borderRadius: '0.75rem',
                             backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.18)' : 'var(--surface-secondary)',
-                            border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
+                            border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border-light)'}`,
+                            boxShadow: isSelected ? '0 0 0 1px var(--accent), 0 4px 14px rgba(37, 99, 235, 0.2)' : 'none',
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
                             userSelect: 'none'

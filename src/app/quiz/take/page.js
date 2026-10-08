@@ -620,7 +620,7 @@ export default function QuizTakePage() {
       </header>
 
       {/* Main Content Area */}
-      <main style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '185px', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '6rem' }}>
+      <main style={{ maxWidth: '800px', margin: '0 auto', paddingTop: '225px', paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingBottom: '6rem' }}>
         
         {questions.length === 0 ? (
           <div style={{
@@ -653,26 +653,20 @@ export default function QuizTakePage() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', marginTop: '0.75rem' }}>
             {questions.map((q, index) => (
               <div 
                 key={q.id}
                 id={`q_${q.id}`}
                 style={{
-                  backgroundColor: 'var(--surface)',
-                  borderRadius: '1rem',
-                  border: '1px solid var(--border)',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
-                  overflow: 'hidden',
-                  transition: 'border-color 0.2s ease',
-                  scrollMarginTop: '185px'
+                  scrollMarginTop: '225px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
                 }}
               >
-                {/* Question Header */}
+                {/* Question Header (Directly on page background) */}
                 <div style={{
-                  padding: '1.25rem 1.5rem',
-                  borderBottom: '1px solid var(--border-light)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
                   display: 'flex',
                   gap: '0.85rem',
                   alignItems: 'flex-start'
@@ -688,13 +682,14 @@ export default function QuizTakePage() {
                     justifyContent: 'center',
                     fontWeight: '800',
                     fontSize: '0.95rem',
-                    flexShrink: 0
+                    flexShrink: 0,
+                    marginTop: '2px'
                   }}>
                     {index + 1}
                   </div>
                   <h3 style={{
-                    fontSize: '1.08rem',
-                    fontWeight: '600',
+                    fontSize: '1.12rem',
+                    fontWeight: '700',
                     lineHeight: '1.5',
                     margin: 0,
                     color: 'var(--text-primary)'
@@ -704,7 +699,7 @@ export default function QuizTakePage() {
                 </div>
 
                 {/* Options List */}
-                <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                   {q.options.map((opt, optIndex) => {
                     const isSelected = answers[q.id] === opt;
                     const optionLetter = String.fromCharCode(65 + optIndex); // A, B, C, D
@@ -717,12 +712,12 @@ export default function QuizTakePage() {
                           display: 'flex',
                           alignItems: 'center',
                           gap: '1rem',
-                          padding: '0.9rem 1.1rem',
+                          padding: '0.95rem 1.15rem',
                           borderRadius: '0.75rem',
                           cursor: timeExpired ? 'not-allowed' : 'pointer',
                           backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.16)' : 'var(--surface-secondary)',
-                          border: `1.5px solid ${isSelected ? 'var(--accent)' : 'transparent'}`,
-                          boxShadow: isSelected ? '0 0 0 1px var(--accent)' : 'none',
+                          border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border-light)'}`,
+                          boxShadow: isSelected ? '0 0 0 1px var(--accent), 0 4px 14px rgba(37, 99, 235, 0.2)' : 'none',
                           transition: 'all 0.15s ease',
                           userSelect: 'none'
                         }}
