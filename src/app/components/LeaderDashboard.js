@@ -649,11 +649,44 @@ export default function LeaderDashboard({ team, onLogout }) {
     });
   }, [quizData.results, quizRoundFilter, quizSearch]);
 
+  const activeQuizRoster = useMemo(() => {
+    const list = [...activeMembers];
+    const seenPhones = new Set(list.map(m => cleanPhone(m.WhatsApp_Number || m.Whatsapp_Number || m.Phone || m.WhatsApp)).filter(Boolean));
+    const seenNames = new Set(list.map(m => cleanName(m.Member_Name)).filter(Boolean));
+
+    if (data?.leadersData && Array.isArray(data.leadersData)) {
+      data.leadersData.forEach((l, idx) => {
+        const lStatus = String(l.Status || 'Active').trim().toLowerCase();
+        if (lStatus !== 'active') return;
+        const name = String(l['Team Leader'] || l.Name || l.Member_Name || '').trim();
+        const phone = String(l.Leader_Phone || l.Phone || '').trim();
+        const rawRole = String(l.Role || l.Position || '').toLowerCase();
+        const role = rawRole.includes('asst') || rawRole.includes('assistant') || idx > 0 ? 'Assistant Leader' : 'Team Leader';
+
+        const pClean = cleanPhone(phone);
+        const nClean = cleanName(name);
+        if ((!pClean || !seenPhones.has(pClean)) && (!nClean || !seenNames.has(nClean))) {
+          list.push({
+            Member_Name: name,
+            WhatsApp_Number: phone,
+            Phone: phone,
+            Status: 'Active',
+            isLeader: true,
+            role: role
+          });
+          if (pClean) seenPhones.add(pClean);
+          if (nClean) seenNames.add(nClean);
+        }
+      });
+    }
+    return list;
+  }, [activeMembers, data?.leadersData, cleanPhone, cleanName]);
+
   const pendingQuizMembers = useMemo(() => {
     const roundResults = (quizData.results || []).filter(r => 
       effectiveRound === 'All' || String(r.round || '').trim().toLowerCase() === String(effectiveRound).trim().toLowerCase()
     );
-    return activeMembers.filter(m => {
+    return activeQuizRoster.filter(m => {
       const p = m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number;
       const n = m.Member_Name;
       const hasSubmitted = roundResults.some(r => isPhoneMatch(r.whatsApp, p) || isNameMatch(r.fullName, n));
@@ -666,10 +699,10 @@ export default function LeaderDashboard({ team, onLogout }) {
       }
       return true;
     });
-  }, [activeMembers, quizData.results, effectiveRound, quizSearch]);
+  }, [activeQuizRoster, quizData.results, effectiveRound, quizSearch]);
 
   const filteredAllMembers = useMemo(() => {
-    return activeMembers.filter(m => {
+    return activeQuizRoster.filter(m => {
       if (quizSearch.trim()) {
         const q = quizSearch.toLowerCase().trim();
         const p = String(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number || '');
@@ -679,11 +712,11 @@ export default function LeaderDashboard({ team, onLogout }) {
       }
       return true;
     });
-  }, [activeMembers, quizSearch]);
+  }, [activeQuizRoster, quizSearch]);
 
   const quizStats = useMemo(() => {
     const count = filteredQuizResults.length;
-    const totalPossible = activeMembers.length;
+    const totalPossible = activeQuizRoster.length;
     const avgScore = count > 0 
       ? (filteredQuizResults.reduce((acc, r) => acc + (r.score || 0), 0) / count).toFixed(1) 
       : 0;
@@ -707,14 +740,14 @@ export default function LeaderDashboard({ team, onLogout }) {
       topScore,
       completionPct
     };
-  }, [filteredQuizResults, activeMembers]);
+  }, [filteredQuizResults, activeQuizRoster]);
 
   const handleCopyQuizBroadcast = () => {
     const roundSubmissions = (quizData.results || []).filter(r => 
       String(r.round || '').trim().toLowerCase() === String(effectiveRound).trim().toLowerCase()
     );
 
-    const totalAssigned = activeMembers.length;
+    const totalAssigned = activeQuizRoster.length;
     const totalSub = roundSubmissions.length;
     const avg = totalSub > 0 ? (roundSubmissions.reduce((a, b) => a + (b.score || 0), 0) / totalSub).toFixed(1) : "0";
     const maxScore = totalSub > 0 ? Math.max(...roundSubmissions.map(r => r.score || 0)) : 0;
@@ -730,7 +763,7 @@ export default function LeaderDashboard({ team, onLogout }) {
       submittedText = "- No submissions yet";
     }
 
-    const unsubmitted = activeMembers.filter(m => {
+    const unsubmitted = activeQuizRoster.filter(m => {
       const p = m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number;
       const n = m.Member_Name;
       return !roundSubmissions.some(r => isPhoneMatch(r.whatsApp, p) || isNameMatch(r.fullName, n));
@@ -1947,6 +1980,31 @@ ${pendingText}
                                 <span style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                                   {r.fullName}
                                 </span>
+                                {r.isLeader && (
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: '700',
+                                    padding: '0.12rem 0.5rem',
+                                    borderRadius: '0.35rem',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                                    color: '#60A5FA',
+                                    border: '1px solid rgba(59, 130, 246, 0.3)'
+                                  }}>
+                                    👑 {r.leaderRole || 'Team Leader'}
+                                  </span>
+                                )}
+                                {r.resolvedRosterName && (
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: '500',
+                                    padding: '0.1rem 0.45rem',
+                                    borderRadius: '0.35rem',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                                    color: 'var(--text-secondary)'
+                                  }}>
+                                    Roster: {r.resolvedRosterName}
+                                  </span>
+                                )}
                                 <span style={{
                                   fontSize: '0.72rem',
                                   fontWeight: '600',
@@ -2123,6 +2181,21 @@ ${pendingText}
                           <div>
                             <span style={{ fontWeight: '600', fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>
                               {trimmedName}
+                              {m.isLeader && (
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: '700',
+                                  padding: '0.1rem 0.45rem',
+                                  borderRadius: '0.35rem',
+                                  backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                                  color: '#60A5FA',
+                                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                                  marginLeft: '0.4rem',
+                                  display: 'inline-block'
+                                }}>
+                                  👑 {m.role || 'Leader'}
+                                </span>
+                              )}
                             </span>
                             {phone && (
                               <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
@@ -2236,6 +2309,21 @@ ${pendingText}
                           <div>
                             <span style={{ fontWeight: '600', fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>
                               {trimmedName}
+                              {m.isLeader && (
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: '700',
+                                  padding: '0.1rem 0.45rem',
+                                  borderRadius: '0.35rem',
+                                  backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                                  color: '#60A5FA',
+                                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                                  marginLeft: '0.4rem',
+                                  display: 'inline-block'
+                                }}>
+                                  👑 {m.role || 'Leader'}
+                                </span>
+                              )}
                             </span>
                             {phone && (
                               <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>

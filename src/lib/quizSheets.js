@@ -1,4 +1,4 @@
-import { getDatabase } from "./googleSheets";
+import { getDatabase } from "./googleSheets.js";
 
 // Helper to get or create a worksheet if it doesn't exist, ensuring header columns match
 async function getSheetByTitle(title, headers = []) {

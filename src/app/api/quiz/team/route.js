@@ -4,7 +4,7 @@ import {
   getAllQuizResults, 
   getAllQuizSessions 
 } from "@/lib/quizSheets";
-import { fetchGlobalData } from "@/lib/googleSheets";
+import { fetchGlobalData, fetchLeadersData } from "@/lib/googleSheets";
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -80,16 +80,20 @@ export async function GET(request) {
 
     const normTargetTeam = normalizeTeam(teamParam);
 
-    const [settings, rawResults, rawSessions, globalData] = await Promise.all([
+    const [settings, rawResults, rawSessions, globalData, leadersData] = await Promise.all([
       getQuizSettings().catch(() => ({})),
       getAllQuizResults().catch(() => []),
       getAllQuizSessions().catch(() => []),
-      fetchGlobalData().catch(() => ({ members: [], trackerData: [] }))
+      fetchGlobalData().catch(() => ({ members: [], trackerData: [] })),
+      fetchLeadersData().catch(() => [])
     ]);
 
-    // Gather team members from trackerData and directory
+    // Gather team members from trackerData, leadersData, and directory
     const teamTrackerMembers = (globalData.trackerData || []).filter(m => 
       isTeamMatch(m.Team_Name || m.Team, teamParam)
+    );
+    const teamLeaders = (leadersData || []).filter(l => 
+      isTeamMatch(l.Team_Name || l.Team, teamParam)
     );
     const teamDirectoryMembers = (globalData.members || []).filter(m => 
       isTeamMatch(m.team, teamParam)
@@ -100,15 +104,19 @@ export async function GET(request) {
       // 1. Direct team name match
       if (isTeamMatch(r.team, teamParam)) return true;
 
-      // 2. Phone match against team members
+      // 2. Phone match against team members or leaders
       const phoneMatched = teamTrackerMembers.some(m => 
         isPhoneMatch(r.whatsApp, m.WhatsApp_Number || m.Whatsapp_Number || m.Phone)
+      ) || teamLeaders.some(l => 
+        isPhoneMatch(r.whatsApp, l.Leader_Phone || l.Phone)
       ) || teamDirectoryMembers.some(m => isPhoneMatch(r.whatsApp, m.whatsapp));
       if (phoneMatched) return true;
 
-      // 3. Name match against team members
+      // 3. Name match against team members or leaders
       const nameMatched = teamTrackerMembers.some(m => 
         isNameMatch(r.fullName, m.Member_Name || m.Name)
+      ) || teamLeaders.some(l => 
+        isNameMatch(r.fullName, l['Team Leader'] || l.Name || l.Member_Name)
       ) || teamDirectoryMembers.some(m => isNameMatch(r.fullName, m.name));
       if (nameMatched) return true;
 
@@ -118,13 +126,22 @@ export async function GET(request) {
     // Enrich results with resolved names, computed time, percentage
     const enrichedResults = teamResults.map(r => {
       let fullName = r.fullName;
+      const matchedTracker = teamTrackerMembers.find(m => 
+        isPhoneMatch(r.whatsApp, m.WhatsApp_Number || m.Whatsapp_Number || m.Phone) || isNameMatch(r.fullName, m.Member_Name || m.Name)
+      );
+      const matchedLeader = teamLeaders.find(l => 
+        isPhoneMatch(r.whatsApp, l.Leader_Phone || l.Phone) || isNameMatch(r.fullName, l['Team Leader'] || l.Name || l.Member_Name)
+      );
+      const matchedDir = teamDirectoryMembers.find(m => 
+        isPhoneMatch(r.whatsApp, m.whatsapp) || isNameMatch(r.fullName, m.name)
+      );
+
+      const resolvedRosterName = matchedTracker?.Member_Name || matchedLeader?.['Team Leader'] || matchedLeader?.Name || matchedDir?.name;
+      const isLeader = !!matchedLeader;
+      const leaderRole = matchedLeader ? (matchedLeader.Role || 'Leader') : null;
+
       if (!fullName || fullName === "Candidate") {
-        const found = teamTrackerMembers.find(m => 
-          isPhoneMatch(r.whatsApp, m.WhatsApp_Number || m.Whatsapp_Number || m.Phone)
-        ) || teamDirectoryMembers.find(m => isPhoneMatch(r.whatsApp, m.whatsapp));
-        if (found) {
-          fullName = found.Member_Name || found.Name || found.name || fullName;
-        }
+        fullName = resolvedRosterName || fullName || "Candidate";
       }
 
       // Compute time spent if missing
@@ -156,6 +173,9 @@ export async function GET(request) {
       return {
         ...r,
         fullName: fullName || "Candidate",
+        resolvedRosterName: resolvedRosterName && resolvedRosterName.toLowerCase() !== (fullName || '').toLowerCase() ? resolvedRosterName : null,
+        isLeader,
+        leaderRole,
         team: teamParam,
         score,
         totalQuestions,
