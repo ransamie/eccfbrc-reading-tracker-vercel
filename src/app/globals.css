@@ -827,94 +827,66 @@ select option {
   }
 
   .tracker-header-actions {
-    width: 100% !important;
-    gap: 0.45rem !important;
+    width: auto !important;
+    gap: 0.35rem !important;
   }
 
-  /* Header Brand Bar on Mobile: Title on left, Utilities on right */
-  .tracker-header-brand-bar {
+  /* Header Brand Bar on Mobile: Title on left, Actions on right in 1 row */
+  .tracker-header-wrap {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    width: 100% !important;
+    flex-wrap: nowrap !important;
+    margin-bottom: 1rem !important;
     gap: 0.5rem !important;
+  }
+
+  .tracker-header-brand-bar {
+    display: flex !important;
+    align-items: center !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
   }
 
   .tracker-header-title {
     flex: 1 1 auto !important;
     min-width: 0 !important;
+    font-size: 1.12rem !important;
+  }
+
+  .tracker-header-title img {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .tracker-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    flex-shrink: 0 !important;
+    width: auto !important;
+  }
+
+  .admin-header-actions,
+  .leader-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    width: auto !important;
+  }
+
+  .admin-header-actions > .tracker-btn-quiz {
+    height: 2.2rem !important;
+    padding: 0 0.55rem !important;
+    font-size: 0.78rem !important;
   }
 
   .mobile-header-utils {
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.45rem !important;
-    flex-shrink: 0 !important;
-  }
-
-  .mobile-header-utils > .tracker-btn-icon {
-    width: 2.35rem !important;
-    height: 2.35rem !important;
-    min-width: 2.35rem !important;
-    padding: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-sizing: border-box !important;
-    border-radius: 0.5rem !important;
-  }
-
-  .desktop-header-utils {
     display: none !important;
   }
 
-  /* Admin Header Actions (Tour, Handbook, Quiz Hub) in 3 equal columns */
-  .admin-header-actions {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    align-items: center !important;
-    width: 100% !important;
-    gap: 0.45rem !important;
-  }
-
-  /* Leader Header Actions (Tour, Guide) in 2 equal columns */
-  .leader-header-actions {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    align-items: center !important;
-    width: 100% !important;
-    gap: 0.45rem !important;
-  }
-
-  .tracker-header-actions > .tracker-btn-quiz,
-  .tracker-header-actions > .tracker-btn-guide {
-    width: 100% !important;
-    min-width: 0 !important;
-    height: 2.35rem !important;
-    padding: 0 0.45rem !important;
-    font-size: 0.8rem !important;
-    font-weight: 700 !important;
-    justify-content: center !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    gap: 0.35rem !important;
-    box-sizing: border-box !important;
-    border-radius: 0.5rem !important;
-  }
-
-  .tracker-header-actions > .tracker-btn-quiz span,
-  .tracker-header-actions > .tracker-btn-guide span {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-  }
-
-  .tracker-header-actions > button[title="Install App"] {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    height: 2.35rem !important;
+  .desktop-header-utils {
+    display: inline-flex !important;
   }
 
   .tracker-header-divider {
@@ -1349,6 +1321,140 @@ select option {
 
 .tracker-btn-logout:active {
   transform: translateY(0) scale(0.95);
+}
+
+/* Quick Tools & Utilities Dropdown Menu */
+.tracker-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 240px;
+  background: rgba(17, 24, 39, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  padding: 0.45rem;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  animation: menuFadeIn 0.15s ease-out;
+}
+
+@keyframes menuFadeIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.tracker-dropdown-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748B;
+  padding: 0.45rem 0.65rem 0.25rem 0.65rem;
+}
+
+.tracker-dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0.35rem 0;
+}
+
+.tracker-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #E2E8F0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.tracker-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+}
+
+.tracker-dropdown-item-danger {
+  color: #F87171 !important;
+}
+
+.tracker-dropdown-item-danger:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #FCA5A5 !important;
+}
+
+.tracker-dropdown-item-wrap {
+  padding: 0.2rem 0;
+}
+
+.tracker-dropdown-item-wrap button {
+  width: 100% !important;
+  justify-content: flex-start !important;
+  border-radius: 0.5rem !important;
+  padding: 0.6rem 0.75rem !important;
+  height: auto !important;
+  font-size: 0.86rem !important;
+}
+
+.tracker-btn-menu-trigger.active {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+.tracker-edition-badge-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #60A5FA;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.4rem;
+}
+
+.tracker-header-subtext {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.1rem;
+}
+
+.tracker-btn-wizard-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  background: rgba(59, 130, 246, 0.14);
+  color: #60A5FA !important;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  padding: 0 0.85rem;
+  height: 2.35rem;
+  border-radius: 0.55rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.tracker-btn-wizard-link:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #60A5FA;
+  transform: translateY(-1px);
 }
 
 /* Modern Segmented Navigation Tabs */

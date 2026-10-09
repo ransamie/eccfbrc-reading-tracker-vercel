@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle, HelpCircle, Compass } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle, HelpCircle, Compass, MoreVertical } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import LeaderTutorialModal from "./LeaderTutorialModal";
 import LeaderTourSpotlight from "./LeaderTourSpotlight";
@@ -42,6 +42,24 @@ export default function LeaderDashboard({ team, onLogout }) {
 
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [quizCopied, setQuizCopied] = useState(false);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const toolsMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target)) {
+        setShowToolsMenu(false);
+      }
+    };
+    if (showToolsMenu) {
+      document.addEventListener("mousedown", handleOutsideClick);
+      document.addEventListener("touchstart", handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, [showToolsMenu]);
   
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -534,78 +552,87 @@ export default function LeaderDashboard({ team, onLogout }) {
             </div>
           </div>
 
-          {/* Mobile utility cluster (Refresh & Logout opposite the title on mobile) */}
-          <div className="tracker-header-util-cluster mobile-header-utils">
-            <button 
-              onClick={() => loadData(true)} 
-              disabled={loading} 
-              title="Refresh Data"
-              className="tracker-btn-icon"
-              style={{ opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
-            >
-              <RefreshCw size={16} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-            </button>
-            <button 
-              onClick={onLogout} 
-              className="tracker-btn-icon tracker-btn-logout"
-              title="Logout"
-              aria-label="Logout"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
         </div>
 
-        <div className="tracker-header-actions leader-header-actions">
-          {/* Interactive Tour button */}
-          <button
-            onClick={() => {
-              setSelectedDay(currentDay);
-              setShowSpotlightTour(true);
-            }}
-            title="Start step-by-step interactive walkthrough"
-            className="tracker-btn-quiz tracker-btn-tour"
-          >
-            <Compass size={14} />
-            <span className="btn-text-full">Interactive Tour</span>
-            <span className="btn-text-short">Tour</span>
-          </button>
-
-          {/* Guide button */}
-          <button 
-            data-tour="guide-btn"
-            onClick={() => {
-              setGuideInitialTab("workflow");
-              setShowGuideModal(true);
-            }}
-            title="Open Leader Guide & Walkthrough"
-            className="tracker-btn-guide"
-          >
-            <HelpCircle size={15} />
-            <span className="btn-text-full">Leader Guide</span>
-            <span className="btn-text-short">Guide</span>
-          </button>
-
-          <InstallPwaButton />
-          <div className="tracker-header-divider desktop-header-utils" />
-
+        <div className="tracker-header-actions leader-header-actions" data-tour="leader-header-actions">
+          {/* Refresh Data */}
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
             title="Refresh Data"
-            className="tracker-btn-icon desktop-header-utils"
+            className="tracker-btn-icon"
             style={{ opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
           >
-            <RefreshCw size={17} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+            <RefreshCw size={16} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </button>
-          <button 
-            onClick={onLogout} 
-            className="tracker-btn-icon tracker-btn-logout desktop-header-utils"
-            title="Logout"
-            aria-label="Logout"
-          >
-            <LogOut size={16} />
-          </button>
+
+          {/* Guide & Tools Menu */}
+          <div style={{ position: 'relative' }} ref={toolsMenuRef}>
+            <button
+              onClick={() => setShowToolsMenu(v => !v)}
+              title="Leader Guide & Tools"
+              className={`tracker-btn-icon tracker-btn-menu-trigger ${showToolsMenu ? 'active' : ''}`}
+              aria-label="Leader Menu"
+              aria-expanded={showToolsMenu}
+            >
+              <MoreVertical size={17} />
+            </button>
+
+            {showToolsMenu && (
+              <div className="tracker-dropdown-menu">
+                <div className="tracker-dropdown-header">Leader Resources</div>
+
+                <button
+                  data-tour="guide-btn"
+                  onClick={() => {
+                    setShowToolsMenu(false);
+                    setGuideInitialTab("workflow");
+                    setShowGuideModal(true);
+                  }}
+                  className="tracker-dropdown-item"
+                >
+                  <HelpCircle size={15} style={{ color: '#38BDF8' }} />
+                  <span>Leader Handbook & Guide</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowToolsMenu(false);
+                    setSelectedDay(currentDay);
+                    setShowSpotlightTour(true);
+                  }}
+                  className="tracker-dropdown-item"
+                >
+                  <Compass size={15} style={{ color: '#38BDF8' }} />
+                  <span>Interactive Walkthrough</span>
+                </button>
+
+                <a
+                  href="/quiz"
+                  className="tracker-dropdown-item"
+                  style={{ textDecoration: 'none' }}
+                  onClick={() => setShowToolsMenu(false)}
+                >
+                  <Trophy size={15} style={{ color: '#60A5FA' }} />
+                  <span>Bible Reading Quiz Hub</span>
+                </a>
+
+                <div className="tracker-dropdown-divider" />
+
+                <div className="tracker-dropdown-item-wrap">
+                  <InstallPwaButton />
+                </div>
+
+                <button
+                  onClick={() => { setShowToolsMenu(false); onLogout(); }}
+                  className="tracker-dropdown-item tracker-dropdown-item-danger"
+                >
+                  <LogOut size={15} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

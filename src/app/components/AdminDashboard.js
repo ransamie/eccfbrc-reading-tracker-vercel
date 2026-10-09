@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2, Power, Lock, Unlock, MessageSquare, FileSpreadsheet, Clock, History, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Check, Search, BookOpen, Sparkles, CheckCheck, BarChart3, Users, Settings, FileText, X, Activity, FileDown, Archive, FolderArchive, Layers, PlusCircle, AlertTriangle, Sliders, Save, UserPlus, KeyRound, ShieldCheck, UploadCloud, AlertCircle, Trash2, Power, Lock, Unlock, MessageSquare, FileSpreadsheet, Clock, History, Play, ArrowLeft, MoreVertical } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import NewRoundWizard from "./NewRoundWizard";
 import AdminTutorialModal from "./AdminTutorialModal";
@@ -85,6 +85,24 @@ export default function AdminDashboard({ onLogout }) {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [whatsAppFilterTeam, setWhatsAppFilterTeam] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const toolsMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target)) {
+        setShowToolsMenu(false);
+      }
+    };
+    if (showToolsMenu) {
+      document.addEventListener("mousedown", handleOutsideClick);
+      document.addEventListener("touchstart", handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, [showToolsMenu]);
 
   // Data
   const [currentDayNum, setCurrentDayNum] = useState(1);
@@ -758,50 +776,21 @@ export default function AdminDashboard({ onLogout }) {
         <div className="tracker-header-brand-bar">
           <div className="tracker-header-title">
             <img src="/eccfbrclogo_square.png" alt="ECCF Logo" />
-            <span>Admin Command Center</span>
-          </div>
-
-          {/* Mobile utility cluster (Refresh & Logout opposite the title on mobile) */}
-          <div className="tracker-header-util-cluster mobile-header-utils">
-            <button 
-              onClick={() => loadData(true)} 
-              disabled={loading} 
-              title="Refresh Data"
-              className="tracker-btn-icon"
-              style={{ opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
-            >
-              <RefreshCw size={16} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-            </button>
-            <button 
-              onClick={onLogout} 
-              className="tracker-btn-icon tracker-btn-logout"
-              title="Logout"
-              aria-label="Logout"
-            >
-              <LogOut size={16} />
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span className="tracker-header-brand-name">Admin Command Center</span>
+                <span className="tracker-edition-badge-compact">
+                  <BookOpen size={11} />
+                  <span>{data?.isArchive ? "Archive Mode" : "Live Challenge"}</span>
+                </span>
+              </div>
+              <span className="tracker-header-subtext">ECCF Bible Reading Challenge</span>
+            </div>
           </div>
         </div>
 
         <div className="tracker-header-actions admin-header-actions" data-tour="admin-header-actions">
-          <button
-            onClick={() => setShowSpotlightTour(true)}
-            title="Start step-by-step interactive walkthrough"
-            className="tracker-btn-quiz tracker-btn-tour"
-          >
-            <Play size={13} fill="currentColor" /> 
-            <span className="btn-text-full">Interactive Tour</span>
-            <span className="btn-text-short">Tour</span>
-          </button>
-          <button
-            onClick={() => setShowTutorial(true)}
-            title="Open Super Admin Handbook & Guide"
-            className="tracker-btn-quiz tracker-btn-handbook"
-          >
-            <HelpCircle size={15} /> 
-            <span className="btn-text-full">Admin Handbook</span>
-            <span className="btn-text-short">Handbook</span>
-          </button>
+          {/* Direct Link to Quiz Hub */}
           <a
             href="/admin/quiz"
             title="Open Quiz Control Center"
@@ -809,41 +798,102 @@ export default function AdminDashboard({ onLogout }) {
           >
             <Trophy size={15} /> <span>Quiz Hub</span>
           </a>
-          <InstallPwaButton />
 
-          <div className="tracker-header-divider desktop-header-utils" />
+          {/* Refresh Database */}
           <button 
             onClick={() => loadData(true)} 
             disabled={loading} 
             title="Refresh Data"
-            className="tracker-btn-icon desktop-header-utils"
+            className="tracker-btn-icon"
             style={{ opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
           >
-            <RefreshCw size={17} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+            <RefreshCw size={16} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </button>
-          <button 
-            onClick={onLogout} 
-            className="tracker-btn-icon tracker-btn-logout desktop-header-utils"
-            title="Logout"
-            aria-label="Logout"
-          >
-            <LogOut size={16} />
-          </button>
+
+          {/* Consolidated Quick Tools Menu */}
+          <div style={{ position: 'relative' }} ref={toolsMenuRef}>
+            <button 
+              onClick={() => setShowToolsMenu(v => !v)}
+              title="Admin Utilities & Tools Menu"
+              className={`tracker-btn-icon tracker-btn-menu-trigger ${showToolsMenu ? 'active' : ''}`}
+              aria-label="Admin Tools"
+              aria-expanded={showToolsMenu}
+            >
+              <MoreVertical size={17} />
+            </button>
+
+            {showToolsMenu && (
+              <div className="tracker-dropdown-menu">
+                <div className="tracker-dropdown-header">Guides & Walkthroughs</div>
+                
+                <button
+                  onClick={() => { setShowToolsMenu(false); setShowTutorial(true); }}
+                  className="tracker-dropdown-item"
+                >
+                  <HelpCircle size={15} style={{ color: '#38BDF8' }} />
+                  <span>Admin Handbook</span>
+                </button>
+
+                <button
+                  onClick={() => { setShowToolsMenu(false); setShowSpotlightTour(true); }}
+                  className="tracker-dropdown-item"
+                >
+                  <Play size={14} fill="currentColor" style={{ color: '#38BDF8' }} />
+                  <span>Interactive Tour</span>
+                </button>
+
+                <div className="tracker-dropdown-divider" />
+                <div className="tracker-dropdown-header">Edition & Controls</div>
+
+                <button
+                  onClick={() => { setShowToolsMenu(false); setActiveTab('wizard'); }}
+                  className="tracker-dropdown-item"
+                >
+                  <PlusCircle size={15} style={{ color: '#60A5FA' }} />
+                  <span>Start New Edition</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleToggleLeaderReporting(!isLeaderReportingAllowed);
+                  }}
+                  className="tracker-dropdown-item"
+                >
+                  <Power size={15} style={{ color: isLeaderReportingAllowed ? '#34D399' : '#EF4444' }} />
+                  <span>Reporting: <strong>{isLeaderReportingAllowed ? 'Active (ON)' : 'Paused (OFF)'}</strong></span>
+                </button>
+
+                {isReadingCompleted && (
+                  <button
+                    onClick={() => { setShowToolsMenu(false); setShowPdfModal(true); }}
+                    className="tracker-dropdown-item"
+                  >
+                    <FileDown size={15} style={{ color: '#34D399' }} />
+                    <span>Download PDF Reports</span>
+                  </button>
+                )}
+
+                <div className="tracker-dropdown-divider" />
+
+                <div className="tracker-dropdown-item-wrap">
+                  <InstallPwaButton />
+                </div>
+
+                <button
+                  onClick={() => { setShowToolsMenu(false); onLogout(); }}
+                  className="tracker-dropdown-item tracker-dropdown-item-danger"
+                >
+                  <LogOut size={15} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Streamlined Operational Navigation Bar (Focused 5 core tabs) */}
       <div className="tracker-tabs-bar" data-tour="admin-tabs-bar">
-        <button 
-          className={`tracker-tab-pill ${activeTab === 'wizard' ? 'active' : ''}`} 
-          onClick={(e) => {
-            setActiveTab('wizard');
-            e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-          }}
-        >
-          <PlusCircle size={15} /> 
-          <span className="tab-text-full">Start New Edition</span>
-          <span className="tab-text-short">New Edition</span>
-        </button>
         <button 
           className={`tracker-tab-pill ${activeTab === 'analytics' ? 'active' : ''}`} 
           onClick={(e) => {
@@ -930,6 +980,14 @@ export default function AdminDashboard({ onLogout }) {
             <span>{isLeaderReportingAllowed ? 'Leader Reporting: ON' : 'Leader Reporting: OFF'}</span>
           </button>
 
+          <button
+            onClick={() => setActiveTab('wizard')}
+            className="tracker-btn-wizard-link"
+            title="Launch 5-Step New Challenge Wizard"
+          >
+            <PlusCircle size={14} /> <span>New Edition</span>
+          </button>
+
           {isReadingCompleted && (
             <button
               onClick={() => setShowPdfModal(true)}
@@ -972,6 +1030,28 @@ export default function AdminDashboard({ onLogout }) {
 
       {activeTab === 'wizard' && (
         <div data-tour="admin-wizard-container">
+          <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                padding: '0.45rem 0.95rem',
+                backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid var(--border)',
+                borderRadius: '0.5rem',
+                color: 'var(--text-primary)',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <ArrowLeft size={15} /> <span>Back to Overview</span>
+            </button>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>New Edition Launch Wizard</span>
+          </div>
           <NewRoundWizard 
             onComplete={() => {
               loadData(true);
