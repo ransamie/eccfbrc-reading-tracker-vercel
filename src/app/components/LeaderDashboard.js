@@ -717,8 +717,6 @@ ${pendingText}
     }
   };
 
-  if (loading && !data) return <div className="loader-container"><div className="spinner"></div><p>Loading Team Dashboard...</p></div>;
-
   const leaderInfo = useMemo(() => {
     if (!data?.leadersData || data.leadersData.length === 0) return { lName: '', aName: '' };
     const leaderRow = data.leadersData.find(l => {
@@ -734,6 +732,8 @@ ${pendingText}
     const aName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || '';
     return { lName, aName };
   }, [data?.leadersData]);
+
+  if (loading && !data) return <div className="loader-container"><div className="spinner"></div><p>Loading Team Dashboard...</p></div>;
 
   return (
     <div className="container">
