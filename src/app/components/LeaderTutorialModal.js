@@ -92,8 +92,8 @@ export default function LeaderTutorialModal({
           text: "Under the 'Roster' tab, you can adjust a participant's status if they voluntarily left the group, declined the challenge, or were evicted. Adjusting their status immediately removes them from your required active attendance tally so your team's completion percentage remains accurate."
         },
         {
-          title: "Quiz Hub & Round Milestone Checkpoints",
-          text: "Each 10-day reading edition culminates in an official challenge quiz. You can copy the team quiz link using the header 'Quiz Link' button. Please note: The quiz link only becomes active after finishing a round when the Super Admin unlocks it."
+          title: "Quiz Hub & Real-Time Scoreboard",
+          text: "Under the 'Quiz' tab, leaders can copy their direct team quiz link, monitor member submissions in real time, view member scores and performance badges (Green/Amber/Red), inspect detailed question breakdowns, track pending members with 1-click WhatsApp reminders, and copy formatted broadcast summaries."
         },
         {
           title: "Historical Day Stepper & Backfilling",
@@ -106,6 +106,39 @@ export default function LeaderTutorialModal({
         {
           title: "Official Team PDF Report Export",
           text: "When a reading edition concludes, leaders can generate and download an official publication-quality PDF report summarizing their entire team's attendance and completion certificates."
+        }
+      ]
+    },
+    {
+      id: "quiz",
+      tabLabel: "Quiz Hub & Scores",
+      category: "Milestone Assessment",
+      heading: "Managing Milestone Quizzes & Tracking Scores",
+      description: "Everything you need to know about sharing the quiz, monitoring submissions in real time, following up with pending members, and publishing team results.",
+      points: [
+        {
+          title: "Direct Team Quiz Link & 1-Click Copy",
+          text: "In the Quiz Hub, click 'Copy' to copy your team's direct quiz link and post it to your WhatsApp reading group. When the Super Admin unlocks a milestone round, participants can enter their details and start."
+        },
+        {
+          title: "Real-Time Submissions & Score Badges",
+          text: "The 'Submitted' list displays members who completed the quiz with their scores (e.g. 9/10), percentage badges (Green for 80%+, Amber for 50–79%, Red for <50%), submission date/time, and time taken (e.g. ⏱️ 3m 45s)."
+        },
+        {
+          title: "Question-by-Question Review Breakdown",
+          text: "Click the arrow next to any completed member to expand their answer review. You can see each question, what the member selected, the correct answer, and which questions they got right or wrong."
+        },
+        {
+          title: "Tracking 'Yet to Submit' & 1-Click WhatsApp Reminders",
+          text: "The 'Yet to Submit' sub-tab lists active members who haven't taken the quiz for the selected round. Click the green 'Remind' button next to any name to open a direct WhatsApp chat pre-filled with a friendly reminder."
+        },
+        {
+          title: "Team Performance Metrics & KPI Cards",
+          text: "Four live metric cards display Total Submissions (with a progress bar), Team Average Score, Highest Score, and Overall Participation Rate."
+        },
+        {
+          title: "Copy WhatsApp Broadcast Summary",
+          text: "Click 'Copy WhatsApp Quiz Report' to instantly copy a formatted announcement listing top performers and pending members, ready to broadcast into your WhatsApp group."
         }
       ]
     },

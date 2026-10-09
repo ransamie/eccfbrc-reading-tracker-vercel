@@ -99,6 +99,15 @@ export default function LeaderTourSpotlight({
       preferredPlacement: "bottom"
     },
     {
+      id: "feature-quiz-submissions",
+      tab: "quiz",
+      selector: '[data-tour="quiz-submissions-section"]',
+      badge: "Feature Spotlight • Scoreboard",
+      title: "Live Submissions, Scores & Reminders",
+      description: "Track your team's submissions in real time! View member scores and time taken, inspect question breakdowns, follow up with 'Yet to Submit' members via 1-click WhatsApp reminders, and copy instant WhatsApp summary reports.",
+      preferredPlacement: "top"
+    },
+    {
       id: "feature-windows",
       tab: "report",
       selector: '[data-tour="reporting-windows"]',

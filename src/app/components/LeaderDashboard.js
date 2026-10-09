@@ -719,7 +719,21 @@ ${pendingText}
 
   if (loading && !data) return <div className="loader-container"><div className="spinner"></div><p>Loading Team Dashboard...</p></div>;
 
-  const daysList = Array.from({length: currentDayNum}, (_, i) => `Day_${i+1}`);
+  const leaderInfo = useMemo(() => {
+    if (!data?.leadersData || data.leadersData.length === 0) return { lName: '', aName: '' };
+    const leaderRow = data.leadersData.find(l => {
+      const r = String(l.Role || '').toLowerCase();
+      return !r.includes('asst') && !r.includes('assistant');
+    }) || data.leadersData[0];
+    const asstRow = data.leadersData.find(l => {
+      const r = String(l.Role || '').toLowerCase();
+      return r.includes('asst') || r.includes('assistant');
+    }) || (data.leadersData.length > 1 ? data.leadersData[1] : null);
+
+    const lName = leaderRow?.['Team Leader'] || leaderRow?.Member_Name || leaderRow?.Name || '';
+    const aName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || '';
+    return { lName, aName };
+  }, [data?.leadersData]);
 
   return (
     <div className="container">
@@ -740,37 +754,30 @@ ${pendingText}
             <div className="tracker-team-header-info">
               <div className="tracker-team-title-row">
                 <h1 className="tracker-team-heading">{formatTeamName(team)}</h1>
+                {/* Desktop: Full Challenge Edition Name */}
                 {data?.settings?.Challenge_Edition && (
-                  <span className="tracker-edition-badge">
+                  <span className="tracker-edition-badge desktop-only">
                     {data.settings.Challenge_Edition}
                   </span>
                 )}
+                {/* Mobile: Sleek compact Live badge */}
+                <span className="tracker-edition-badge-compact mobile-only">
+                  <span className="tracker-pulse-dot dot-open" />
+                  <span>Live</span>
+                </span>
               </div>
 
-              <div className="tracker-team-meta-row">
-                {data?.leadersData && (() => {
-                  const leaderRow = data.leadersData.find(l => {
-                    const r = String(l.Role || '').toLowerCase();
-                    return !r.includes('asst') && !r.includes('assistant');
-                  }) || data.leadersData[0];
-                  const asstRow = data.leadersData.find(l => {
-                    const r = String(l.Role || '').toLowerCase();
-                    return r.includes('asst') || r.includes('assistant');
-                  }) || (data.leadersData.length > 1 ? data.leadersData[1] : null);
-
-                  const lName = leaderRow?.['Team Leader'] || leaderRow?.Member_Name || leaderRow?.Name || 'N/A';
-                  const aName = asstRow?.['Team Leader'] || asstRow?.Member_Name || asstRow?.Name || leaderRow?.Assistant || leaderRow?.['Assistant Leader'] || '';
-
-                  return (
-                    <span className="tracker-leaders-text">
-                      Leader: <strong style={{ color: 'var(--text-primary)' }}>{lName}</strong>
-                      {aName && aName.toLowerCase() !== 'n/a' && (
-                        <span> &bull; Asst: <strong style={{ color: 'var(--text-primary)' }}>{aName}</strong></span>
-                      )}
-                    </span>
-                  );
-                })()}
-              </div>
+              {/* Desktop only: full leader and assistant names */}
+              {leaderInfo.lName && (
+                <div className="tracker-team-meta-row desktop-only">
+                  <span className="tracker-leaders-text">
+                    Leader: <strong style={{ color: 'var(--text-primary)' }}>{leaderInfo.lName}</strong>
+                    {leaderInfo.aName && leaderInfo.aName.toLowerCase() !== 'n/a' && (
+                      <span> &bull; Asst: <strong style={{ color: 'var(--text-primary)' }}>{leaderInfo.aName}</strong></span>
+                    )}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -806,6 +813,24 @@ ${pendingText}
                 <div className="tracker-dropdown-menu">
                   <div className="tracker-sheet-handle mobile-only" />
 
+                  {/* Team & Challenge Details in Tools Menu */}
+                  <div className="tracker-dropdown-header">Team & Challenge</div>
+                  <div className="tracker-dropdown-info-card">
+                    <div className="tracker-dropdown-info-team">{formatTeamName(team)}</div>
+                    {data?.settings?.Challenge_Edition && (
+                      <div className="tracker-dropdown-info-edition">{data.settings.Challenge_Edition}</div>
+                    )}
+                    {leaderInfo.lName && (
+                      <div className="tracker-dropdown-info-leaders">
+                        Leader: <strong>{leaderInfo.lName}</strong>
+                        {leaderInfo.aName && leaderInfo.aName.toLowerCase() !== 'n/a' && (
+                          <span> • Asst: <strong>{leaderInfo.aName}</strong></span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="tracker-dropdown-divider" />
                   <div className="tracker-dropdown-header">Leader Resources</div>
 
                   <button
@@ -1564,7 +1589,7 @@ ${pendingText}
           </div>
 
           {/* Submissions & Scores Management Card */}
-          <div className="card">
+          <div className="card" data-tour="quiz-submissions-section">
             {/* Header with Title and Search/Filters */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>

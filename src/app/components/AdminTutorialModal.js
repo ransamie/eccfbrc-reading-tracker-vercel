@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { 
   X, BookOpen, Layers, Users, Sliders, BarChart3, 
   HelpCircle, ShieldCheck, CheckCircle2, AlertTriangle, 
-  MessageSquare, KeyRound, Sparkles, ArrowRight, FileText, ChevronRight, Play
+  MessageSquare, KeyRound, Sparkles, ArrowRight, FileText, ChevronRight, Play, Trophy
 } from "lucide-react";
 
 export default function AdminTutorialModal({ isOpen, onClose, onStartInteractiveTour }) {
@@ -170,6 +170,32 @@ export default function AdminTutorialModal({ isOpen, onClose, onStartInteractive
         {
           title: "One-Click Chat Launcher",
           text: "Super Admins can click \"Send to Leader via WhatsApp\" to instantly open WhatsApp Web or App with the pre-filled message."
+        }
+      ]
+    },
+    {
+      id: "quiz",
+      title: "Quiz Hub & Moderation",
+      icon: <Trophy size={18} color="#F59E0B" />,
+      badge: "Milestone Assessment",
+      heading: "Managing Milestone Quizzes & Global Submissions",
+      description: "Activate reading challenge quizzes, generate questions with AI, and review club-wide leaderboards.",
+      points: [
+        {
+          title: "Master Quiz Switch & Round Activation",
+          text: "Toggle the quiz live or inactive. Set the active edition, current round (e.g., Round 1, Round 2), and timer duration (e.g., 15 minutes)."
+        },
+        {
+          title: "AI Question Generator & Bulk Importer",
+          text: "Generate challenging questions automatically using Gemini AI from scripture readings or paste formatted questions in bulk."
+        },
+        {
+          title: "Global Submissions & Live Sessions Log",
+          text: "View all candidate submissions across all teams with their scores, percentages, and time taken. Active timer sessions can be monitored or extended."
+        },
+        {
+          title: "Team Leader Dashboard Visibility",
+          text: "Team Leaders can automatically view real-time submissions for their own team under their 'Quiz' tab, track scores, see who hasn't submitted yet with WhatsApp reminder links, and copy group summary reports."
         }
       ]
     }

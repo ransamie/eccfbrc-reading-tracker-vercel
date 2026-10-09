@@ -1442,6 +1442,40 @@ select option {
   cursor: pointer;
 }
 
+/* Team info card in tools dropdown menu */
+.tracker-dropdown-info-card {
+  padding: 0.65rem 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.6rem;
+  margin: 0.2rem 0 0.4rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tracker-dropdown-info-team {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #F8FAFC;
+}
+
+.tracker-dropdown-info-edition {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #60A5FA;
+}
+
+.tracker-dropdown-info-leaders {
+  font-size: 0.76rem;
+  color: #94A3B8;
+  margin-top: 0.15rem;
+}
+
+.tracker-dropdown-info-leaders strong {
+  color: #E2E8F0;
+}
+
 .tracker-dropdown-item {
   display: flex;
   align-items: center;
@@ -3835,21 +3869,37 @@ select option {
 }
 
 @media (max-width: 640px) {
+  .tracker-team-header-info {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    min-width: 0 !important;
+    gap: 0.4rem !important;
+  }
   .tracker-team-heading {
-    font-size: 1.15rem !important;
+    font-size: 1.12rem !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 160px !important;
+    color: var(--text-primary) !important;
   }
   .tracker-team-title-row {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    gap: 0.45rem !important;
+    gap: 0.4rem !important;
+    min-width: 0 !important;
+    flex-wrap: nowrap !important;
   }
   .tracker-team-meta-row {
-    font-size: 0.76rem;
-    gap: 0.35rem;
+    display: none !important;
   }
   .tracker-meta-separator {
-    display: none;
+    display: none !important;
   }
 }
 
