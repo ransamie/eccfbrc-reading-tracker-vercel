@@ -38,14 +38,35 @@ function isPhoneMatch(p1, p2) {
   return last8A.length >= 8 && last8A === last8B;
 }
 
+function cleanNameString(n) {
+  return String(n || "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\b(sis|bro|sister|brother)\b/gi, "")
+    .replace(/\b\d+_\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function isNameMatch(n1, n2) {
   if (!n1 || !n2) return false;
-  const s1 = String(n1).trim().toLowerCase();
-  const s2 = String(n2).trim().toLowerCase();
+  const s1 = cleanNameString(n1);
+  const s2 = cleanNameString(n2);
+  if (!s1 || !s2) return false;
   if (s1 === s2) return true;
-  const clean1 = s1.replace(/^(sis\.|bro\.|sister|brother|\d+_)\s*/i, '').trim();
-  const clean2 = s2.replace(/^(sis\.|bro\.|sister|brother|\d+_)\s*/i, '').trim();
-  return clean1.length > 2 && clean1 === clean2;
+  if (s1.includes(s2) || s2.includes(s1)) return true;
+
+  const words1 = s1.split(/\s+/).filter(w => w.length > 2);
+  const words2 = s2.split(/\s+/).filter(w => w.length > 2);
+  if (words1.length === 0 || words2.length === 0) return false;
+
+  const [shorter, longer] = words1.length <= words2.length ? [words1, words2] : [words2, words1];
+  if (shorter.every(w => longer.includes(w))) return true;
+
+  const matchingWords = words1.filter(w => words2.includes(w));
+  if (matchingWords.length >= 2) return true;
+
+  return false;
 }
 
 export async function GET(request) {

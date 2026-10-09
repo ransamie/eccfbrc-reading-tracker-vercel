@@ -6,6 +6,53 @@ import LeaderTourSpotlight from "./LeaderTourSpotlight";
 import { generateTeamPdfReport } from "@/lib/pdfReportGenerator";
 import { formatTeamName, formatTeamUpper } from "@/lib/teamUtils";
 
+function isPhoneMatch(p1, p2) {
+  if (!p1 || !p2) return false;
+  const s1 = String(p1).replace(/\D/g, "").replace(/^0+/, "");
+  const s2 = String(p2).replace(/\D/g, "").replace(/^0+/, "");
+  if (!s1 || !s2) return false;
+  if (s1 === s2) return true;
+  if (s1.endsWith(s2) || s2.endsWith(s1)) return true;
+  const minLen = Math.min(s1.length, s2.length);
+  if (minLen >= 8) {
+    const end1 = s1.slice(-8);
+    const end2 = s2.slice(-8);
+    if (end1 === end2) return true;
+  }
+  return false;
+}
+
+function cleanNameString(n) {
+  return String(n || "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\b(sis|bro|sister|brother)\b/gi, "")
+    .replace(/\b\d+_\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isNameMatch(n1, n2) {
+  if (!n1 || !n2) return false;
+  const s1 = cleanNameString(n1);
+  const s2 = cleanNameString(n2);
+  if (!s1 || !s2) return false;
+  if (s1 === s2) return true;
+  if (s1.includes(s2) || s2.includes(s1)) return true;
+
+  const words1 = s1.split(/\s+/).filter(w => w.length > 2);
+  const words2 = s2.split(/\s+/).filter(w => w.length > 2);
+  if (words1.length === 0 || words2.length === 0) return false;
+
+  const [shorter, longer] = words1.length <= words2.length ? [words1, words2] : [words2, words1];
+  if (shorter.every(w => longer.includes(w))) return true;
+
+  const matchingWords = words1.filter(w => words2.includes(w));
+  if (matchingWords.length >= 2) return true;
+
+  return false;
+}
+
 export default function LeaderDashboard({ team, onLogout }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -602,31 +649,37 @@ export default function LeaderDashboard({ team, onLogout }) {
     });
   }, [quizData.results, quizRoundFilter, quizSearch]);
 
-  const submittedIdentifiersForRound = useMemo(() => {
-    const roundResults = (quizData.results || []).filter(r => 
-      String(r.round || '').trim().toLowerCase() === String(effectiveRound).trim().toLowerCase()
-    );
-    const phones = new Set(roundResults.map(r => cleanPhone(r.whatsApp)).filter(Boolean));
-    const names = new Set(roundResults.map(r => cleanName(r.fullName)).filter(Boolean));
-    return { phones, names, roundResults };
-  }, [quizData.results, effectiveRound, cleanPhone, cleanName]);
-
   const pendingQuizMembers = useMemo(() => {
-    const { phones, names } = submittedIdentifiersForRound;
+    const roundResults = (quizData.results || []).filter(r => 
+      effectiveRound === 'All' || String(r.round || '').trim().toLowerCase() === String(effectiveRound).trim().toLowerCase()
+    );
     return activeMembers.filter(m => {
-      const p = cleanPhone(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number);
-      const n = cleanName(m.Member_Name);
-      if (p && phones.has(p)) return false;
-      if (n && names.has(n)) return false;
+      const p = m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number;
+      const n = m.Member_Name;
+      const hasSubmitted = roundResults.some(r => isPhoneMatch(r.whatsApp, p) || isNameMatch(r.fullName, n));
+      if (hasSubmitted) return false;
       if (quizSearch.trim()) {
         const q = quizSearch.toLowerCase().trim();
         const nameMatches = String(m.Member_Name || '').toLowerCase().includes(q);
-        const phoneMatches = String(m.WhatsApp_Number || m.Whatsapp_Number || m.Phone || '').includes(q);
+        const phoneMatches = String(p || '').includes(q);
         if (!nameMatches && !phoneMatches) return false;
       }
       return true;
     });
-  }, [activeMembers, submittedIdentifiersForRound, quizSearch, cleanPhone, cleanName]);
+  }, [activeMembers, quizData.results, effectiveRound, quizSearch]);
+
+  const filteredAllMembers = useMemo(() => {
+    return activeMembers.filter(m => {
+      if (quizSearch.trim()) {
+        const q = quizSearch.toLowerCase().trim();
+        const p = String(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number || '');
+        const nameMatches = String(m.Member_Name || '').toLowerCase().includes(q);
+        const phoneMatches = p.includes(q);
+        if (!nameMatches && !phoneMatches) return false;
+      }
+      return true;
+    });
+  }, [activeMembers, quizSearch]);
 
   const quizStats = useMemo(() => {
     const count = filteredQuizResults.length;
@@ -677,11 +730,10 @@ export default function LeaderDashboard({ team, onLogout }) {
       submittedText = "- No submissions yet";
     }
 
-    const { phones, names } = submittedIdentifiersForRound;
     const unsubmitted = activeMembers.filter(m => {
-      const p = cleanPhone(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number);
-      const n = cleanName(m.Member_Name);
-      return (!p || !phones.has(p)) && (!n || !names.has(n));
+      const p = m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number;
+      const n = m.Member_Name;
+      return !roundSubmissions.some(r => isPhoneMatch(r.whatsApp, p) || isNameMatch(r.fullName, n));
     });
 
     let pendingText = "";
@@ -2126,97 +2178,139 @@ ${pendingText}
               )
             ) : (
               /* View: All Active Members with Submission Status */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                {activeMembers.map(m => {
-                  const trimmedName = String(m.Member_Name || '').trim();
-                  const phone = String(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number || '').trim();
-                  const matchedResult = (quizData.results || []).find(r => 
-                    (isPhoneMatch(r.whatsApp, phone) || isNameMatch(r.fullName, trimmedName)) &&
-                    (quizRoundFilter === 'All' || String(r.round || '').trim().toLowerCase() === String(quizRoundFilter).trim().toLowerCase())
-                  );
+              filteredAllMembers.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2.5rem 1rem',
+                  backgroundColor: 'var(--surface-secondary)',
+                  borderRadius: '0.75rem',
+                  border: '1px solid var(--border-light)'
+                }}>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    No members match &ldquo;{quizSearch}&rdquo;
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                  {filteredAllMembers.map(m => {
+                    const trimmedName = String(m.Member_Name || '').trim();
+                    const phone = String(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number || '').trim();
+                    const matchedResult = (quizData.results || []).find(r => 
+                      (isPhoneMatch(r.whatsApp, phone) || isNameMatch(r.fullName, trimmedName)) &&
+                      (quizRoundFilter === 'All' || String(r.round || '').trim().toLowerCase() === String(quizRoundFilter).trim().toLowerCase())
+                    );
+                    const waUrl = getWhatsAppReminderUrl(m, effectiveRound);
 
-                  return (
-                    <div
-                      key={trimmedName}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        backgroundColor: 'var(--surface-secondary)',
-                        border: '1px solid var(--border-light)',
-                        borderLeft: `4px solid ${matchedResult ? 'var(--success)' : 'var(--warning)'}`,
-                        padding: '0.75rem 1rem',
-                        borderRadius: '0.5rem',
-                        gap: '0.75rem',
-                        flexWrap: 'wrap'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '180px', flex: 1 }}>
-                        <div style={{
-                          width: '34px',
-                          height: '34px',
-                          borderRadius: '50%',
-                          backgroundColor: matchedResult ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                          color: matchedResult ? '#34D399' : '#FBBF24',
+                    return (
+                      <div
+                        key={trimmedName}
+                        style={{
                           display: 'flex',
+                          justifyContent: 'space-between',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: '700',
-                          fontSize: '0.85rem',
-                          flexShrink: 0
-                        }}>
-                          {trimmedName.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <span style={{ fontWeight: '600', fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>
-                            {trimmedName}
-                          </span>
-                          {phone && (
-                            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                              📱 {phone}
+                          backgroundColor: 'var(--surface-secondary)',
+                          border: '1px solid var(--border-light)',
+                          borderLeft: `4px solid ${matchedResult ? 'var(--success)' : 'var(--warning)'}`,
+                          padding: '0.75rem 1rem',
+                          borderRadius: '0.5rem',
+                          gap: '0.75rem',
+                          flexWrap: 'wrap'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '180px', flex: 1 }}>
+                          <div style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '50%',
+                            backgroundColor: matchedResult ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                            color: matchedResult ? '#34D399' : '#FBBF24',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: '700',
+                            fontSize: '0.85rem',
+                            flexShrink: 0
+                          }}>
+                            {trimmedName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <span style={{ fontWeight: '600', fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>
+                              {trimmedName}
                             </span>
+                            {phone && (
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                📱 {phone}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {matchedResult ? (
+                            <div style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.45rem',
+                              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                              color: '#34D399',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              padding: '0.35rem 0.75rem',
+                              borderRadius: '0.45rem',
+                              fontWeight: '700',
+                              fontSize: '0.82rem'
+                            }}>
+                              <CheckCircle2 size={14} />
+                              <span>Score: {matchedResult.score}/{matchedResult.totalQuestions} ({matchedResult.percentage}%)</span>
+                            </div>
+                          ) : (
+                            <>
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                color: '#FBBF24',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                padding: '0.35rem 0.65rem',
+                                borderRadius: '0.45rem',
+                                fontWeight: '700',
+                                fontSize: '0.78rem'
+                              }}>
+                                ⏳ Yet to Submit
+                              </span>
+                              {waUrl && (
+                                <a
+                                  href={waUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Send Reminder on WhatsApp"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                    padding: '0.35rem 0.75rem',
+                                    borderRadius: '0.4rem',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                    color: '#34D399',
+                                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                                    fontSize: '0.78rem',
+                                    fontWeight: '700',
+                                    textDecoration: 'none',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  <MessageSquare size={13} />
+                                  <span>Remind</span>
+                                </a>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
-
-                      <div>
-                        {matchedResult ? (
-                          <div style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.45rem',
-                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                            color: '#34D399',
-                            border: '1px solid rgba(16, 185, 129, 0.35)',
-                            padding: '0.35rem 0.75rem',
-                            borderRadius: '0.45rem',
-                            fontWeight: '700',
-                            fontSize: '0.82rem'
-                          }}>
-                            <CheckCircle2 size={14} />
-                            <span>Score: {matchedResult.score}/{matchedResult.totalQuestions} ({matchedResult.percentage}%)</span>
-                          </div>
-                        ) : (
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                            color: '#FBBF24',
-                            border: '1px solid rgba(245, 158, 11, 0.3)',
-                            padding: '0.35rem 0.65rem',
-                            borderRadius: '0.45rem',
-                            fontWeight: '700',
-                            fontSize: '0.78rem'
-                          }}>
-                            ⏳ Yet to Submit
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )
             )}
           </div>
         </div>
