@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle, HelpCircle, Compass, MoreVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle, HelpCircle, Compass, MoreVertical, Award, CheckCircle2, Clock, ChevronDown, ChevronUp, Sparkles, MessageSquare } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import LeaderTutorialModal from "./LeaderTutorialModal";
 import LeaderTourSpotlight from "./LeaderTourSpotlight";
@@ -44,6 +44,86 @@ export default function LeaderDashboard({ team, onLogout }) {
   const [quizCopied, setQuizCopied] = useState(false);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const toolsMenuRef = useRef(null);
+
+  // Quiz Submissions State
+  const [quizData, setQuizData] = useState({ results: [], settings: null, availableRounds: [] });
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizRoundFilter, setQuizRoundFilter] = useState("All");
+  const [quizSearch, setQuizSearch] = useState("");
+  const [quizViewFilter, setQuizViewFilter] = useState("submitted"); // "submitted" | "pending" | "all"
+  const [expandedQuizMember, setExpandedQuizMember] = useState(null);
+  const [quizBroadcastCopied, setQuizBroadcastCopied] = useState(false);
+
+  const cleanPhone = useCallback((p) => String(p || '').replace(/\D/g, '').replace(/^0+/, ''), []);
+  const cleanName = useCallback((n) => String(n || '').replace(/^(sis\.|bro\.|sister|brother|\d+_)\s*/i, '').trim().toLowerCase(), []);
+
+  const fetchTeamQuiz = useCallback(async (isManual = false) => {
+    if (!team) return;
+    setQuizLoading(true);
+    try {
+      const res = await fetch(`/api/quiz/team?team=${encodeURIComponent(team)}&t=${Date.now()}`, { cache: 'no-store' });
+      const d = await res.json();
+      if (res.ok && d.success) {
+        setQuizData({
+          results: d.results || [],
+          settings: d.settings || null,
+          availableRounds: d.availableRounds || []
+        });
+        if (d.settings?.activeRound) {
+          setQuizRoundFilter(prev => prev === "All" && d.availableRounds?.includes(d.settings.activeRound) ? d.settings.activeRound : prev);
+        }
+        if (isManual) showToast("Quiz submissions updated!");
+      } else {
+        if (isManual) showToast("Could not load quiz submissions", "error");
+      }
+    } catch (err) {
+      console.error("Failed to load quiz submissions:", err);
+      if (isManual) showToast("Error loading quiz submissions", "error");
+    } finally {
+      setQuizLoading(false);
+    }
+  }, [team]);
+
+  useEffect(() => {
+    if (activeTab === 'quiz' && !quizData.settings && !quizLoading) {
+      fetchTeamQuiz();
+    }
+  }, [activeTab, fetchTeamQuiz, quizData.settings, quizLoading]);
+
+  const formatQuizTimestamp = (iso) => {
+    if (!iso) return "";
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  const formatTimeSpent = (sec) => {
+    if (!sec || isNaN(sec)) return null;
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
+  const getWhatsAppReminderUrl = (member, roundName) => {
+    const rawPhone = member.WhatsApp_Number || member.Whatsapp_Number || member.WhatsApp || member.Phone || member.Phone_Number || '';
+    let phone = String(rawPhone).replace(/\D/g, '');
+    if (phone.startsWith('0') && phone.length === 11) {
+      phone = '234' + phone.slice(1);
+    }
+    const quizUrl = typeof window !== 'undefined' ? `${window.location.origin}/quiz` : '/quiz';
+    const text = encodeURIComponent(`Hi ${member.Member_Name}! 👋 Kindly remember to take our ECCF Bible Reading Challenge Quiz for ${roundName}. Click here to take it: ${quizUrl}`);
+    return phone ? `https://wa.me/${phone}?text=${text}` : null;
+  };
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -170,6 +250,10 @@ export default function LeaderDashboard({ team, onLogout }) {
             }
           });
           setRosterUpdates(freshRosterStatuses);
+        }
+
+        if (activeTab === 'quiz') {
+          fetchTeamQuiz();
         }
 
         if (isManualRefresh === true) showToast("Dashboard is up-to-date!");
@@ -493,10 +577,148 @@ export default function LeaderDashboard({ team, onLogout }) {
     }
   }, [reportText, data, currentDayNum, reflection, team, updates, selectedDay, currentDay]);
 
+  const allMembers = useMemo(() => data?.trackerData || [], [data?.trackerData]);
+  const activeMembers = useMemo(() => 
+    allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'active'),
+    [allMembers]
+  );
+
+  const effectiveRound = quizRoundFilter !== "All" ? quizRoundFilter : (quizData.settings?.activeRound || "Round 1");
+
+  const filteredQuizResults = useMemo(() => {
+    return (quizData.results || []).filter(r => {
+      if (quizRoundFilter !== "All") {
+        if (String(r.round || '').trim().toLowerCase() !== String(quizRoundFilter).trim().toLowerCase()) {
+          return false;
+        }
+      }
+      if (quizSearch.trim()) {
+        const q = quizSearch.toLowerCase().trim();
+        const nameMatches = String(r.fullName || '').toLowerCase().includes(q);
+        const phoneMatches = String(r.whatsApp || '').includes(q);
+        if (!nameMatches && !phoneMatches) return false;
+      }
+      return true;
+    });
+  }, [quizData.results, quizRoundFilter, quizSearch]);
+
+  const submittedIdentifiersForRound = useMemo(() => {
+    const roundResults = (quizData.results || []).filter(r => 
+      String(r.round || '').trim().toLowerCase() === String(effectiveRound).trim().toLowerCase()
+    );
+    const phones = new Set(roundResults.map(r => cleanPhone(r.whatsApp)).filter(Boolean));
+    const names = new Set(roundResults.map(r => cleanName(r.fullName)).filter(Boolean));
+    return { phones, names, roundResults };
+  }, [quizData.results, effectiveRound, cleanPhone, cleanName]);
+
+  const pendingQuizMembers = useMemo(() => {
+    const { phones, names } = submittedIdentifiersForRound;
+    return activeMembers.filter(m => {
+      const p = cleanPhone(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number);
+      const n = cleanName(m.Member_Name);
+      if (p && phones.has(p)) return false;
+      if (n && names.has(n)) return false;
+      if (quizSearch.trim()) {
+        const q = quizSearch.toLowerCase().trim();
+        const nameMatches = String(m.Member_Name || '').toLowerCase().includes(q);
+        const phoneMatches = String(m.WhatsApp_Number || m.Whatsapp_Number || m.Phone || '').includes(q);
+        if (!nameMatches && !phoneMatches) return false;
+      }
+      return true;
+    });
+  }, [activeMembers, submittedIdentifiersForRound, quizSearch, cleanPhone, cleanName]);
+
+  const quizStats = useMemo(() => {
+    const count = filteredQuizResults.length;
+    const totalPossible = activeMembers.length;
+    const avgScore = count > 0 
+      ? (filteredQuizResults.reduce((acc, r) => acc + (r.score || 0), 0) / count).toFixed(1) 
+      : 0;
+    const avgTotalQ = count > 0 
+      ? Math.round(filteredQuizResults.reduce((acc, r) => acc + (r.totalQuestions || 0), 0) / count) 
+      : 10;
+    const avgPct = count > 0 
+      ? Math.round(filteredQuizResults.reduce((acc, r) => acc + (r.percentage || 0), 0) / count) 
+      : 0;
+    const topScore = count > 0 
+      ? Math.max(...filteredQuizResults.map(r => r.score || 0)) 
+      : 0;
+    const completionPct = totalPossible > 0 ? Math.round((count / totalPossible) * 100) : 0;
+
+    return {
+      count,
+      totalPossible,
+      avgScore,
+      avgTotalQ,
+      avgPct,
+      topScore,
+      completionPct
+    };
+  }, [filteredQuizResults, activeMembers]);
+
+  const handleCopyQuizBroadcast = () => {
+    const roundSubmissions = (quizData.results || []).filter(r => 
+      String(r.round || '').trim().toLowerCase() === String(effectiveRound).trim().toLowerCase()
+    );
+
+    const totalAssigned = activeMembers.length;
+    const totalSub = roundSubmissions.length;
+    const avg = totalSub > 0 ? (roundSubmissions.reduce((a, b) => a + (b.score || 0), 0) / totalSub).toFixed(1) : "0";
+    const maxScore = totalSub > 0 ? Math.max(...roundSubmissions.map(r => r.score || 0)) : 0;
+    const maxQ = roundSubmissions[0]?.totalQuestions || 10;
+
+    let submittedText = "";
+    if (roundSubmissions.length > 0) {
+      submittedText = roundSubmissions.map(r => {
+        const star = r.percentage >= 90 ? "🌟" : r.percentage >= 70 ? "👏" : "✨";
+        return `• @${r.fullName}: ${r.score}/${r.totalQuestions} (${r.percentage}%) ${star}`;
+      }).join("\n");
+    } else {
+      submittedText = "- No submissions yet";
+    }
+
+    const { phones, names } = submittedIdentifiersForRound;
+    const unsubmitted = activeMembers.filter(m => {
+      const p = cleanPhone(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number);
+      const n = cleanName(m.Member_Name);
+      return (!p || !phones.has(p)) && (!n || !names.has(n));
+    });
+
+    let pendingText = "";
+    if (unsubmitted.length > 0) {
+      pendingText = unsubmitted.map(m => `• @${m.Member_Name}`).join("\n");
+    } else {
+      pendingText = "- All members completed! 🎉";
+    }
+
+    const quizUrl = typeof window !== 'undefined' ? `${window.location.origin}/quiz` : '/quiz';
+
+    const message = `*ECCF Bible Reading Challenge Tracker*
+*DAILY QUIZ REPORT — ${formatTeamUpper(team)}* 🏆
+
+*Target Round*: *${effectiveRound}*
+*Submissions*: ${totalSub}/${totalAssigned} Members (${totalAssigned > 0 ? Math.round((totalSub/totalAssigned)*100) : 0}%)
+*Team Average Score*: ${avg}/${maxQ}
+*Top Score*: ${maxScore}/${maxQ}
+
+*SUBMITTED CANDIDATES & SCORES 📝*
+${submittedText}
+
+*YET TO SUBMIT ⏳*
+${pendingText}
+
+🔗 *Take Quiz Here*: ${quizUrl}`;
+
+    if (typeof window !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(message);
+      setQuizBroadcastCopied(true);
+      showToast("Quiz report copied for WhatsApp!");
+      setTimeout(() => setQuizBroadcastCopied(false), 2500);
+    }
+  };
+
   if (loading && !data) return <div className="loader-container"><div className="spinner"></div><p>Loading Team Dashboard...</p></div>;
 
-  const allMembers = data?.trackerData || [];
-  const activeMembers = allMembers.filter(m => String(m.Status || '').trim().toLowerCase() === 'active');
   const daysList = Array.from({length: currentDayNum}, (_, i) => `Day_${i+1}`);
 
   return (
@@ -579,58 +801,70 @@ export default function LeaderDashboard({ team, onLogout }) {
             </button>
 
             {showToolsMenu && (
-              <div className="tracker-dropdown-menu">
-                <div className="tracker-dropdown-header">Leader Resources</div>
+              <>
+                <div className="tracker-menu-backdrop mobile-only" onClick={() => setShowToolsMenu(false)} />
+                <div className="tracker-dropdown-menu">
+                  <div className="tracker-sheet-handle mobile-only" />
 
-                <button
-                  data-tour="guide-btn"
-                  onClick={() => {
-                    setShowToolsMenu(false);
-                    setGuideInitialTab("workflow");
-                    setShowGuideModal(true);
-                  }}
-                  className="tracker-dropdown-item"
-                >
-                  <HelpCircle size={15} style={{ color: '#38BDF8' }} />
-                  <span>Leader Handbook & Guide</span>
-                </button>
+                  <div className="tracker-dropdown-header">Leader Resources</div>
 
-                <button
-                  onClick={() => {
-                    setShowToolsMenu(false);
-                    setSelectedDay(currentDay);
-                    setShowSpotlightTour(true);
-                  }}
-                  className="tracker-dropdown-item"
-                >
-                  <Compass size={15} style={{ color: '#38BDF8' }} />
-                  <span>Interactive Walkthrough</span>
-                </button>
+                  <button
+                    data-tour="guide-btn"
+                    onClick={() => {
+                      setShowToolsMenu(false);
+                      setGuideInitialTab("workflow");
+                      setShowGuideModal(true);
+                    }}
+                    className="tracker-dropdown-item"
+                  >
+                    <HelpCircle size={15} style={{ color: '#38BDF8' }} />
+                    <span>Leader Handbook & Guide</span>
+                  </button>
 
-                <a
-                  href="/quiz"
-                  className="tracker-dropdown-item"
-                  style={{ textDecoration: 'none' }}
-                  onClick={() => setShowToolsMenu(false)}
-                >
-                  <Trophy size={15} style={{ color: '#60A5FA' }} />
-                  <span>Bible Reading Quiz Hub</span>
-                </a>
+                  <button
+                    onClick={() => {
+                      setShowToolsMenu(false);
+                      setSelectedDay(currentDay);
+                      setShowSpotlightTour(true);
+                    }}
+                    className="tracker-dropdown-item"
+                  >
+                    <Compass size={15} style={{ color: '#38BDF8' }} />
+                    <span>Interactive Walkthrough</span>
+                  </button>
 
-                <div className="tracker-dropdown-divider" />
+                  <a
+                    href="/quiz"
+                    className="tracker-dropdown-item"
+                    style={{ textDecoration: 'none' }}
+                    onClick={() => setShowToolsMenu(false)}
+                  >
+                    <Trophy size={15} style={{ color: '#60A5FA' }} />
+                    <span>Bible Reading Quiz Hub</span>
+                  </a>
 
-                <div className="tracker-dropdown-item-wrap">
-                  <InstallPwaButton />
+                  <div className="tracker-dropdown-divider" />
+
+                  <div className="tracker-dropdown-item-wrap">
+                    <InstallPwaButton />
+                  </div>
+
+                  <button
+                    onClick={() => { setShowToolsMenu(false); onLogout(); }}
+                    className="tracker-dropdown-item tracker-dropdown-item-danger"
+                  >
+                    <LogOut size={15} />
+                    <span>Logout</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowToolsMenu(false)}
+                    className="tracker-sheet-close-btn mobile-only"
+                  >
+                    Cancel
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => { setShowToolsMenu(false); onLogout(); }}
-                  className="tracker-dropdown-item tracker-dropdown-item-danger"
-                >
-                  <LogOut size={15} />
-                  <span>Logout</span>
-                </button>
-              </div>
+              </>
             )}
           </div>
         </div>

@@ -776,15 +776,18 @@ export default function AdminDashboard({ onLogout }) {
         <div className="tracker-header-brand-bar">
           <div className="tracker-header-title">
             <img src="/eccfbrclogo_square.png" alt="ECCF Logo" />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <span className="tracker-header-brand-name">Admin Command Center</span>
+            <div className="tracker-header-title-text">
+              <div className="tracker-header-title-row">
+                <span className="tracker-header-brand-name">
+                  <span className="desktop-only">Admin Command Center</span>
+                  <span className="mobile-only">Admin Hub</span>
+                </span>
                 <span className="tracker-edition-badge-compact">
-                  <BookOpen size={11} />
-                  <span>{data?.isArchive ? "Archive Mode" : "Live Challenge"}</span>
+                  <span className="tracker-pulse-dot dot-open" />
+                  <span>{data?.isArchive ? (data?.archiveInfo?.edition || "Archive") : "Live"}</span>
                 </span>
               </div>
-              <span className="tracker-header-subtext">ECCF Bible Reading Challenge</span>
+              <span className="tracker-header-subtext desktop-only">ECCF Bible Reading Challenge</span>
             </div>
           </div>
         </div>
@@ -796,7 +799,7 @@ export default function AdminDashboard({ onLogout }) {
             title="Open Quiz Control Center"
             className="tracker-btn-quiz tracker-btn-quiz-hub"
           >
-            <Trophy size={15} /> <span>Quiz Hub</span>
+            <Trophy size={15} /> <span className="desktop-only">Quiz Hub</span>
           </a>
 
           {/* Refresh Database */}
@@ -823,70 +826,105 @@ export default function AdminDashboard({ onLogout }) {
             </button>
 
             {showToolsMenu && (
-              <div className="tracker-dropdown-menu">
-                <div className="tracker-dropdown-header">Guides & Walkthroughs</div>
-                
-                <button
-                  onClick={() => { setShowToolsMenu(false); setShowTutorial(true); }}
-                  className="tracker-dropdown-item"
-                >
-                  <HelpCircle size={15} style={{ color: '#38BDF8' }} />
-                  <span>Admin Handbook</span>
-                </button>
+              <>
+                <div className="tracker-menu-backdrop mobile-only" onClick={() => setShowToolsMenu(false)} />
+                <div className="tracker-dropdown-menu">
+                  <div className="tracker-sheet-handle mobile-only" />
 
-                <button
-                  onClick={() => { setShowToolsMenu(false); setShowSpotlightTour(true); }}
-                  className="tracker-dropdown-item"
-                >
-                  <Play size={14} fill="currentColor" style={{ color: '#38BDF8' }} />
-                  <span>Interactive Tour</span>
-                </button>
-
-                <div className="tracker-dropdown-divider" />
-                <div className="tracker-dropdown-header">Edition & Controls</div>
-
-                <button
-                  onClick={() => { setShowToolsMenu(false); setActiveTab('wizard'); }}
-                  className="tracker-dropdown-item"
-                >
-                  <PlusCircle size={15} style={{ color: '#60A5FA' }} />
-                  <span>Start New Edition</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    handleToggleLeaderReporting(!isLeaderReportingAllowed);
-                  }}
-                  className="tracker-dropdown-item"
-                >
-                  <Power size={15} style={{ color: isLeaderReportingAllowed ? '#34D399' : '#EF4444' }} />
-                  <span>Reporting: <strong>{isLeaderReportingAllowed ? 'Active (ON)' : 'Paused (OFF)'}</strong></span>
-                </button>
-
-                {isReadingCompleted && (
+                  <div className="tracker-dropdown-header">Guides & Walkthroughs</div>
+                  
                   <button
-                    onClick={() => { setShowToolsMenu(false); setShowPdfModal(true); }}
+                    onClick={() => { setShowToolsMenu(false); setShowTutorial(true); }}
                     className="tracker-dropdown-item"
                   >
-                    <FileDown size={15} style={{ color: '#34D399' }} />
-                    <span>Download PDF Reports</span>
+                    <HelpCircle size={15} style={{ color: '#38BDF8' }} />
+                    <span>Admin Handbook</span>
                   </button>
-                )}
 
-                <div className="tracker-dropdown-divider" />
+                  <button
+                    onClick={() => { setShowToolsMenu(false); setShowSpotlightTour(true); }}
+                    className="tracker-dropdown-item"
+                  >
+                    <Play size={14} fill="currentColor" style={{ color: '#38BDF8' }} />
+                    <span>Interactive Tour</span>
+                  </button>
 
-                <div className="tracker-dropdown-item-wrap">
-                  <InstallPwaButton />
+                  <div className="tracker-dropdown-divider" />
+                  <div className="tracker-dropdown-header">Edition & Controls</div>
+
+                  {/* Quick Active Edition Switcher */}
+                  <div className="tracker-dropdown-select-wrap">
+                    <label className="tracker-dropdown-select-label">Active Challenge Edition</label>
+                    <select
+                      value={selectedEdition}
+                      onChange={(e) => {
+                        const newEd = e.target.value;
+                        handleSwitchGlobalEdition(newEd);
+                        setShowToolsMenu(false);
+                      }}
+                      className="tracker-dropdown-select"
+                    >
+                      <option value="live">
+                        Live: {data?.settings?.Challenge_Edition || "Active Challenge"}
+                      </option>
+                      {editionsList && editionsList.map(arch => (
+                        <option key={arch.id} value={arch.id}>
+                          Past: {arch.edition} ({arch.startDate || 'Past'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={() => { setShowToolsMenu(false); setActiveTab('wizard'); }}
+                    className="tracker-dropdown-item"
+                  >
+                    <PlusCircle size={15} style={{ color: '#60A5FA' }} />
+                    <span>Start New Edition</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      handleToggleLeaderReporting(!isLeaderReportingAllowed);
+                    }}
+                    className="tracker-dropdown-item"
+                  >
+                    <Power size={15} style={{ color: isLeaderReportingAllowed ? '#34D399' : '#EF4444' }} />
+                    <span>Reporting: <strong>{isLeaderReportingAllowed ? 'Active (ON)' : 'Paused (OFF)'}</strong></span>
+                  </button>
+
+                  {isReadingCompleted && (
+                    <button
+                      onClick={() => { setShowToolsMenu(false); setShowPdfModal(true); }}
+                      className="tracker-dropdown-item"
+                    >
+                      <FileDown size={15} style={{ color: '#34D399' }} />
+                      <span>Download PDF Reports</span>
+                    </button>
+                  )}
+
+                  <div className="tracker-dropdown-divider" />
+
+                  <div className="tracker-dropdown-item-wrap">
+                    <InstallPwaButton />
+                  </div>
+
+                  <button
+                    onClick={() => { setShowToolsMenu(false); onLogout(); }}
+                    className="tracker-dropdown-item tracker-dropdown-item-danger"
+                  >
+                    <LogOut size={15} />
+                    <span>Logout</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowToolsMenu(false)}
+                    className="tracker-sheet-close-btn mobile-only"
+                  >
+                    Cancel
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => { setShowToolsMenu(false); onLogout(); }}
-                  className="tracker-dropdown-item tracker-dropdown-item-danger"
-                >
-                  <LogOut size={15} />
-                  <span>Logout</span>
-                </button>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -942,8 +980,8 @@ export default function AdminDashboard({ onLogout }) {
         </button>
       </div>
 
-      {/* Global Edition & Quick Actions Switcher Bar */}
-      <div className="tracker-edition-bar" data-tour="admin-edition-bar">
+      {/* Global Edition & Quick Actions Switcher Bar (Desktop only, mobile accesses via Tools menu or Settings) */}
+      <div className="tracker-edition-bar desktop-only" data-tour="admin-edition-bar">
         <div className="tracker-edition-left">
           <span className="tracker-edition-label">
             <BookOpen size={13} style={{ color: 'var(--accent)' }} />
