@@ -2206,18 +2206,6 @@ ${pendingText}
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{
-                            fontSize: '0.75rem',
-                            fontWeight: '700',
-                            padding: '0.25rem 0.65rem',
-                            borderRadius: '0.4rem',
-                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                            color: '#FBBF24',
-                            border: '1px solid rgba(245, 158, 11, 0.3)'
-                          }}>
-                            ⏳ Yet to Submit
-                          </span>
-
                           {waUrl && (
                             <a
                               href={waUrl}
