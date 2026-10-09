@@ -1364,135 +1364,835 @@ ${pendingText}
       )}
 
       {activeTab === 'quiz' && (
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-            <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #2563EB 0%, #4F46E5 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff'
-            }}>
-              <Trophy size={22} />
-            </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700' }}>{formatTeamName(team)} Quiz Link</h3>
-              <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                Share this link with your team members on WhatsApp
-              </p>
-            </div>
-          </div>
-
-          <div style={{
-            backgroundColor: 'var(--surface-secondary)',
-            border: '1px solid var(--border)',
-            borderRadius: '0.75rem',
-            padding: '1.25rem',
-            marginBottom: '1.5rem'
-          }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-              Direct Quiz URL
-            </label>
-            <div style={{
-              display: 'flex',
-              gap: '0.5rem',
-              alignItems: 'center',
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border-light)',
-              borderRadius: '0.5rem',
-              padding: '0.4rem 0.5rem 0.4rem 0.85rem'
-            }}>
-              <input 
-                type="text"
-                readOnly
-                value={typeof window !== 'undefined' ? `${window.location.origin}/quiz` : '/quiz'}
-                style={{
-                  flex: 1,
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.9rem',
-                  fontFamily: 'monospace',
-                  outline: 'none'
-                }}
-              />
-              <button
-                onClick={handleCopyQuizLink}
-                style={{
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Top Card: Quiz Link & Sharing Bar */}
+          <div className="card" style={{ marginBottom: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #2563EB 0%, #4F46E5 100%)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.35rem',
-                  padding: '0.5rem 0.9rem',
-                  backgroundColor: quizCopied ? 'var(--success)' : 'var(--accent)',
+                  justifyContent: 'center',
                   color: '#fff',
-                  border: 'none',
-                  borderRadius: '0.4rem',
+                  flexShrink: 0
+                }}>
+                  <Trophy size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700' }}>{formatTeamName(team)} Quiz Hub</h3>
+                  <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    Track member submissions, monitor scores, and share the quiz link
+                  </p>
+                </div>
+              </div>
+
+              {/* Quiz Active Status Pill */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {quizData.settings?.isLive ? (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    padding: '0.35rem 0.8rem',
+                    borderRadius: '9999px',
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    color: '#34D399',
+                    fontSize: '0.82rem',
+                    fontWeight: '700'
+                  }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#34D399', boxShadow: '0 0 8px #34D399' }} />
+                    Live: {quizData.settings?.activeRound || "Active Round"}
+                  </span>
+                ) : (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    padding: '0.35rem 0.8rem',
+                    borderRadius: '9999px',
+                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    color: '#FBBF24',
+                    fontSize: '0.82rem',
+                    fontWeight: '700'
+                  }}>
+                    <Lock size={12} />
+                    Quiz Coming Soon
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Direct URL Box */}
+            <div style={{
+              backgroundColor: 'var(--surface-secondary)',
+              border: '1px solid var(--border)',
+              borderRadius: '0.75rem',
+              padding: '1rem',
+              marginBottom: '1rem'
+            }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                Direct Quiz Link
+              </label>
+              <div style={{
+                display: 'flex',
+                gap: '0.5rem',
+                alignItems: 'center',
+                backgroundColor: 'var(--surface)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '0.5rem',
+                padding: '0.35rem 0.45rem 0.35rem 0.75rem'
+              }}>
+                <input 
+                  type="text"
+                  readOnly
+                  value={typeof window !== 'undefined' ? `${window.location.origin}/quiz` : '/quiz'}
+                  style={{
+                    flex: 1,
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.88rem',
+                    fontFamily: 'monospace',
+                    outline: 'none',
+                    minWidth: 0
+                  }}
+                />
+                <button
+                  onClick={handleCopyQuizLink}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.45rem 0.85rem',
+                    backgroundColor: quizCopied ? 'var(--success)' : 'var(--accent)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '0.4rem',
+                    fontSize: '0.82rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {quizCopied ? <CheckCheck size={15} /> : <Copy size={15} />}
+                  <span>{quizCopied ? "Copied!" : "Copy"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={handleCopyQuizBroadcast}
+                style={{
+                  flex: '1 1 200px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  padding: '0.65rem 1rem',
+                  backgroundColor: quizBroadcastCopied ? 'rgba(16, 185, 129, 0.2)' : 'rgba(56, 189, 248, 0.12)',
+                  color: quizBroadcastCopied ? '#34D399' : '#38BDF8',
+                  border: `1px solid ${quizBroadcastCopied ? 'rgba(16, 185, 129, 0.4)' : 'rgba(56, 189, 248, 0.35)'}`,
+                  borderRadius: '0.5rem',
                   fontSize: '0.85rem',
                   fontWeight: '700',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  transition: 'all 0.2s ease'
                 }}
               >
-                {quizCopied ? <CheckCheck size={16} /> : <Copy size={16} />}
-                <span>{quizCopied ? "Copied!" : "Copy"}</span>
+                {quizBroadcastCopied ? <CheckCheck size={16} /> : <Share2 size={16} />}
+                <span>{quizBroadcastCopied ? "Report Copied!" : "Copy WhatsApp Quiz Report"}</span>
+              </button>
+
+              <a
+                href="/quiz"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  flex: '1 1 180px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  padding: '0.65rem 1rem',
+                  backgroundColor: 'var(--surface-secondary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.85rem',
+                  fontWeight: '600',
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <ExternalLink size={15} /> <span>Preview Candidate Screen</span>
+              </a>
+
+              <button
+                onClick={() => fetchTeamQuiz(true)}
+                disabled={quizLoading}
+                title="Refresh Quiz Submissions"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  padding: '0.65rem 0.9rem',
+                  backgroundColor: 'var(--surface-secondary)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.85rem',
+                  fontWeight: '600',
+                  cursor: quizLoading ? 'not-allowed' : 'pointer',
+                  opacity: quizLoading ? 0.6 : 1,
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <RefreshCw size={15} style={{ animation: quizLoading ? 'spin 1s linear infinite' : 'none' }} />
+                <span>Refresh</span>
               </button>
             </div>
           </div>
 
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
-            fontSize: '0.88rem',
-            color: 'var(--text-secondary)',
-            marginBottom: '1.5rem',
-            lineHeight: '1.5'
-          }}>
-            <p style={{ margin: 0 }}>
-              💡 <strong>How it works:</strong>
-            </p>
-            <p style={{ margin: 0 }}>
-              1. Copy this link and send it to your WhatsApp reading group.
-            </p>
-            <p style={{ margin: 0 }}>
-              2. Members will enter their name, WhatsApp number, and select <strong>{formatTeamName(team)}</strong> to start.
-            </p>
-            <p style={{ margin: 0 }}>
-              3. If the Super Admin has not activated the quiz yet, members will see a <strong>"Coming Soon"</strong> screen.
-            </p>
-          </div>
+          {/* Submissions & Scores Management Card */}
+          <div className="card">
+            {/* Header with Title and Search/Filters */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Award size={20} style={{ color: 'var(--accent)' }} />
+                  <span>Team Quiz Submissions & Scores</span>
+                </h3>
+                <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.83rem' }}>
+                  Viewing submissions for <strong>{effectiveRound}</strong>
+                </p>
+              </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <a
-              href="/quiz"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                flex: 1,
-                minWidth: '180px',
+              {/* Round Selector Filter */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-secondary)' }}>Round:</span>
+                <select
+                  value={quizRoundFilter}
+                  onChange={(e) => setQuizRoundFilter(e.target.value)}
+                  style={{
+                    backgroundColor: 'var(--surface-secondary)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.45rem',
+                    padding: '0.4rem 0.75rem',
+                    fontSize: '0.82rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="All">All Rounds</option>
+                  {(quizData.availableRounds || []).map(rnd => (
+                    <option key={rnd} value={rnd}>{rnd}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* 4 Mini Stat Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+              gap: '0.75rem',
+              marginBottom: '1.25rem'
+            }}>
+              {/* Card 1: Submissions */}
+              <div style={{
+                backgroundColor: 'var(--surface-secondary)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '0.65rem',
+                padding: '0.85rem'
+              }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Submitted
+                </div>
+                <div style={{ fontSize: '1.35rem', fontWeight: '800', color: 'var(--text-primary)', marginTop: '0.25rem' }}>
+                  {quizStats.count} <span style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-secondary)' }}>/ {quizStats.totalPossible}</span>
+                </div>
+                <div style={{ width: '100%', height: '5px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '9999px', marginTop: '0.45rem', overflow: 'hidden' }}>
+                  <div style={{ width: `${quizStats.completionPct}%`, height: '100%', backgroundColor: 'var(--accent)', borderRadius: '9999px', transition: 'width 0.4s ease' }} />
+                </div>
+              </div>
+
+              {/* Card 2: Average Score */}
+              <div style={{
+                backgroundColor: 'var(--surface-secondary)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '0.65rem',
+                padding: '0.85rem'
+              }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Average Score
+                </div>
+                <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#60A5FA', marginTop: '0.25rem' }}>
+                  {quizStats.avgScore} <span style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-secondary)' }}>/ {quizStats.avgTotalQ}</span>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  {quizStats.avgPct}% team avg
+                </div>
+              </div>
+
+              {/* Card 3: Top Score */}
+              <div style={{
+                backgroundColor: 'var(--surface-secondary)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '0.65rem',
+                padding: '0.85rem'
+              }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Highest Score
+                </div>
+                <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#34D399', marginTop: '0.25rem' }}>
+                  {quizStats.topScore} <span style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-secondary)' }}>/ {quizStats.avgTotalQ}</span>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  Leaderboard best
+                </div>
+              </div>
+
+              {/* Card 4: Completion Rate */}
+              <div style={{
+                backgroundColor: 'var(--surface-secondary)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '0.65rem',
+                padding: '0.85rem'
+              }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Participation
+                </div>
+                <div style={{ fontSize: '1.35rem', fontWeight: '800', color: quizStats.completionPct >= 80 ? '#34D399' : quizStats.completionPct >= 50 ? '#FBBF24' : '#F87171', marginTop: '0.25rem' }}>
+                  {quizStats.completionPct}%
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  {quizStats.count} completed
+                </div>
+              </div>
+            </div>
+
+            {/* View Sub-Tabs and Search Bar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.65rem', marginBottom: '1rem' }}>
+              {/* Segmented View Pills */}
+              <div style={{
+                display: 'inline-flex',
+                backgroundColor: 'var(--surface-secondary)',
+                padding: '0.25rem',
+                borderRadius: '0.55rem',
+                border: '1px solid var(--border-light)',
+                gap: '0.25rem'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setQuizViewFilter('submitted')}
+                  style={{
+                    border: 'none',
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '0.4rem',
+                    fontSize: '0.8rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    backgroundColor: quizViewFilter === 'submitted' ? 'var(--accent)' : 'transparent',
+                    color: quizViewFilter === 'submitted' ? '#fff' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  Submitted ({filteredQuizResults.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuizViewFilter('pending')}
+                  style={{
+                    border: 'none',
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '0.4rem',
+                    fontSize: '0.8rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    backgroundColor: quizViewFilter === 'pending' ? 'var(--accent)' : 'transparent',
+                    color: quizViewFilter === 'pending' ? '#fff' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  Yet to Submit ({pendingQuizMembers.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuizViewFilter('all')}
+                  style={{
+                    border: 'none',
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '0.4rem',
+                    fontSize: '0.8rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    backgroundColor: quizViewFilter === 'all' ? 'var(--accent)' : 'transparent',
+                    color: quizViewFilter === 'all' ? '#fff' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  All ({activeMembers.length})
+                </button>
+              </div>
+
+              {/* Search Filter Input */}
+              <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                padding: '0.8rem',
+                gap: '0.4rem',
                 backgroundColor: 'var(--surface-secondary)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-light)',
+                border: '1px solid var(--border)',
                 borderRadius: '0.5rem',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                textDecoration: 'none',
-                transition: 'all 0.2s ease',
-                boxSizing: 'border-box'
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; }}
-            >
-              <ExternalLink size={16} /> Preview Candidate Screen
-            </a>
+                padding: '0.35rem 0.65rem',
+                minWidth: '200px',
+                flex: '1 1 200px',
+                maxWidth: '320px'
+              }}>
+                <Search size={14} style={{ color: 'var(--text-secondary)' }} />
+                <input
+                  type="text"
+                  placeholder="Search member name or phone..."
+                  value={quizSearch}
+                  onChange={(e) => setQuizSearch(e.target.value)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.82rem',
+                    outline: 'none',
+                    width: '100%'
+                  }}
+                />
+                {quizSearch && (
+                  <button
+                    onClick={() => setQuizSearch('')}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 0 }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Content Lists */}
+            {quizLoading && !quizData.settings ? (
+              <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary)' }}>
+                <div className="spinner" style={{ margin: '0 auto 1rem auto' }} />
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>Loading team quiz submissions...</p>
+              </div>
+            ) : quizViewFilter === 'submitted' ? (
+              filteredQuizResults.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '3rem 1.5rem',
+                  backgroundColor: 'var(--surface-secondary)',
+                  borderRadius: '0.75rem',
+                  border: '1px dashed var(--border)'
+                }}>
+                  <Trophy size={40} style={{ color: 'var(--text-secondary)', opacity: 0.5, marginBottom: '0.75rem' }} />
+                  <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '1.05rem', fontWeight: '700' }}>
+                    No Quiz Submissions Yet
+                  </h4>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
+                    {quizSearch.trim()
+                      ? `No submitted quizzes matching "${quizSearch}". Try clearing your search.`
+                      : `No members from ${formatTeamName(team)} have submitted their quiz for ${effectiveRound} yet. Copy the quiz link above and share it in your WhatsApp reading group!`}
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                  {filteredQuizResults.map((r, idx) => {
+                    const scorePct = r.percentage !== undefined ? r.percentage : (r.totalQuestions > 0 ? Math.round((r.score / r.totalQuestions) * 100) : 0);
+                    const isHigh = scorePct >= 80;
+                    const isMed = scorePct >= 50 && scorePct < 80;
+                    
+                    const scoreBg = isHigh ? 'rgba(16, 185, 129, 0.15)' : isMed ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+                    const scoreColor = isHigh ? '#34D399' : isMed ? '#FBBF24' : '#F87171';
+                    const scoreBorder = isHigh ? 'rgba(16, 185, 129, 0.35)' : isMed ? 'rgba(245, 158, 11, 0.35)' : 'rgba(239, 68, 68, 0.35)';
+
+                    const timeStr = formatTimeSpent(r.timeSpentSeconds);
+                    const dateStr = formatQuizTimestamp(r.timestamp);
+                    const isExpanded = expandedQuizMember === (r.whatsApp + r.round);
+
+                    let parsedDetails = [];
+                    if (r.details) {
+                      try {
+                        parsedDetails = typeof r.details === 'string' ? JSON.parse(r.details) : r.details;
+                      } catch {
+                        parsedDetails = [];
+                      }
+                    }
+
+                    return (
+                      <div
+                        key={r.whatsApp + r.round + idx}
+                        style={{
+                          backgroundColor: 'var(--surface-secondary)',
+                          border: '1px solid var(--border-light)',
+                          borderRadius: '0.65rem',
+                          padding: '0.85rem 1rem',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                          {/* Member info */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '200px', flex: 1 }}>
+                            <div style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                              border: '1px solid rgba(37, 99, 235, 0.3)',
+                              color: '#60A5FA',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: '800',
+                              fontSize: '0.88rem',
+                              flexShrink: 0
+                            }}>
+                              {r.fullName.trim().charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                                  {r.fullName}
+                                </span>
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: '600',
+                                  padding: '0.1rem 0.45rem',
+                                  borderRadius: '0.35rem',
+                                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                                  color: 'var(--text-secondary)'
+                                }}>
+                                  {r.round}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem', flexWrap: 'wrap' }}>
+                                {r.whatsApp && <span>📱 {r.whatsApp}</span>}
+                                {dateStr && <span>📅 {dateStr}</span>}
+                                {timeStr && <span>⏱️ {timeStr}</span>}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Score Pill & Review Trigger */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                            <div style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'flex-end',
+                              backgroundColor: scoreBg,
+                              border: `1px solid ${scoreBorder}`,
+                              padding: '0.35rem 0.75rem',
+                              borderRadius: '0.55rem',
+                              minWidth: '85px',
+                              textAlign: 'right'
+                            }}>
+                              <span style={{ fontSize: '1.1rem', fontWeight: '800', color: scoreColor, lineHeight: 1.1 }}>
+                                {r.score} <span style={{ fontSize: '0.8rem', fontWeight: '500', opacity: 0.8 }}>/ {r.totalQuestions}</span>
+                              </span>
+                              <span style={{ fontSize: '0.74rem', fontWeight: '700', color: scoreColor }}>
+                                {scorePct}%
+                              </span>
+                            </div>
+
+                            {/* Expand Question Details Button */}
+                            {Array.isArray(parsedDetails) && parsedDetails.length > 0 && (
+                              <button
+                                onClick={() => setExpandedQuizMember(isExpanded ? null : (r.whatsApp + r.round))}
+                                title="Review Answers"
+                                style={{
+                                  background: 'none',
+                                  border: '1px solid var(--border-light)',
+                                  color: 'var(--text-secondary)',
+                                  borderRadius: '0.45rem',
+                                  padding: '0.4rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease'
+                                }}
+                              >
+                                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Question Breakdown Accordion */}
+                        {isExpanded && Array.isArray(parsedDetails) && parsedDetails.length > 0 && (
+                          <div style={{
+                            marginTop: '0.85rem',
+                            paddingTop: '0.85rem',
+                            borderTop: '1px solid var(--border-light)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.5rem'
+                          }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.2rem' }}>
+                              Question Review Breakdown:
+                            </div>
+                            {parsedDetails.map((q, qIdx) => (
+                              <div
+                                key={q.questionId || qIdx}
+                                style={{
+                                  padding: '0.55rem 0.75rem',
+                                  borderRadius: '0.45rem',
+                                  backgroundColor: q.isCorrect ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                                  border: `1px solid ${q.isCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                                  fontSize: '0.82rem'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                                  {q.isCorrect ? (
+                                    <CheckCircle2 size={15} style={{ color: '#34D399', flexShrink: 0, marginTop: '2px' }} />
+                                  ) : (
+                                    <X size={15} style={{ color: '#F87171', flexShrink: 0, marginTop: '2px' }} />
+                                  )}
+                                  <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
+                                    {qIdx + 1}. {q.questionText}
+                                  </span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.78rem', marginLeft: '1.4rem' }}>
+                                  <span style={{ color: q.isCorrect ? '#34D399' : '#F87171' }}>
+                                    <strong>Answered:</strong> {q.userAnswer}
+                                  </span>
+                                  {!q.isCorrect && (
+                                    <span style={{ color: '#34D399' }}>
+                                      <strong>Correct:</strong> {q.correctAnswer}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : quizViewFilter === 'pending' ? (
+              pendingQuizMembers.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '3rem 1.5rem',
+                  backgroundColor: 'var(--surface-secondary)',
+                  borderRadius: '0.75rem',
+                  border: '1px solid var(--border-light)'
+                }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎉</div>
+                  <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '1.1rem', fontWeight: '800', color: '#34D399' }}>
+                    All Members Have Submitted!
+                  </h4>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    Every active member of {formatTeamName(team)} has completed their quiz for {effectiveRound}. Great leadership!
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                  {pendingQuizMembers.map((m) => {
+                    const trimmedName = String(m.Member_Name || '').trim();
+                    const phone = String(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number || '').trim();
+                    const waUrl = getWhatsAppReminderUrl(m, effectiveRound);
+
+                    return (
+                      <div
+                        key={trimmedName}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          backgroundColor: 'var(--surface-secondary)',
+                          border: '1px solid var(--border-light)',
+                          borderLeft: '4px solid var(--warning)',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '0.5rem',
+                          gap: '0.75rem',
+                          flexWrap: 'wrap'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '180px', flex: 1 }}>
+                          <div style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                            color: '#FBBF24',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: '700',
+                            fontSize: '0.85rem',
+                            flexShrink: 0
+                          }}>
+                            {trimmedName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <span style={{ fontWeight: '600', fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>
+                              {trimmedName}
+                            </span>
+                            {phone && (
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                📱 {phone}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{
+                            fontSize: '0.75rem',
+                            fontWeight: '700',
+                            padding: '0.25rem 0.65rem',
+                            borderRadius: '0.4rem',
+                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                            color: '#FBBF24',
+                            border: '1px solid rgba(245, 158, 11, 0.3)'
+                          }}>
+                            ⏳ Yet to Submit
+                          </span>
+
+                          {waUrl && (
+                            <a
+                              href={waUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Send Reminder on WhatsApp"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.35rem 0.75rem',
+                                borderRadius: '0.4rem',
+                                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                color: '#34D399',
+                                border: '1px solid rgba(16, 185, 129, 0.35)',
+                                fontSize: '0.78rem',
+                                fontWeight: '700',
+                                textDecoration: 'none',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <MessageSquare size={13} />
+                              <span>Remind</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : (
+              /* View: All Active Members with Submission Status */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {activeMembers.map(m => {
+                  const trimmedName = String(m.Member_Name || '').trim();
+                  const phone = String(m.WhatsApp_Number || m.Whatsapp_Number || m.WhatsApp || m.Phone || m.Phone_Number || '').trim();
+                  const matchedResult = (quizData.results || []).find(r => 
+                    (isPhoneMatch(r.whatsApp, phone) || isNameMatch(r.fullName, trimmedName)) &&
+                    (quizRoundFilter === 'All' || String(r.round || '').trim().toLowerCase() === String(quizRoundFilter).trim().toLowerCase())
+                  );
+
+                  return (
+                    <div
+                      key={trimmedName}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        backgroundColor: 'var(--surface-secondary)',
+                        border: '1px solid var(--border-light)',
+                        borderLeft: `4px solid ${matchedResult ? 'var(--success)' : 'var(--warning)'}`,
+                        padding: '0.75rem 1rem',
+                        borderRadius: '0.5rem',
+                        gap: '0.75rem',
+                        flexWrap: 'wrap'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '180px', flex: 1 }}>
+                        <div style={{
+                          width: '34px',
+                          height: '34px',
+                          borderRadius: '50%',
+                          backgroundColor: matchedResult ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                          color: matchedResult ? '#34D399' : '#FBBF24',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: '700',
+                          fontSize: '0.85rem',
+                          flexShrink: 0
+                        }}>
+                          {trimmedName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <span style={{ fontWeight: '600', fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>
+                            {trimmedName}
+                          </span>
+                          {phone && (
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                              📱 {phone}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        {matchedResult ? (
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.45rem',
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            color: '#34D399',
+                            border: '1px solid rgba(16, 185, 129, 0.35)',
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: '0.45rem',
+                            fontWeight: '700',
+                            fontSize: '0.82rem'
+                          }}>
+                            <CheckCircle2 size={14} />
+                            <span>Score: {matchedResult.score}/{matchedResult.totalQuestions} ({matchedResult.percentage}%)</span>
+                          </div>
+                        ) : (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                            color: '#FBBF24',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                            padding: '0.35rem 0.65rem',
+                            borderRadius: '0.45rem',
+                            fontWeight: '700',
+                            fontSize: '0.78rem'
+                          }}>
+                            ⏳ Yet to Submit
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}

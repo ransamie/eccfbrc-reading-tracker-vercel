@@ -95,7 +95,7 @@ export default function LeaderTourSpotlight({
       selector: '[data-tour="quiz-tab"]',
       badge: "Feature Spotlight • Quiz",
       title: "Quiz Hub & Milestone Rounds",
-      description: "Switch to the Quiz tab to copy your team's direct quiz link and view candidate guidelines. Important: The quiz is milestone-based and activates only after completing each 10-day round once enabled by the Super Admin.",
+      description: "Switch to the Quiz tab to copy your team's direct quiz link, view real-time member submissions and scores, track pending members, and copy WhatsApp broadcast updates.",
       preferredPlacement: "bottom"
     },
     {
