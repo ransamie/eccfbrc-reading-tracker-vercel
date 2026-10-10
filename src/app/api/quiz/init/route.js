@@ -33,9 +33,14 @@ export async function GET(req) {
       const normPhone = checkPhone.replace(/\D/g, "").replace(/^0+/, "");
       const session = await getSession(normPhone, activeRound, activeEdition);
       if (session) {
+        const nowServer = Date.now();
+        const deadlineNum = Number(session.absoluteDeadline);
+        const remainingSeconds = Math.max(0, Math.round((deadlineNum - nowServer) / 1000));
         activeSession = {
-          deadlineTimestamp: session.absoluteDeadline,
-          startTimestamp: session.startTimestamp
+          deadlineTimestamp: deadlineNum,
+          startTimestamp: Number(session.startTimestamp),
+          serverTimestamp: nowServer,
+          remainingSeconds
         };
       }
     }
@@ -105,12 +110,18 @@ export async function POST(req) {
       return clientQuestion;
     });
 
+    const nowServer = Date.now();
+    const deadlineNum = Number(session.absoluteDeadline);
+    const remainingSeconds = Math.max(0, Math.round((deadlineNum - nowServer) / 1000));
+
     return NextResponse.json({
       edition: activeEdition,
       round: activeRound,
       questions: securedQuestions,
-      deadlineTimestamp: session.absoluteDeadline,
-      startTimestamp: session.startTimestamp
+      deadlineTimestamp: deadlineNum,
+      startTimestamp: Number(session.startTimestamp),
+      serverTimestamp: nowServer,
+      remainingSeconds
     }, { status: 200 });
 
   } catch (error) {

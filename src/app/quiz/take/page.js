@@ -22,6 +22,7 @@ export default function QuizTakePage() {
   const [participant, setParticipant] = useState({ fullName: "", whatsapp: "", team: "", round: "" });
 
   const timerRef = useRef(null);
+  const quizStartedAtRef = useRef(null);
 
   // 1. Initialization and Offline Support
   useEffect(() => {
@@ -92,10 +93,20 @@ export default function QuizTakePage() {
       const res = await fetch(`/api/quiz/init?whatsapp=${encodeURIComponent(cleanPhone)}&round=${encodeURIComponent(round)}&t=${Date.now()}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.activeSession && data.activeSession.deadlineTimestamp) {
-          const serverDeadline = Number(data.activeSession.deadlineTimestamp);
-          if (serverDeadline > Date.now()) {
-            setDeadline(serverDeadline);
+        if (data.activeSession) {
+          const clientNow = Date.now();
+          let clientDeadline = null;
+          if (typeof data.activeSession.remainingSeconds === "number" && data.activeSession.remainingSeconds > 0) {
+            clientDeadline = clientNow + data.activeSession.remainingSeconds * 1000;
+          } else if (data.activeSession.serverTimestamp && data.activeSession.deadlineTimestamp) {
+            const serverOffset = clientNow - Number(data.activeSession.serverTimestamp);
+            clientDeadline = Number(data.activeSession.deadlineTimestamp) + serverOffset;
+          } else if (Number(data.activeSession.deadlineTimestamp) > clientNow) {
+            clientDeadline = Number(data.activeSession.deadlineTimestamp);
+          }
+
+          if (clientDeadline && clientDeadline > clientNow) {
+            setDeadline(clientDeadline);
             setTimeExpired(false);
           }
         }
@@ -154,12 +165,17 @@ export default function QuizTakePage() {
     };
   }, [hasStarted, deadline, timeExpired, calculateTimeLeft]);
 
-  // 4. Auto-submit when time expires
+  // 4. Auto-submit when time expires (with safety guard against instant zero-second auto-submits)
   useEffect(() => {
-    if (timeExpired && !isSubmitting) {
+    if (timeExpired && !isSubmitting && hasStarted) {
+      // Safety guard: Don't auto-submit if the quiz literally just initialized within 5 seconds
+      if (quizStartedAtRef.current && (Date.now() - quizStartedAtRef.current < 5000)) {
+        console.warn("Time expired triggered suspiciously early after start. Suppressing premature auto-submit.");
+        return;
+      }
       handleFinalSubmit();
     }
-  }, [timeExpired, isSubmitting]);
+  }, [timeExpired, isSubmitting, hasStarted]);
 
   const startQuiz = async () => {
     setIsSubmitting(true);
@@ -185,6 +201,18 @@ export default function QuizTakePage() {
       
       const data = await res.json();
       
+      const clientNow = Date.now();
+      let clientDeadline = null;
+      if (typeof data.remainingSeconds === "number" && data.remainingSeconds > 0) {
+        clientDeadline = clientNow + data.remainingSeconds * 1000;
+      } else if (data.serverTimestamp && data.deadlineTimestamp) {
+        const serverOffset = clientNow - Number(data.serverTimestamp);
+        clientDeadline = Number(data.deadlineTimestamp) + serverOffset;
+      } else {
+        clientDeadline = Number(data.deadlineTimestamp);
+      }
+
+      quizStartedAtRef.current = clientNow;
       setQuestions(data.questions || []);
       setParticipant(p => ({ 
         ...p, 
@@ -194,7 +222,8 @@ export default function QuizTakePage() {
         round: data.round || p.round,
         edition: data.edition || p.edition || "New Testament (3 chapters daily)"
       }));
-      setDeadline(data.deadlineTimestamp);
+      setDeadline(clientDeadline);
+      setTimeExpired(false);
       setHasStarted(true);
       
       localStorage.removeItem("quiz_pending_start");
