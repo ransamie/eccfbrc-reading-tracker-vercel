@@ -3982,6 +3982,11 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#60A5FA', marginTop: '0.15rem' }}>
                   {totalStartedCount}
                 </div>
+                {uniqueCandidatesStartedCount !== totalStartedCount && (
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.15rem', fontWeight: '600' }}>
+                    {uniqueCandidatesStartedCount} unique candidate{uniqueCandidatesStartedCount === 1 ? '' : 's'}
+                  </div>
+                )}
               </div>
 
               <div style={{
@@ -4010,6 +4015,11 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                 <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#34D399', marginTop: '0.15rem' }}>
                   {completedSessionsCount}
                 </div>
+                {uniqueCompletedCount !== completedSessionsCount && (
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.15rem', fontWeight: '600' }}>
+                    {uniqueCompletedCount} unique candidate{uniqueCompletedCount === 1 ? '' : 's'}
+                  </div>
+                )}
               </div>
 
               <div style={{
@@ -4067,6 +4077,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     onChange={(val) => {
                       setSelectedActivityRound(val);
                       setSelectedRoundFilter(val);
+                      setSelectedSessionRoundFilter(val);
                     }}
                     options={[
                       { value: 'All', label: 'All Rounds' },
@@ -4082,7 +4093,10 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     isOpen={openDropdown === 'team'}
                     onToggle={() => setOpenDropdown(prev => prev === 'team' ? null : 'team')}
                     onClose={() => setOpenDropdown(null)}
-                    onChange={(val) => setSelectedTeamFilter(val)}
+                    onChange={(val) => {
+                      setSelectedTeamFilter(val);
+                      setSelectedSessionTeamFilter(val);
+                    }}
                     options={[
                       { value: 'All', label: 'All Teams' },
                       ...uniqueTeams.map(t => ({ value: t, label: `Team ${t}` }))
@@ -4139,7 +4153,10 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                           const displayTeam = !rawTeam || rawTeam.toLowerCase() === 'unassigned'
                             ? 'Unassigned'
                             : (rawTeam.toLowerCase().startsWith('team ') ? rawTeam : `Team ${rawTeam}`);
-                          const isUnassigned = displayTeam === 'Unassigned';
+                          const candidateKey = `${String(r.whatsApp || r.whatsapp || "").replace(/\D/g, "").slice(-10)}_${String(r.round || "").trim().toLowerCase()}`;
+                          const candidateSubmissions = submissionsByCandidateRound.get(candidateKey) || [];
+                          const hasMultiple = candidateSubmissions.length > 1;
+                          const attemptIndex = hasMultiple ? candidateSubmissions.findIndex(sub => (sub.timestamp === r.timestamp && sub.score === r.score)) : -1;
 
                           return (
                             <tr 
@@ -4188,6 +4205,20 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                                   }}>
                                     {r.round}
                                   </span>
+                                  {hasMultiple && attemptIndex !== -1 && (
+                                    <span style={{
+                                      backgroundColor: attemptIndex > 0 ? 'rgba(245, 158, 11, 0.14)' : 'rgba(59, 130, 246, 0.12)',
+                                      color: attemptIndex > 0 ? '#FBBF24' : '#60A5FA',
+                                      border: attemptIndex > 0 ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(59, 130, 246, 0.25)',
+                                      padding: '0.15rem 0.45rem',
+                                      borderRadius: '0.35rem',
+                                      fontSize: '0.7rem',
+                                      fontWeight: '700',
+                                      whiteSpace: 'nowrap'
+                                    }} title={attemptIndex > 0 ? `Subsequent submission (Attempt ${attemptIndex + 1})` : `First submission attempt`}>
+                                      {attemptIndex > 0 ? `Attempt ${attemptIndex + 1} (Retake)` : 'Attempt 1'}
+                                    </span>
+                                  )}
                                 </div>
                               </td>
 
@@ -4334,7 +4365,11 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     isOpen={openDropdown === 'session_round'}
                     onToggle={() => setOpenDropdown(prev => prev === 'session_round' ? null : 'session_round')}
                     onClose={() => setOpenDropdown(null)}
-                    onChange={(val) => setSelectedSessionRoundFilter(val)}
+                    onChange={(val) => {
+                      setSelectedSessionRoundFilter(val);
+                      setSelectedActivityRound(val);
+                      setSelectedRoundFilter(val);
+                    }}
                     options={[
                       { value: 'All', label: 'All Rounds' },
                       ...uniqueRoundsInEdition.map(r => ({ value: r, label: r }))
@@ -4349,7 +4384,10 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                     isOpen={openDropdown === 'session_team'}
                     onToggle={() => setOpenDropdown(prev => prev === 'session_team' ? null : 'session_team')}
                     onClose={() => setOpenDropdown(null)}
-                    onChange={(val) => setSelectedSessionTeamFilter(val)}
+                    onChange={(val) => {
+                      setSelectedSessionTeamFilter(val);
+                      setSelectedTeamFilter(val);
+                    }}
                     options={[
                       { value: 'All', label: 'All Teams' },
                       ...uniqueSessionTeams.map(t => ({ value: t, label: `Team ${t}` }))
