@@ -931,7 +931,7 @@ export default function AdminDashboard({ onLogout }) {
       </div>
 
       {/* Streamlined Operational Navigation Bar (Focused 5 core tabs) */}
-      <div className="tracker-tabs-bar" data-tour="admin-tabs-bar">
+      <div className="tracker-tabs-bar admin-tabs-bar" data-tour="admin-tabs-bar">
         <button 
           className={`tracker-tab-pill ${activeTab === 'analytics' ? 'active' : ''}`} 
           onClick={(e) => {
@@ -1105,7 +1105,7 @@ export default function AdminDashboard({ onLogout }) {
       )}
 
       {activeTab === 'leaders' && (
-        <div className="card" data-tour="admin-leaders-controls">
+        <div className="mark-updates-container" data-tour="admin-leaders-controls">
 
           <div className="admin-section-header">
             <div>

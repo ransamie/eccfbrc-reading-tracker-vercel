@@ -1325,38 +1325,6 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       return new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime();
     });
 
-  // Sessions scoped to currently selected reading track, deduplicated by candidate phone + round
-  const rawTrackSessions = sessions.filter(s => {
-    const sEd = s.edition || "New Testament (3 chapters daily)";
-    return sEd.trim().toLowerCase() === currentTrack.trim().toLowerCase();
-  });
-
-  const trackSessions = [];
-  const seenSessionKeys = new Set();
-  // Sort by startTimestamp descending so newest session is retained if duplicate exists
-  const sortedTrackSessions = [...rawTrackSessions].sort((a, b) => (b.startTimestamp || 0) - (a.startTimestamp || 0));
-  for (const s of sortedTrackSessions) {
-    const phone = String(s.whatsApp || s.whatsapp || "").replace(/\D/g, "").slice(-10);
-    const round = String(s.round || "").trim().toLowerCase();
-    const key = `${phone}_${round}`;
-    if (phone && !seenSessionKeys.has(key)) {
-      seenSessionKeys.add(key);
-      trackSessions.push(s);
-    } else if (!phone) {
-      trackSessions.push(s);
-    }
-  }
-
-  const uniqueSessionTeams = Array.from(new Set([
-    ...uniqueTeams,
-    ...trackSessions.map(s => s.team).filter(Boolean)
-  ])).sort((a, b) => {
-    const numA = parseInt(a, 10);
-    const numB = parseInt(b, 10);
-    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-    return String(a).localeCompare(String(b));
-  });
-
   const isPhoneMatch = (p1, p2) => {
     if (!p1 || !p2) return false;
     const s1 = String(p1).replace(/\D/g, "").replace(/^0+/, "");
@@ -1370,31 +1338,84 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
     return false;
   };
 
-  const enrichedSessions = trackSessions.map(s => {
-    const sRound = String(s.round || "").trim().toLowerCase();
+  // Sessions scoped to currently selected reading track
+  const rawTrackSessions = sessions.filter(s => {
+    const sEd = s.edition || "New Testament (3 chapters daily)";
+    return sEd.trim().toLowerCase() === currentTrack.trim().toLowerCase();
+  });
 
-    // Check if matching result exists strictly within this track and round
-    const matchingResult = trackResults.find(r => {
-      const isPhone = isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp);
-      const rRound = String(r.round || "").trim().toLowerCase();
-      return isPhone && rRound === sRound;
-    });
+  // Pair track submissions with session records, and synthesize any missing session
+  const sortedSubmissionsForPairing = [...trackResults].sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+  const sortedSessionsForPairing = [...rawTrackSessions].sort((a, b) => (a.startTimestamp || 0) - (b.startTimestamp || 0));
 
-    const now = Date.now();
-    const isCompleted = !!matchingResult;
-    const deadline = Number(s.absoluteDeadline) || (s.startTimestamp + 15 * 60 * 1000);
-    const isExpired = !isCompleted && now >= deadline;
-    const isActive = !isCompleted && now < deadline;
+  const usedSessionIndices = new Set();
+  const enrichedSessions = [];
 
-    let status = "active";
-    let statusLabel = "In Progress";
-    if (isCompleted) {
-      status = "completed";
-      statusLabel = "Completed";
-    } else if (isExpired) {
-      status = "expired";
-      statusLabel = "Time Expired";
+  // 1. Every submission represents a candidate attempt that was started and completed
+  for (const r of sortedSubmissionsForPairing) {
+    const rRound = String(r.round || "").trim().toLowerCase();
+
+    // Look for matching session in the same round that hasn't been claimed yet
+    let matchedSessionIdx = -1;
+    for (let i = 0; i < sortedSessionsForPairing.length; i++) {
+      if (usedSessionIndices.has(i)) continue;
+      const s = sortedSessionsForPairing[i];
+      const sRound = String(s.round || "").trim().toLowerCase();
+      if (sRound === rRound && isPhoneMatch(r.whatsApp || r.whatsapp, s.whatsApp || s.whatsapp)) {
+        matchedSessionIdx = i;
+        break;
+      }
     }
+
+    const matchedSession = matchedSessionIdx !== -1 ? sortedSessionsForPairing[matchedSessionIdx] : null;
+    if (matchedSessionIdx !== -1) {
+      usedSessionIndices.add(matchedSessionIdx);
+    }
+
+    const startTimestamp = matchedSession?.startTimestamp || (r.timestamp ? new Date(r.timestamp).getTime() - ((r.timeSpentSeconds || 600) * 1000) : Date.now());
+    let timeSpentSeconds = r.timeSpentSeconds !== null && r.timeSpentSeconds !== undefined ? r.timeSpentSeconds : null;
+    if ((timeSpentSeconds === null || timeSpentSeconds === undefined) && r.timestamp && startTimestamp) {
+      const subMs = new Date(r.timestamp).getTime() - startTimestamp;
+      if (subMs > 0 && subMs < 86400000) timeSpentSeconds = Math.round(subMs / 1000);
+    }
+
+    enrichedSessions.push({
+      ...(matchedSession || {}),
+      fullName: (matchedSession?.fullName && matchedSession.fullName !== "Candidate" ? matchedSession.fullName : r.fullName) || "Candidate",
+      whatsApp: r.whatsApp || r.whatsapp || matchedSession?.whatsApp || "",
+      team: (matchedSession?.team && matchedSession.team !== "Unassigned" ? matchedSession.team : r.team) || "Unassigned",
+      edition: r.edition || matchedSession?.edition || currentTrack,
+      round: r.round || matchedSession?.round || "",
+      startTimestamp,
+      absoluteDeadline: matchedSession?.absoluteDeadline || (startTimestamp + 15 * 60 * 1000),
+      status: "completed",
+      statusLabel: "Completed",
+      isCompleted: true,
+      isActive: false,
+      isExpired: false,
+      timeRemainingStr: "",
+      matchingResult: r,
+      timeSpentSeconds,
+      formattedTimeSpent: formatTimeSpent(timeSpentSeconds)
+    });
+  }
+
+  // 2. Add remaining sessions that were never submitted (active or expired candidates)
+  // Deduplicate rapid unsubmitted reloads by candidate phone + round
+  const seenUnsubmittedKeys = new Set();
+  const now = Date.now();
+  for (let i = sortedSessionsForPairing.length - 1; i >= 0; i--) {
+    if (usedSessionIndices.has(i)) continue;
+    const s = sortedSessionsForPairing[i];
+    const phone = String(s.whatsApp || s.whatsapp || "").replace(/\D/g, "").slice(-10);
+    const round = String(s.round || "").trim().toLowerCase();
+    const key = `${phone}_${round}`;
+    if (phone && seenUnsubmittedKeys.has(key)) continue;
+    if (phone) seenUnsubmittedKeys.add(key);
+
+    const deadline = Number(s.absoluteDeadline) || (s.startTimestamp + 15 * 60 * 1000);
+    const isExpired = now >= deadline;
+    const isActive = now < deadline;
 
     let timeRemainingStr = "";
     if (isActive) {
@@ -1404,54 +1425,79 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
       timeRemainingStr = `${remM}m ${remS.toString().padStart(2, '0')}s left`;
     }
 
-    let timeSpentSeconds = matchingResult ? matchingResult.timeSpentSeconds : null;
-    if (isCompleted && (timeSpentSeconds === null || timeSpentSeconds === undefined) && matchingResult.timestamp && s.startTimestamp) {
-      const subMs = new Date(matchingResult.timestamp).getTime() - s.startTimestamp;
-      if (subMs > 0) timeSpentSeconds = Math.round(subMs / 1000);
-    }
-
-    // Resolve Name: s.fullName -> matchingResult.fullName -> "Candidate"
-    let resolvedName = s.fullName && s.fullName !== "Candidate" ? s.fullName : "";
-    if (!resolvedName && matchingResult && matchingResult.fullName && matchingResult.fullName !== "Candidate") {
-      resolvedName = matchingResult.fullName;
-    }
-
-    // Resolve Team: s.team -> matchingResult.team -> "Unassigned"
-    let resolvedTeam = s.team && s.team !== "Unassigned" ? s.team : "";
-    if (!resolvedTeam && matchingResult && matchingResult.team && matchingResult.team !== "Unassigned") {
-      resolvedTeam = matchingResult.team;
-    }
-
-    return {
+    enrichedSessions.push({
       ...s,
-      fullName: resolvedName || "Candidate",
-      team: resolvedTeam || "Unassigned",
+      fullName: s.fullName || "Candidate",
+      team: s.team || "Unassigned",
       edition: s.edition || currentTrack,
-      status,
-      statusLabel,
-      isCompleted,
+      round: s.round || "",
+      startTimestamp: s.startTimestamp || now,
+      status: isActive ? "active" : "expired",
+      statusLabel: isActive ? "In Progress" : "Time Expired",
+      isCompleted: false,
       isActive,
       isExpired,
       timeRemainingStr,
-      matchingResult,
-      timeSpentSeconds,
-      formattedTimeSpent: formatTimeSpent(timeSpentSeconds)
-    };
+      matchingResult: null,
+      timeSpentSeconds: null,
+      formattedTimeSpent: ""
+    });
+  }
+
+  const uniqueSessionTeams = Array.from(new Set([
+    ...uniqueTeams,
+    ...enrichedSessions.map(s => s.team).filter(Boolean)
+  ])).sort((a, b) => {
+    const numA = parseInt(a, 10);
+    const numB = parseInt(b, 10);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return String(a).localeCompare(String(b));
   });
 
   // Effective round filter for Sessions (syncing selectedActivityRound with selectedSessionRoundFilter)
   const effectiveSessionsRound = selectedActivityRound !== "All" ? selectedActivityRound : selectedSessionRoundFilter;
 
-  const filteredSessions = enrichedSessions
+  // Scoped to current round and team (for overview metric cards)
+  const roundTeamSessions = enrichedSessions
     .filter(s => effectiveSessionsRound === "All" || String(s.round || "").trim().toLowerCase() === String(effectiveSessionsRound).trim().toLowerCase())
-    .filter(s => selectedSessionTeamFilter === "All" || s.team === selectedSessionTeamFilter)
+    .filter(s => selectedTeamFilter === "All" || s.team === selectedTeamFilter);
+
+  // Filtered sessions for Live Sessions table (applying status filter)
+  const filteredSessions = roundTeamSessions
     .filter(s => selectedSessionStatusFilter === "All" || s.status === selectedSessionStatusFilter)
     .sort((a, b) => (b.startTimestamp || 0) - (a.startTimestamp || 0));
 
-  const totalStartedCount = filteredSessions.length;
-  const activeSessionsCount = filteredSessions.filter(s => s.status === 'active').length;
+  const totalStartedCount = roundTeamSessions.length;
+  const activeSessionsCount = roundTeamSessions.filter(s => s.status === 'active').length;
   const completedSessionsCount = sortedResults.length;
-  const expiredSessionsCount = filteredSessions.filter(s => s.status === 'expired').length;
+  const expiredSessionsCount = roundTeamSessions.filter(s => s.status === 'expired').length;
+
+  const uniqueCandidatesStartedCount = new Set(
+    roundTeamSessions
+      .map(s => String(s.whatsApp || s.whatsapp || "").replace(/\D/g, "").slice(-10))
+      .filter(Boolean)
+  ).size;
+
+  const uniqueCompletedCount = new Set(
+    sortedResults
+      .map(r => String(r.whatsApp || r.whatsapp || "").replace(/\D/g, "").slice(-10))
+      .filter(Boolean)
+  ).size;
+
+  // Group submissions by candidate phone + round to detect multiple attempts
+  const submissionsByCandidateRound = new Map();
+  for (const r of sortedResults) {
+    const phone = String(r.whatsApp || r.whatsapp || "").replace(/\D/g, "").slice(-10);
+    const round = String(r.round || "").trim().toLowerCase();
+    const key = `${phone}_${round}`;
+    if (!submissionsByCandidateRound.has(key)) {
+      submissionsByCandidateRound.set(key, []);
+    }
+    submissionsByCandidateRound.get(key).push(r);
+  }
+  for (const list of submissionsByCandidateRound.values()) {
+    list.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+  }
 
   const toggleSort = (col) => {
     if (resultSortBy === col) {

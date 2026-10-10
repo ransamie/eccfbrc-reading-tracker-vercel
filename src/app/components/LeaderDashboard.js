@@ -1003,7 +1003,7 @@ ${pendingText}
         </div>
       </div>
 
-      <div className="tracker-tabs-bar">
+      <div className="tracker-tabs-bar leader-tabs-bar">
         <button 
           className={`tracker-tab-pill ${activeTab === 'report' ? 'active' : ''}`} 
           onClick={(e) => {

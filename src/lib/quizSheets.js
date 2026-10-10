@@ -100,6 +100,20 @@ export async function getQuestionsForRound(round, edition) {
     }));
 }
 
+// Robust phone number matcher (handles international prefix +234, leading 0, etc.)
+export function isPhoneMatch(p1, p2) {
+  if (!p1 || !p2) return false;
+  const s1 = String(p1).replace(/\D/g, "").replace(/^0+/, "");
+  const s2 = String(p2).replace(/\D/g, "").replace(/^0+/, "");
+  if (!s1 || !s2) return false;
+  if (s1 === s2) return true;
+  if (s1.endsWith(s2) || s2.endsWith(s1)) return true;
+  const last10A = s1.length >= 10 ? s1.slice(-10) : s1;
+  const last10B = s2.length >= 10 ? s2.slice(-10) : s2;
+  if (last10A.length >= 8 && last10A === last10B) return true;
+  return false;
+}
+
 export async function checkExistingResult(whatsAppNumber, round, edition) {
   const sheet = await getSheetByTitle("Quiz_Results", [
     "Full_Name",
@@ -116,7 +130,8 @@ export async function checkExistingResult(whatsAppNumber, round, edition) {
   const targetEdition = edition ? String(edition).trim().toLowerCase() : "";
 
   const match = rows.find((row) => {
-    const phoneMatches = String(row.get("WhatsApp_Number") || "").trim() === String(whatsAppNumber).trim();
+    const rowPhone = row.get("WhatsApp_Number");
+    const phoneMatches = isPhoneMatch(rowPhone, whatsAppNumber);
     const roundMatches = String(row.get("Round") || "").trim().toLowerCase() === String(round).trim().toLowerCase();
     if (!phoneMatches || !roundMatches) return false;
 
@@ -139,14 +154,13 @@ export async function getSession(whatsAppNumber, round, edition = "") {
     "Absolute_Deadline"
   ]);
   const rows = await sheet.getRows();
-  const normPhone = String(whatsAppNumber || "").replace(/\D/g, "").replace(/^0+/, "");
   const targetRound = String(round || "").trim().toLowerCase();
   const targetEdition = edition ? String(edition).trim().toLowerCase() : "";
 
   const existingRow = rows.find((row) => {
-    const rowPhone = String(row.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
+    const rowPhone = row.get("WhatsApp_Number");
     const rowRound = String(row.get("Round") || "").trim().toLowerCase();
-    const phoneMatches = rowPhone === normPhone;
+    const phoneMatches = isPhoneMatch(rowPhone, whatsAppNumber);
     const roundMatches = rowRound === targetRound;
     if (!phoneMatches || !roundMatches) return false;
 
@@ -242,14 +256,13 @@ export async function extendQuizSession(whatsAppNumber, round, extraMinutes = 5,
     "Absolute_Deadline"
   ]);
   const rows = await sheet.getRows();
-  const normPhone = String(whatsAppNumber || "").replace(/\D/g, "").replace(/^0+/, "");
   const targetRound = String(round || "").trim().toLowerCase();
   const targetEdition = edition ? String(edition).trim().toLowerCase() : "";
 
   const existingRow = rows.find((row) => {
-    const rowPhone = String(row.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
+    const rowPhone = row.get("WhatsApp_Number");
     const rowRound = String(row.get("Round") || "").trim().toLowerCase();
-    const phoneMatches = rowPhone === normPhone;
+    const phoneMatches = isPhoneMatch(rowPhone, whatsAppNumber);
     const roundMatches = rowRound === targetRound;
     if (!phoneMatches || !roundMatches) return false;
 
@@ -371,12 +384,11 @@ export async function getResultByWhatsApp(whatsAppNumber, round, edition) {
     "Details"
   ]);
   const rows = await sheet.getRows();
-  const normalized = String(whatsAppNumber).replace(/\D/g, "").replace(/^0+/, "");
   const targetEdition = edition ? String(edition).trim().toLowerCase() : "";
 
   const match = rows.find((row) => {
-    const rowPhone = String(row.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
-    const phoneMatches = rowPhone === normalized;
+    const rowPhone = row.get("WhatsApp_Number");
+    const phoneMatches = isPhoneMatch(rowPhone, whatsAppNumber);
     const roundMatches = String(row.get("Round") || "").trim().toLowerCase() === String(round).trim().toLowerCase();
     if (!phoneMatches || !roundMatches) return false;
     if (!targetEdition) return true;
@@ -536,13 +548,13 @@ export async function deleteQuizSubmission(whatsAppNumber, round, timestamp, ful
     const resultRows = await resultsSheet.getRows();
 
     for (const row of resultRows) {
-      const rowPhone = String(row.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
+      const rowPhone = row.get("WhatsApp_Number");
       const rowRound = String(row.get("Round") || "").trim().toLowerCase();
       const rowTimestamp = String(row.get("Timestamp") || "").trim();
       const rowName = String(row.get("Full_Name") || "").trim().toLowerCase();
       const rowEdition = String(row.get("Edition") || "").trim().toLowerCase();
 
-      const phoneMatch = normTargetPhone && rowPhone && (rowPhone === normTargetPhone || rowPhone.endsWith(normTargetPhone) || normTargetPhone.endsWith(rowPhone));
+      const phoneMatch = isPhoneMatch(rowPhone, whatsAppNumber);
       const nameMatch = targetName && rowName && targetName === rowName;
       const roundMatch = !targetRound || rowRound === targetRound;
       const timestampMatch = timestamp ? rowTimestamp === String(timestamp).trim() : true;
@@ -567,11 +579,11 @@ export async function deleteQuizSubmission(whatsAppNumber, round, timestamp, ful
     const sessionRows = await sessionsSheet.getRows();
 
     for (const sRow of sessionRows) {
-      const sPhone = String(sRow.get("WhatsApp_Number") || "").replace(/\D/g, "").replace(/^0+/, "");
+      const sPhone = sRow.get("WhatsApp_Number");
       const sRound = String(sRow.get("Round") || "").trim().toLowerCase();
       const sEdition = String(sRow.get("Edition") || "").trim().toLowerCase();
 
-      const sPhoneMatch = normTargetPhone && sPhone && (sPhone === normTargetPhone || sPhone.endsWith(normTargetPhone) || normTargetPhone.endsWith(sPhone));
+      const sPhoneMatch = isPhoneMatch(sPhone, whatsAppNumber);
       const sRoundMatch = !targetRound || sRound === targetRound;
       const sEditionMatch = !targetEdition || (!sEdition ? targetEdition.includes("new testament") : sEdition === targetEdition);
 
