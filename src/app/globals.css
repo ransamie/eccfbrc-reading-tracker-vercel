@@ -958,7 +958,8 @@ select option {
   .tracker-tabs-bar {
     display: flex !important;
     flex-wrap: nowrap !important;
-    gap: 0.3rem !important;
+    width: 100% !important;
+    gap: 0.35rem !important;
     padding: 0.25rem !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
@@ -967,6 +968,7 @@ select option {
     margin-bottom: 0.75rem !important;
     border-radius: 0.6rem !important;
     touch-action: pan-x !important;
+    box-sizing: border-box !important;
   }
 
   .tracker-tabs-bar::-webkit-scrollbar {
@@ -974,11 +976,12 @@ select option {
   }
 
   .tracker-tab-pill {
-    flex: 0 0 auto !important;
-    padding: 0.45rem 0.65rem !important;
-    font-size: 0.78rem !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 0.5rem 0.65rem !important;
+    font-size: 0.82rem !important;
     font-weight: 600 !important;
-    gap: 0.3rem !important;
+    gap: 0.35rem !important;
     justify-content: center !important;
     text-align: center !important;
     white-space: nowrap !important;
@@ -1657,6 +1660,15 @@ select option {
   color: #FFFFFF;
   font-weight: 700;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+/* Mark Daily Updates Container (Borderless, Seamless Main Background) */
+.mark-updates-container {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 /* Date Stepper Card */

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle, HelpCircle, Compass, MoreVertical, Award, CheckCircle2, Clock, ChevronDown, ChevronUp, Sparkles, MessageSquare } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, RefreshCw, LogOut, Trophy, Copy, CheckCheck, Share2, ExternalLink, Check, Search, BookOpen, FileText, Users, X, FileDown, FolderArchive, Archive, Lock, AlertCircle, HelpCircle, Compass, MoreVertical, Award, CheckCircle2, Clock, ChevronDown, ChevronUp, Sparkles, MessageSquare, Bell } from "lucide-react";
 import InstallPwaButton from "./InstallPwaButton";
 import LeaderTutorialModal from "./LeaderTutorialModal";
 import LeaderTourSpotlight from "./LeaderTourSpotlight";
+import NotificationReminderModal from "./NotificationReminderModal";
 import { generateTeamPdfReport } from "@/lib/pdfReportGenerator";
 import { formatTeamName, formatTeamUpper } from "@/lib/teamUtils";
 
@@ -59,6 +60,7 @@ export default function LeaderDashboard({ team, onLogout }) {
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showSpotlightTour, setShowSpotlightTour] = useState(false);
   const [guideInitialTab, setGuideInitialTab] = useState("workflow");
+  const [showReminderModal, setShowReminderModal] = useState(false);
   
   const [selectedDay, setSelectedDay] = useState("");
   const [currentDay, setCurrentDay] = useState("");
@@ -869,6 +871,16 @@ ${pendingText}
         </div>
 
         <div className="tracker-header-actions leader-header-actions" data-tour="leader-header-actions">
+          {/* Push Reminders */}
+          <button 
+            onClick={() => setShowReminderModal(true)} 
+            title="Daily Push Reminders"
+            className="tracker-btn-icon"
+            aria-label="Push Reminders"
+          >
+            <Bell size={16} style={{ color: '#F59E0B' }} />
+          </button>
+
           {/* Refresh Data */}
           <button 
             onClick={() => loadData(true)} 
@@ -953,6 +965,17 @@ ${pendingText}
                     <span>Bible Reading Quiz Hub</span>
                   </a>
 
+                  <button
+                    onClick={() => {
+                      setShowToolsMenu(false);
+                      setShowReminderModal(true);
+                    }}
+                    className="tracker-dropdown-item"
+                  >
+                    <Bell size={15} style={{ color: '#F59E0B' }} />
+                    <span>Push Notification Reminders</span>
+                  </button>
+
                   <div className="tracker-dropdown-divider" />
 
                   <div className="tracker-dropdown-item-wrap">
@@ -1013,7 +1036,7 @@ ${pendingText}
       </div>
 
       {activeTab === 'report' && (
-        <div className="card">
+        <div className="mark-updates-container">
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
@@ -2425,6 +2448,12 @@ ${pendingText}
         eveEnd={eveEnd}
         reportText={reportText}
         onEnsureReportPreview={handleEnsureReportPreview}
+      />
+
+      <NotificationReminderModal
+        isOpen={showReminderModal}
+        onClose={() => setShowReminderModal(false)}
+        teamName={formatTeamName(team)}
       />
     </div>
   );
