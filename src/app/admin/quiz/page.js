@@ -646,7 +646,7 @@ export default function AdminQuizPage() {
 
   // Clear all questions for a specific round in the active reading track
   const handleClearRoundQuestions = (roundToClear) => {
-    const rName = roundToClear || (selectedBankRound !== "All" ? selectedBankRound : activeTargetRound);
+    const rName = roundToClear || (selectedBankRound !== "All" ? selectedBankRound : (settings.Active_Round || "Round 1"));
     if (!rName || rName === "All") return;
     const questionsInRound = editionQuestions.filter(q => q.round === rName);
     const count = questionsInRound.length;
@@ -708,7 +708,7 @@ export default function AdminQuizPage() {
 
   // Completely delete a round from the active reading track
   const handleDeleteRound = (roundToDelete) => {
-    const rName = roundToDelete || (selectedBankRound !== "All" ? selectedBankRound : activeTargetRound);
+    const rName = roundToDelete || (selectedBankRound !== "All" ? selectedBankRound : (settings.Active_Round || "Round 1"));
     if (!rName || rName === "All") return;
     const questionsInRound = editionQuestions.filter(q => q.round === rName);
     const count = questionsInRound.length;
@@ -1488,8 +1488,9 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
   const submissionsByCandidateRound = new Map();
   for (const r of sortedResults) {
     const phone = String(r.whatsApp || r.whatsapp || "").replace(/\D/g, "").slice(-10);
+    const identifier = phone || String(r.fullName || "unknown").trim().toLowerCase();
     const round = String(r.round || "").trim().toLowerCase();
-    const key = `${phone}_${round}`;
+    const key = `${identifier}_${round}`;
     if (!submissionsByCandidateRound.has(key)) {
       submissionsByCandidateRound.set(key, []);
     }
@@ -4153,10 +4154,13 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                           const displayTeam = !rawTeam || rawTeam.toLowerCase() === 'unassigned'
                             ? 'Unassigned'
                             : (rawTeam.toLowerCase().startsWith('team ') ? rawTeam : `Team ${rawTeam}`);
-                          const candidateKey = `${String(r.whatsApp || r.whatsapp || "").replace(/\D/g, "").slice(-10)}_${String(r.round || "").trim().toLowerCase()}`;
+                          const isUnassigned = displayTeam === 'Unassigned';
+                          const candidatePhone = String(r.whatsApp || r.whatsapp || "").replace(/\D/g, "").slice(-10);
+                          const candidateId = candidatePhone || String(r.fullName || "unknown").trim().toLowerCase();
+                          const candidateKey = `${candidateId}_${String(r.round || "").trim().toLowerCase()}`;
                           const candidateSubmissions = submissionsByCandidateRound.get(candidateKey) || [];
                           const hasMultiple = candidateSubmissions.length > 1;
-                          const attemptIndex = hasMultiple ? candidateSubmissions.findIndex(sub => (sub.timestamp === r.timestamp && sub.score === r.score)) : -1;
+                          const attemptIndex = hasMultiple ? candidateSubmissions.findIndex(sub => sub === r || (sub.timestamp === r.timestamp && sub.score === r.score)) : -1;
 
                           return (
                             <tr 

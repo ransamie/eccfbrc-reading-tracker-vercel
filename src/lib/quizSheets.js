@@ -285,7 +285,7 @@ export async function extendQuizSession(whatsAppNumber, round, extraMinutes = 5,
   return { 
     success: true, 
     newDeadline,
-    whatsApp: normPhone,
+    whatsApp: whatsAppNumber,
     round
   };
 }

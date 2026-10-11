@@ -3,6 +3,7 @@ import {
   getQuizSettings, 
   checkExistingResult, 
   getOrCreateSession, 
+  getSession,
   getQuestionsForRound 
 } from "@/lib/quizSheets";
 
