@@ -514,6 +514,8 @@ export default function LeaderDashboard({ team, onLogout }) {
     const currentRound = Math.floor(((currentDayNum || 1) - 1) / daysPerRound) + 1;
     const evictionThreshold = parseInt(useData.settings?.Eviction_Threshold || 5, 10);
     const currentRoundStart = Math.floor(((currentDayNum || 1) - 1) / daysPerRound) * daysPerRound + 1;
+    const currentRoundEnd = currentRoundStart + daysPerRound - 1;
+    const evictionTargetDay = currentRoundStart + evictionThreshold - 1;
     
     // Previous rounds formatting
     let previousRoundsStr = "";
@@ -590,10 +592,12 @@ export default function LeaderDashboard({ team, onLogout }) {
         const daysStr = missedDays.length === 1 ? `Day ${missedDays[0]}` : `Day ${missedDays[0]} - ${missedDays[missedDays.length - 1]}`;
         yetToUpdate.push(`* @${memberNameStr} (${daysStr})`);
         
-        // Warn if they haven't completed at least evictionThreshold days — they risk eviction at round end
-        if (showEvictionList && lastCompletedDay < evictionThreshold) {
-           const dayWord = daysBehind === 1 ? "day" : "days";
-           evictionList.push(`* @${memberNameStr} (${daysBehind} ${dayWord} behind)`);
+        // Target milestone day for eviction in current round (e.g. Day 5 in Round 1, Day 15 in Round 2, Day 25 in Round 3)
+        const hasCompletedTargetDay = lastCompletedDay >= evictionTargetDay && !missedDays.includes(evictionTargetDay);
+        if (showEvictionList && !hasCompletedTargetDay) {
+           const behindCount = daysBehind > 0 ? daysBehind : missedDays.length;
+           const dayWord = behindCount === 1 ? "day" : "days";
+           evictionList.push(`* @${memberNameStr} (${behindCount} ${dayWord} behind)`);
         }
       } else {
         upToDate.push(`* @${memberNameStr}`);
@@ -606,7 +610,7 @@ export default function LeaderDashboard({ team, onLogout }) {
     let evictionSection = "";
     if (showEvictionList) {
        const evictStr = evictionList.length ? evictionList.join('\\n') : "- None 🎉";
-       evictionSection = `\\n\\n*Eviction List 🚨🚨🚨*\\n_(Members who have not completed Day ${evictionThreshold}. Eviction takes effect next round!)_\\n${evictStr}`;
+       evictionSection = `\\n\\n*Eviction List 🚨🚨🚨*\\n_(Members who have not completed Day ${evictionTargetDay}. Eviction takes effect next round!)_\\n${evictStr}`;
     }
 
     const challengeHeader = String(useData.settings?.Challenge_Name || "ECCF BIBLE READING CHALLENGE").toUpperCase();
