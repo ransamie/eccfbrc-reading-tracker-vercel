@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession, getQuestionsForRound, saveQuizResult } from "@/lib/quizSheets";
+import { getSession, getQuestionsForRound, saveQuizResult, checkExistingResult } from "@/lib/quizSheets";
 import { fetchGlobalData } from "@/lib/googleSheets";
 
 export async function POST(req) {
@@ -32,7 +32,16 @@ export async function POST(req) {
       }, { status: 403 });
     }
 
-    // 2. Fetch Correct Answers and Compute Score
+    // 2. Reject Duplicate Submissions: Ensure only 1 attempt per candidate per round
+    const alreadySubmitted = await checkExistingResult(normalizedWhatsApp, participant.round, edition);
+    if (alreadySubmitted) {
+      return NextResponse.json({ 
+        error: `A submission has already been recorded for ${participant.round}. Multiple attempts are not permitted.`,
+        alreadySubmitted: true 
+      }, { status: 400 });
+    }
+
+    // 3. Fetch Correct Answers and Compute Score
     const questions = await getQuestionsForRound(participant.round, edition);
 
     if (!questions || questions.length === 0) {

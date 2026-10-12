@@ -4017,8 +4017,8 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                   {completedSessionsCount}
                 </div>
                 {uniqueCompletedCount !== completedSessionsCount && (
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.15rem', fontWeight: '600' }}>
-                    {uniqueCompletedCount} unique candidate{uniqueCompletedCount === 1 ? '' : 's'}
+                  <div style={{ fontSize: '0.68rem', color: '#F87171', marginTop: '0.15rem', fontWeight: '700' }}>
+                    ⚠️ {completedSessionsCount - uniqueCompletedCount} duplicate{(completedSessionsCount - uniqueCompletedCount) === 1 ? '' : 's'} flagged ({uniqueCompletedCount} unique)
                   </div>
                 )}
               </div>
@@ -4211,16 +4211,16 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                                   </span>
                                   {hasMultiple && attemptIndex !== -1 && (
                                     <span style={{
-                                      backgroundColor: attemptIndex > 0 ? 'rgba(245, 158, 11, 0.14)' : 'rgba(59, 130, 246, 0.12)',
-                                      color: attemptIndex > 0 ? '#FBBF24' : '#60A5FA',
-                                      border: attemptIndex > 0 ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(59, 130, 246, 0.25)',
+                                      backgroundColor: attemptIndex > 0 ? 'rgba(239, 68, 68, 0.16)' : 'rgba(59, 130, 246, 0.12)',
+                                      color: attemptIndex > 0 ? '#F87171' : '#60A5FA',
+                                      border: attemptIndex > 0 ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(59, 130, 246, 0.25)',
                                       padding: '0.15rem 0.45rem',
                                       borderRadius: '0.35rem',
                                       fontSize: '0.7rem',
                                       fontWeight: '700',
                                       whiteSpace: 'nowrap'
-                                    }} title={attemptIndex > 0 ? `Subsequent submission (Attempt ${attemptIndex + 1})` : `First submission attempt`}>
-                                      {attemptIndex > 0 ? `Attempt ${attemptIndex + 1} (Retake)` : 'Attempt 1'}
+                                    }} title={attemptIndex > 0 ? `Duplicate submission entry detected (Entry #${attemptIndex + 1})` : `First recorded entry`}>
+                                      {attemptIndex > 0 ? `⚠️ Duplicate #${attemptIndex + 1}` : 'Initial'}
                                     </span>
                                   )}
                                 </div>
@@ -4308,7 +4308,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteSubmission(r)}
-                                    title={`Reset submission and allow ${r.fullName || 'candidate'} to retake`}
+                                    title={hasMultiple && attemptIndex > 0 ? `Delete this duplicate submission entry` : `Delete submission record for ${r.fullName || 'candidate'}`}
                                     style={{
                                       display: 'inline-flex',
                                       alignItems: 'center',
@@ -4327,7 +4327,7 @@ Where was Jesus born?\tNazareth\tJerusalem\tBethlehem\tJericho\tBethlehem`;
                                     onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
                                   >
                                     <Trash2 size={11} />
-                                    <span>Reset</span>
+                                    <span>{hasMultiple && attemptIndex > 0 ? 'Delete Duplicate' : 'Delete'}</span>
                                   </button>
                                 </div>
                               </td>
